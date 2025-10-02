@@ -1,0 +1,56 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vsidx
+*.vspx
+
+# Build results
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+build/
+
+# Logs
+*.log
+*.tlog
+
+# Publish
+publish/
+*.Publish.xml
+*.pubxml
+*.pubxml.user
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Temp files
+*.tmp
+*.bak
+*.dbmdl
+*.swp
+
+# Rider / Resharper
+.idea/
+_ReSharper*/
+*.DotSettings.user
+
+# OS junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# --- AppSettings management ---
+!appsettings.json  
+
+appsettings.*.json  
+
+!appsettings.*.example.json  
