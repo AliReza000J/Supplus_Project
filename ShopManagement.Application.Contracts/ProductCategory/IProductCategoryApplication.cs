@@ -8,6 +8,6 @@ namespace ShopManagement.Application.Contracts.ProductCategory
         OperationResult Edit(EditProductCategory command);
         EditProductCategory GetDetails(long id);
         List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel);
-        //List<ProductCategoryViewModel> GetProductCategories();
+        List<ProductCategoryViewModel> GetProductCategories();
     }
 }
