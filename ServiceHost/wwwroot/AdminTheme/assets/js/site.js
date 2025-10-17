@@ -1,5 +1,11 @@
 ﻿var SinglePage = {};
 
+$(document).ready(function () {
+    initializeSelect2();
+});
+
+
+
 SinglePage.LoadModal = function () {
     var url = window.location.hash.toLowerCase();
     if (!url.startsWith("#showmodal")) {
@@ -15,6 +21,8 @@ SinglePage.LoadModal = function () {
             const newForm = forms[forms.length - 1];
             $.validator.unobtrusive.parse(newForm);
             showModal();
+
+            initializeSelect2();
         }).fail(function (error) {
             alert("خطایی رخ داده، لطفا با مدیر سیستم تماس بگیرید.");
         });
@@ -208,3 +216,17 @@ jQuery.validator.unobtrusive.adapters.addBool("maxFileSize");
 //        }
 //    });
 //jQuery.validator.unobtrusive.adapters.addBool("maxFileSize");
+
+
+function initializeSelect2() {
+    $('select[id="productSelect"], select.product-select').each(function () {
+        if (!$(this).hasClass("select2-hidden-accessible")) {
+            $(this).select2({
+                placeholder: "انتخاب یا جستجوی محصول...",
+                allowClear: true,
+                width: '100%',
+                dir: "rtl"
+            });
+        }
+    });
+}

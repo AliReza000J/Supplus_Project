@@ -1,3 +1,4 @@
+using DiscountManagement.Configuration;
 using Microsoft.OpenApi.Models;
 using ShopManagement.Configuration;
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("PharmaPlusDB");
 
 ShopManagementBootstrapper.Configure(builder.Services, connectionString);
+DiscountManagementBootstrapper.Configure(builder.Services, connectionString);
 
 // Add services to the container.
 builder.Services.AddRazorPages();

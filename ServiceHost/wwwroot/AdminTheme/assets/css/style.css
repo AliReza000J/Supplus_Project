@@ -3480,3 +3480,58 @@ th { text-align: right; }
         box-shadow: 0 0 3px #B20000;
     }
 }
+
+/* === Match Select2 with Bootstrap form-control === */
+.select2-container--default .select2-selection--single {
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    height: 38px; /* same as Bootstrap input height */
+    display: flex;
+    align-items: center;
+}
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #495057;
+        line-height: 36px; /* vertically center text */
+        padding-left: 8px;
+        font-family: inherit;
+        font-size: 14px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100%;
+        right: 10px;
+    }
+
+    .select2-container--default .select2-selection--single:focus,
+    .select2-container--default .select2-selection--single:active {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(38, 143, 255, .25);
+        border-color: #80bdff;
+    }
+
+.select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    z-index: 2000 !important; /* ensures dropdown shows above modals */
+}
+
+.select2-results__option {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.select2-results__option--highlighted {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+.select2-container {
+    width: 100% !important;
+}
+
+/* Optional: smoother appearance inside modals */
+.modal .select2-container {
+    z-index: 2050 !important;
+}
