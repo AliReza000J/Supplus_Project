@@ -13,9 +13,7 @@ namespace ShopManagement.Domain.ProductAgg
     {
         public string Name { get; private set; }
         public long CategoryId { get; private set; }
-        public double UnitPrice { get; private set; }
         public string Code { get; private set; }
-        public bool IsInStock { get; private set; }
         public string ShortDescription { get; private set; }
         public string Description { get; private set; }
         public string Specifications { get; private set; }
@@ -65,16 +63,6 @@ namespace ShopManagement.Domain.ProductAgg
             Keywords = keywords;
             MetaDescription = metaDescription;
             Specifications = specifications;
-        }
-
-        public void InStock()
-        {
-            IsInStock = true;
-        }
-
-        public void OutOfStock()
-        {
-            IsInStock = false;
         }
     }
 }

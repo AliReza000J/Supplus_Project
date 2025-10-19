@@ -1,7 +1,6 @@
 ﻿using _0_Framework.Application;
 //using Microsoft.AspNetCore.Http;
 using ShopManagement.Application.Contracts.ProductCategory;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace ShopManagement.Application.Contracts.Product
