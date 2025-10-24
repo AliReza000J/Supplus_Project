@@ -27,6 +27,7 @@ using ShopManagement.Infrastructure.EFCore.Repository;
 using _01_PharmaPlusQuery.Query;
 using _01_PharmaPlusQuery.Contracts.Slide;
 using _01_PharmaPlusQuery.Contracts.ProductCategory;
+using _01_PharmaPlusQuery.Contracts.Product;
 //using ShopManagement.Infrastructure.InventoryAcl;
 
 namespace ShopManagement.Configuration
@@ -63,6 +64,7 @@ namespace ShopManagement.Configuration
             // API
             services.AddTransient<ISlideQuery, SlideQuery>();
             services.AddTransient<IProductCategoryQuery, ProductCategoryQuery>();
+            services.AddTransient<IProductQuery, ProductQuery>();
 
 
             //services.AddTransient<IPermissionExposer, ShopPermissionExposer>();

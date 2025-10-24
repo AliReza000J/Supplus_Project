@@ -192,23 +192,10 @@ function handleAjaxCall(method, url, data) {
     }
 }
 
-jQuery.validator.addMethod("maxFileSize",
-    function (value, element, params) {
-        var size = element.files[0].size;
-        var maxSize = 3 * 1024 * 1024;
-        if (size > maxSize)
-            return false;
-        else {
-            return true;
-        }
-    });
-jQuery.validator.unobtrusive.adapters.addBool("maxFileSize");
-
 //jQuery.validator.addMethod("maxFileSize",
 //    function (value, element, params) {
 //        var size = element.files[0].size;
 //        var maxSize = 3 * 1024 * 1024;
-//        debugger;
 //        if (size > maxSize)
 //            return false;
 //        else {
@@ -216,6 +203,45 @@ jQuery.validator.unobtrusive.adapters.addBool("maxFileSize");
 //        }
 //    });
 //jQuery.validator.unobtrusive.adapters.addBool("maxFileSize");
+
+jQuery.validator.addMethod("maxfilesize", function (value, element, param) {
+    if (!element.files || element.files.length === 0) return true;
+
+    var maxSize = param; // param is from data-val-maxfilesize-size
+    var fileSize = element.files[0].size;
+    return fileSize <= maxSize;
+});
+
+// Adapter reads the "size" parameter from data-val-maxfilesize-size
+jQuery.validator.unobtrusive.adapters.addSingleVal("maxfilesize", "size");
+
+
+
+//jQuery.validator.addMethod("fileextensionlimit", function (value, element) {
+//    if (element.files.length === 0)
+//        return true;
+
+//    var allowedExtensions = [".jpeg", ".jpg", ".png"];
+//    var fileName = element.files[0].name.toLowerCase();
+//    var fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+
+//    return allowedExtensions.includes(fileExtension);
+//});
+
+//// Adapter
+//jQuery.validator.unobtrusive.adapters.addBool("fileextensionlimit");
+
+
+jQuery.validator.addMethod("fileextensionlimit", function (value, element, param) {
+    if (!element.files || element.files.length === 0) return true;
+
+    var allowedExtensions = param.split(',').map(e => e.toLowerCase());
+    var fileName = element.files[0].name.toLowerCase();
+    var fileExtension = fileName.substring(fileName.lastIndexOf('.'));
+    return allowedExtensions.includes(fileExtension);
+});
+
+jQuery.validator.unobtrusive.adapters.addSingleVal("fileextensionlimit", "extensions");
 
 
 function initializeSelect2() {

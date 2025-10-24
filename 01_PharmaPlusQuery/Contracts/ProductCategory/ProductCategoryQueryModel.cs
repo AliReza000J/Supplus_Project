@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using _01_PharmaPlusQuery.Contracts.Product;
 
 namespace _01_PharmaPlusQuery.Contracts.ProductCategory
 {
@@ -17,6 +13,6 @@ namespace _01_PharmaPlusQuery.Contracts.ProductCategory
         public string Keywords { get; set; }
         public string MetaDescription { get; set; }
         public string Description { get; set; }
-        //public List<ProductQueryModel> Products { get; set; }
+        public List<ProductQueryModel> Products { get; set; }
     }
 }

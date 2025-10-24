@@ -1,4 +1,5 @@
 ﻿using _0_Framework.Application;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -16,13 +17,14 @@ namespace ShopManagement.Application.Contracts.ProductCategory
         public string Description { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        //[FileExtensionLimitation(new[] { ".jpeg", ".jpg", ".png" }, ErrorMessage = ValidationMessages.InvalidFileFormat)]
-        //[MaxFileSize(3 * 1024 * 1024, ErrorMessage = ValidationMessages.MaxFileSize)]
-        public string Picture { get; set; }
-        //public IFormFile Picture { get; set; }
-
+        [FileExtensionLimitation(new[] { ".jpeg", ".jpg", ".png" }, ErrorMessage = ValidationMessages.InvalidFileFormat)]
+        [MaxFileSize(3 * 1024 * 1024, ErrorMessage = ValidationMessages.MaxFileSize)]
+        public IFormFile Picture { get; set; }
+        
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string PictureAlt { get; set; }
 
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string PictureTitle { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]

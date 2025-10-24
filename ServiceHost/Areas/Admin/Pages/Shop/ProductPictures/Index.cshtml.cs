@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
@@ -40,6 +40,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
 
         public JsonResult OnPostCreate(CreateProductPicture command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _productPictureApplication.Create(command);
             return new JsonResult(result);
         }
@@ -53,6 +56,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
 
         public JsonResult OnPostEdit(EditProductPicture command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _productPictureApplication.Edit(command);
             return new JsonResult(result);
         }

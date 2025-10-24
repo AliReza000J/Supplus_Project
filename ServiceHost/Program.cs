@@ -1,6 +1,8 @@
+using _0_Framework.Application;
 using DiscountManagement.Configuration;
 using InventoryManagement.Configuration;
 using Microsoft.OpenApi.Models;
+using ServiceHost;
 using ShopManagement.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,8 @@ DiscountManagementBootstrapper.Configure(builder.Services, connectionString);
 InventoryManagementBootstrapper.Configure(builder.Services, connectionString);
 
 // Add services to the container.
+builder.Services.AddTransient<IFileUploader, FileUploader>();
+
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
 

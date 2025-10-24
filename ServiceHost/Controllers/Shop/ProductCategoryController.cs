@@ -57,5 +57,85 @@ namespace ServiceHost.Controllers.Shop
                     statusCode: StatusCodes.Status500InternalServerError);
             }
         }
+
+        [HttpGet("with-products")]
+        public async Task<IActionResult> GetProductCategoriesWithProducts()
+        {
+            try
+            {
+                var productCategories = await _productCategoryQuery.GetProductCategoriesWithProducts();
+
+                if (productCategories == null || !productCategories.Any())
+                    return NotFound("هیچ دسته‌بندی محصولی یافت نشد.");
+
+                return Ok(productCategories);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "ورودی نامعتبر در دریافت دسته‌بندی‌ها");
+                return BadRequest(new
+                {
+                    error = "خطای ورودی",
+                    message = "داده‌های ارسال‌شده معتبر نیستند."
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "خطای منطقی در دریافت دسته‌بندی‌ها");
+                return StatusCode(StatusCodes.Status409Conflict, new
+                {
+                    error = "تداخل در پردازش",
+                    message = "عملیات مورد نظر با مشکل مواجه شد."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "خطای غیرمنتظره در دریافت دسته‌بندی‌ها");
+                return Problem(
+                    title: "خطای سرور",
+                    detail: "در هنگام پردازش درخواست خطایی رخ داده است. لطفاً مجدداً تلاش کنید.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        [HttpGet("{slug}")]
+        public async Task<IActionResult> GetProductCategoryWithProductsBySlug(string slug)
+        {
+            try
+            {
+                var productCategories = await _productCategoryQuery.GetProductCategoryWithProductsBy(slug);
+
+                if (productCategories == null)
+                    return NotFound($"هیچ دسته‌بندی محصولی با {slug} یافت نشد.");
+
+                return Ok(productCategories);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "ورودی نامعتبر در دریافت دسته‌بندی‌ها");
+                return BadRequest(new
+                {
+                    error = "خطای ورودی",
+                    message = "داده‌های ارسال‌شده معتبر نیستند."
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "خطای منطقی در دریافت دسته‌بندی‌ها");
+                return StatusCode(StatusCodes.Status409Conflict, new
+                {
+                    error = "تداخل در پردازش",
+                    message = "عملیات مورد نظر با مشکل مواجه شد."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "خطای غیرمنتظره در دریافت دسته‌بندی‌ها");
+                return Problem(
+                    title: "خطای سرور",
+                    detail: "در هنگام پردازش درخواست خطایی رخ داده است. لطفاً مجدداً تلاش کنید.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }

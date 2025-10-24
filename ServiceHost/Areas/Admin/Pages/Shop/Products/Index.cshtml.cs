@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
@@ -45,6 +45,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         //[NeedsPermission(ShopPermissions.CreateProduct)]
         public JsonResult OnPostCreate(CreateProduct command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _productApplication.Create(command);
             return new JsonResult(result);
         }
@@ -59,6 +62,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         //[NeedsPermission(ShopPermissions.EditProduct)]
         public JsonResult OnPostEdit(EditProduct command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _productApplication.Edit(command);
             return new JsonResult(result);
         }

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
@@ -34,6 +34,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
 
         public JsonResult OnPostCreate(CreateSlide command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _slideApplication.Create(command);
             return new JsonResult(result);
         }
@@ -46,6 +49,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
 
         public JsonResult OnPostEdit(EditSlide command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _slideApplication.Edit(command);
             return new JsonResult(result);
         }

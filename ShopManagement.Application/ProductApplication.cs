@@ -7,14 +7,13 @@ namespace ShopManagement.Application
 {
     public class ProductApplication : IProductApplication
     {
-        //private readonly IFileUploader _fileUploader;
+        private readonly IFileUploader _fileUploader;
         private readonly IProductRepository _productRepository;
         private readonly IProductCategoryRepository _productCategoryRepository;
 
-        //public ProductApplication(IProductRepository productRepository, IFileUploader fileUploader, IProductCategoryRepository productCategoryRepository)
-        public ProductApplication(IProductRepository productRepository, IProductCategoryRepository productCategoryRepository)
+        public ProductApplication(IProductRepository productRepository, IFileUploader fileUploader, IProductCategoryRepository productCategoryRepository)
         {
-            //_fileUploader = fileUploader;
+            _fileUploader = fileUploader;
             _productRepository = productRepository;
             _productCategoryRepository = productCategoryRepository;
         }
@@ -28,8 +27,7 @@ namespace ShopManagement.Application
             var slug = command.Slug.Slugify();
             var categorySlug = _productCategoryRepository.GetSlugById(command.CategoryId);
             var path = $"{categorySlug}//{slug}";
-            var picturePath ="";
-            //var picturePath = _fileUploader.Upload(command.Picture, path);
+            var picturePath = _fileUploader.Upload(command.Picture, path);
 
             var product = new Product(command.Name, command.Code,
                 command.ShortDescription, command.Description, picturePath,
@@ -56,8 +54,7 @@ namespace ShopManagement.Application
 
             var slug = command.Slug.Slugify();
             var path = $"{product.Category.Slug}/{slug}";
-            var picturePath = "";
-            //var picturePath = _fileUploader.Upload(command.Picture, path);
+            var picturePath = _fileUploader.Upload(command.Picture, path);
 
             product.Edit(command.Name, command.Code,
                 command.ShortDescription, command.Description, picturePath,

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ShopManagement.Application.Contracts.ProductCategory;
@@ -35,6 +35,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         //[NeedsPermission(ShopPermissions.CreateProductCategory)]
         public JsonResult OnPostCreate(CreateProductCategory command)
         {
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
             var result = _productCategoryApplication.Create(command);
             return new JsonResult(result);
         }
@@ -48,9 +51,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         //[NeedsPermission(ShopPermissions.EditProductCategory)]
         public JsonResult OnPostEdit(EditProductCategory command)
         {
-            if (ModelState.IsValid)
-            {
-            }
+            if (!ModelState.IsValid)
+                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+
 
             var result = _productCategoryApplication.Edit(command);
             return new JsonResult(result);

@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace _01_PharmaPlusQuery.Contracts.ProductCategory
+﻿namespace _01_PharmaPlusQuery.Contracts.ProductCategory
 {
     public interface IProductCategoryQuery
     {
-        Task<ProductCategoryQueryModel> GetProductCategoryWithProducstsBy(string slug);
+        Task<ProductCategoryQueryModel> GetProductCategoryWithProductsBy(string slug);
         Task<List<ProductCategoryQueryModel>> GetProductCategories();
         Task<List<ProductCategoryQueryModel>> GetProductCategoriesWithProducts();
     }
