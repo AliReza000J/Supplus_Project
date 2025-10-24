@@ -29,7 +29,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         //[NeedsPermission(ShopPermissions.ListProducts)]
         public void OnGet(ProductSearchModel searchModel)
         {
-            ProductCategories = new SelectList(_productCategoryApplication.GetProductCategories(), "Id", "Name");
+            ProductCategories = new SelectList(_productCategoryApplication.GetLeafCategories(), "Id", "Name");
             Products = _productApplication.Search(searchModel);
         }
 
@@ -37,7 +37,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         {
             var command = new CreateProduct
             {
-                Categories = _productCategoryApplication.GetProductCategories()
+                Categories = _productCategoryApplication.GetLeafCategories()
             };
             return Partial("./Create", command);
         }

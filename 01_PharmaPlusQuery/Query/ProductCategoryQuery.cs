@@ -21,6 +21,56 @@ namespace _01_PharmaPlusQuery.Query
             _discountContext = discountContext;
         }
 
+        public async Task<List<ProductCategoryQueryModel>> GetProductCategoriesTree()
+        {
+            var categories = await _shopContext.ProductCategories
+            .Select(x => new ProductCategoryQueryModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Slug = x.Slug,
+                ParentId = x.ParentId,
+            })
+            .AsNoTracking()
+            .ToListAsync();
+
+            var lookup = categories.ToLookup(c => c.ParentId);
+
+            List<ProductCategoryQueryModel> BuildTree(long? parentId)
+            {
+                return lookup[parentId]
+                    .Select(c => new ProductCategoryQueryModel
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Slug = c.Slug,
+                        ParentId = c.ParentId,
+                        Children = BuildTree(c.Id)
+                    })
+                    .ToList();
+            }
+
+            return BuildTree(null); // root-level categories
+        }
+
+        public async Task<List<ProductCategoryQueryModel>> GetLeafProductCategories()
+        {
+            return await _shopContext.ProductCategories
+                .Where(x => !x.Children.Any())
+                .Select(x => new ProductCategoryQueryModel
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Picture = x.Picture,
+                    PictureAlt = x.PictureAlt,
+                    PictureTitle = x.PictureTitle,
+                    Slug = x.Slug,
+                    ProductsCount = x.Products.Count
+                })
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task<List<ProductCategoryQueryModel>> GetProductCategories()
         {
             return await _shopContext.ProductCategories
@@ -31,7 +81,8 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    Slug = x.Slug
+                    Slug = x.Slug,
+                    ProductsCount = x.Products.Count
                 }).AsNoTracking().ToListAsync();
         }
 

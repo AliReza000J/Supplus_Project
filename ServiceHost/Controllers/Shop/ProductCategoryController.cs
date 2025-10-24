@@ -1,5 +1,6 @@
 ﻿using _01_PharmaPlusQuery.Contracts.ProductCategory;
 using Microsoft.AspNetCore.Mvc;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ServiceHost.Controllers.Shop
 {
@@ -136,6 +137,20 @@ namespace ServiceHost.Controllers.Shop
                     detail: "در هنگام پردازش درخواست خطایی رخ داده است. لطفاً مجدداً تلاش کنید.",
                     statusCode: StatusCodes.Status500InternalServerError);
             }
+        }
+
+        [HttpGet("tree")]
+        public async Task<IActionResult> GetProductCategoriesTree()
+        {
+            var result = await _productCategoryQuery.GetProductCategoriesTree();
+            return Ok(result);
+        }
+
+        [HttpGet("leaf")]
+        public async Task<IActionResult> GetLeafProductCategories()
+        {
+            var result = await _productCategoryQuery.GetLeafProductCategories();
+            return Ok(result);
         }
     }
 }

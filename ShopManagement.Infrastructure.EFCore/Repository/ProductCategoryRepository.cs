@@ -1,5 +1,6 @@
 ﻿using _0_Framework.Application;
 using _0_Framework.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using ShopManagement.Application.Contracts.ProductCategory;
 using ShopManagement.Domain.ProductCategoryAgg;
 
@@ -26,16 +27,41 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 //Picture = x.Picture,
                 PictureAlt = x.PictureAlt,
                 PictureTitle = x.PictureTitle,
-                Slug = x.Slug
+                Slug = x.Slug,
+                ParentId = x.ParentId,
             }).FirstOrDefault(x => x.Id == id);
         }
 
+        //public List<ProductCategory> GetAllWithChildren()
+        //{
+        //    return _context.ProductCategories
+        //        .Include(x => x.Children)
+        //        .AsNoTracking()
+        //        .ToList();
+        //}
+
+        public List<ProductCategoryViewModel> GetLeafCategories()
+        {
+            return _context.ProductCategories
+                .Where(x => !x.Children.Any())
+                .Select(x => new ProductCategoryViewModel
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                })
+                .AsNoTracking()
+                .ToList();
+        }
+
+
         public List<ProductCategoryViewModel> GetProductCategories()
         {
-            return _context.ProductCategories.Select(x => new ProductCategoryViewModel
+            return _context.ProductCategories
+                .Select(x => new ProductCategoryViewModel
             {
                 Id = x.Id,
-                Name = x.Name
+                Name = x.Name,
+                Parent = x.Parent.Name
             }).ToList();
         }
 
@@ -51,7 +77,8 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 Id = x.Id,
                 Picture = x.Picture,
                 Name = x.Name,
-                CreationDate = x.CreationDate.ToFarsi()
+                CreationDate = x.CreationDate.ToFarsi(),
+                Parent = x.Parent.Name
             });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Name))

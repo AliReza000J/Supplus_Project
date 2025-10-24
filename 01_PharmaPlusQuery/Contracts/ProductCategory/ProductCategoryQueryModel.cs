@@ -14,5 +14,9 @@ namespace _01_PharmaPlusQuery.Contracts.ProductCategory
         public string MetaDescription { get; set; }
         public string Description { get; set; }
         public List<ProductQueryModel> Products { get; set; }
+        public long? ParentId { get; set; }
+        public List<ProductCategoryQueryModel> Children { get; set; } = new();
+        // for leaf queries:
+        public int ProductsCount { get; set; }
     }
 }

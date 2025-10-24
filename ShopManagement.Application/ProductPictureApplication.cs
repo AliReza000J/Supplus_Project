@@ -27,7 +27,7 @@ namespace ShopManagement.Application
 
             var product = _productRepository.GetProductWithCategory(command.ProductId);
 
-            var path = $"{product.Category.Slug}//{product.Slug}";
+            var path = $"Products/{product.Category.Slug}/{product.Slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
             var productPicture = new ProductPicture(command.ProductId, picturePath, command.PictureAlt, command.PictureTitle);
@@ -43,7 +43,7 @@ namespace ShopManagement.Application
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            var path = $"{productPicture.Product.Category.Slug}//{productPicture.Product.Slug}";
+            var path = $"Products/{productPicture.Product.Category.Slug}/{productPicture.Product.Slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
             productPicture.Edit(command.ProductId, picturePath, command.PictureAlt, command.PictureTitle);

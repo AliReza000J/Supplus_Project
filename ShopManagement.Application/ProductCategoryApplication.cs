@@ -18,21 +18,43 @@ namespace ShopManagement.Application
         {
             var operation = new OperationResult();
 
-            if (_productCategoryRepository.Exists(x => x.Name == command.Name))
+            if (_productCategoryRepository.Exists(x => x.Name == command.Name && x.ParentId == command.ParentId))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
+
+            if (command.ParentId.HasValue)
+            {
+                var parent = _productCategoryRepository.Get(command.ParentId.Value);
+                if (parent != null && parent.IsDescendantOf(command.ParentId.Value))
+                    return operation.Failed("انتخاب والد باعث ایجاد حلقه می‌شود.");
+            }
 
             var slug = command.Slug.Slugify();
 
-            var picturePath = $"{command.Slug}";
-            var pictureName = _fileUploader.Upload(command.Picture, picturePath);
+            string fullPath = GetCategoryFullPath(command.ParentId, slug);
 
-            var productCategory = new ProductCategory(command.Name, command.Description,
-                pictureName, command.PictureAlt, command.PictureTitle, command.Keywords,
-                command.MetaDescription, slug);
+            var pictureName = _fileUploader.Upload(command.Picture, fullPath);
+
+            var productCategory = new ProductCategory(
+                command.Name, command.Description, pictureName, command.PictureTitle,
+                command.PictureAlt, slug, command.MetaDescription, command.Keywords, command.ParentId);
 
             _productCategoryRepository.Create(productCategory);
+
             _productCategoryRepository.SaveChanges();
             return operation.Succeeded();
+        }
+
+        private string GetCategoryFullPath(long? parentId, string currentSlug)
+        {
+            if (!parentId.HasValue)
+                return $"ProductCategories/{currentSlug}";
+
+            var parent = _productCategoryRepository.Get(parentId.Value);
+            if (parent == null)
+                return $"ProductCategories/{currentSlug}";
+
+            var parentPath = GetCategoryFullPath(parent.ParentId, parent.Slug);
+            return $"{parentPath}/{currentSlug}";
         }
 
         public OperationResult Edit(EditProductCategory command)
@@ -43,17 +65,29 @@ namespace ShopManagement.Application
             if (productCategory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_productCategoryRepository.Exists(x => x.Name == command.Name && x.Id != command.Id))
+            if (_productCategoryRepository.Exists(x => x.Name == command.Name && x.ParentId == command.ParentId && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
+
+            // Check for cycle: if command.ParentId is descendant of category.Id -> invalid
+            if (command.ParentId.HasValue)
+            {
+                var parent = _productCategoryRepository.Get(command.ParentId.Value);
+                if (parent != null && parent.IsDescendantOf(command.Id))
+                    return operation.Failed("انتخاب والد باعث ایجاد حلقه می‌شود.");
+            }
 
             var slug = command.Slug.Slugify();
 
-            var picturePath = $"{command.Slug}";
-            var pictureName = _fileUploader.Upload(command.Picture, picturePath);
+            string fullPath = GetCategoryFullPath(command.ParentId, slug);
+            string pictureName = productCategory.Picture;
 
-            productCategory.Edit(command.Name, command.Description, pictureName,
-                command.PictureAlt, command.PictureTitle, command.Keywords,
-                command.MetaDescription, slug);
+            if (command.Picture != null)
+            {
+                pictureName = _fileUploader.Upload(command.Picture, fullPath);
+            }
+
+            productCategory.Edit(command.Name, command.Description, pictureName, command.PictureTitle,
+                command.PictureAlt, slug, command.MetaDescription, command.Keywords, command.ParentId);
 
             _productCategoryRepository.SaveChanges();
             return operation.Succeeded();
@@ -72,6 +106,11 @@ namespace ShopManagement.Application
         public List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel)
         {
             return _productCategoryRepository.Search(searchModel);
+        }
+
+        public List<ProductCategoryViewModel> GetLeafCategories()
+        {
+            return _productCategoryRepository.GetLeafCategories();
         }
     }
 }

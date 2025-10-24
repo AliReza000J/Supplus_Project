@@ -29,7 +29,11 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
 
         public IActionResult OnGetCreate()
         {
-            return Partial("./Create", new CreateProductCategory());
+            var command = new CreateProductCategory
+            {
+                Categories = _productCategoryApplication.GetProductCategories()
+            };
+            return Partial("./Create", command);
         }
 
         //[NeedsPermission(ShopPermissions.CreateProductCategory)]
@@ -45,6 +49,10 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         public IActionResult OnGetEdit(long id)
         {
             var productCategory = _productCategoryApplication.GetDetails(id);
+            productCategory.Categories = _productCategoryApplication.GetProductCategories()
+                .Where(x => x.Id != id)
+                .ToList();
+
             return Partial("Edit", productCategory);
         }
 
