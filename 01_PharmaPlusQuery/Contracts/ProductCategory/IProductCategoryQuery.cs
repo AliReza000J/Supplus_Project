@@ -2,10 +2,11 @@
 {
     public interface IProductCategoryQuery
     {
-        Task<ProductCategoryQueryModel> GetProductCategoryWithProductsBy(string slug);
-        Task<List<ProductCategoryQueryModel>> GetProductCategories();
-        Task<List<ProductCategoryQueryModel>> GetProductCategoriesWithProducts();
-        Task<List<ProductCategoryQueryModel>> GetProductCategoriesTree();
-        Task<List<ProductCategoryQueryModel>> GetLeafProductCategories(); // last-level categories only
+        //Task<ProductCategoryQueryModel> GetLeafProductCategoryWithProductsBy(string slug);
+        //Task<List<ProductCategoryQueryModel>> GetProductCategories();
+        //Task<List<ProductCategoryQueryModel>> GetProductCategoriesWithProducts();
+        Task<ProductCategoryQueryModel> GetCategoryByFullSlug(string fullSlug);
+        Task<List<ProductCategoryQueryModel>> GetAll(); //Tree
+        //Task<List<ProductCategoryQueryModel>> GetLeafProductCategories(); // last-level categories only
     }
 }

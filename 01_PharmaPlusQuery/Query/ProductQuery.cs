@@ -126,8 +126,9 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = product.Picture,
                     PictureAlt = product.PictureAlt,
                     PictureTitle = product.PictureTitle,
-                    Slug = product.Slug
-                }).AsNoTracking().OrderByDescending(x => x.Id).Take(6).ToListAsync();
+                    Slug = product.Slug,
+                    MetaDescription = product.MetaDescription
+                }).AsNoTracking().OrderByDescending(x => x.Id).Take(10).ToListAsync();
 
             foreach (var product in products)
             {
@@ -166,7 +167,8 @@ namespace _01_PharmaPlusQuery.Query
                 PictureTitle = product.PictureTitle,
                 ShortDescription = product.ShortDescription,
                 Slug = product.Slug,
-                Keywords = product.Keywords
+                Keywords = product.Keywords,
+                MetaDescription = product.MetaDescription,
             })
             .AsNoTracking();
 

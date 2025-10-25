@@ -20,6 +20,6 @@ namespace DiscountManagement.Application.Contracts.CustomerDiscount
         [Range(1, 100000, ErrorMessage = ValidationMessages.IsRequired)]
         public int ProductCount { get; set; }
         public string Reason { get; set; }
-        public List<ProductViewModel> Products { get; set; }
+        public List<ProductViewModel> Products { get; set; } = new();
     }
 }

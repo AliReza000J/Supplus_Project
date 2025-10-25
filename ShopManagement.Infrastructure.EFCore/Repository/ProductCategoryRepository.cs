@@ -53,7 +53,12 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 .ToList();
         }
 
-
+        public ProductCategory GetWithChildren(long id)
+        {
+            return _context.ProductCategories
+                .Include(x => x.Children)
+                .FirstOrDefault(x => x.Id == id);
+        }
         public List<ProductCategoryViewModel> GetProductCategories()
         {
             return _context.ProductCategories
@@ -65,9 +70,9 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             }).ToList();
         }
 
-        public string GetSlugById(long id)
+        public string GetFullSlugById(long id)
         {
-            return _context.ProductCategories.Select(x => new { x.Id, x.Slug }).FirstOrDefault(x => x.Id == id).Slug;
+            return _context.ProductCategories.Select(x => new { x.Id, x.FullSlug }).FirstOrDefault(x => x.Id == id).FullSlug;
         }
 
         public List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel)

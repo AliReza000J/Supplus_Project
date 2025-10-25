@@ -13,6 +13,7 @@ namespace ShopManagement.Domain.ProductCategoryAgg
         public string Keywords { get; private set; }
         public string MetaDescription { get; private set; }
         public string Slug { get; private set; }
+        public string FullSlug { get; private set; }
         public List<Product> Products { get; private set; }
 
         // Self referencing
@@ -27,7 +28,7 @@ namespace ShopManagement.Domain.ProductCategoryAgg
         }
 
         public ProductCategory(string name, string description, string picture, string pictureAlt,
-            string pictureTitle, string slug, string metaDescription, string keywords, long? parentId)
+            string pictureTitle, string slug, string fullSlug, string metaDescription, string keywords, long? parentId)
         {
             Name = name;
             Description = description;
@@ -35,13 +36,14 @@ namespace ShopManagement.Domain.ProductCategoryAgg
             PictureAlt = pictureAlt;
             PictureTitle = pictureTitle;
             Slug = slug;
+            FullSlug = fullSlug;
             MetaDescription = metaDescription;
             Keywords = keywords;
             ParentId = parentId;
         }
 
         public void Edit(string name, string description, string picture, string pictureAlt,
-            string pictureTitle, string slug, string metaDescription, string keywords, long? parentId)
+            string pictureTitle, string slug, string fullslug, string metaDescription, string keywords, long? parentId)
         {
             Name = name;
             Description = description;
@@ -52,6 +54,7 @@ namespace ShopManagement.Domain.ProductCategoryAgg
             PictureAlt = pictureAlt;
             PictureTitle = pictureTitle;
             Slug = slug;
+            FullSlug = fullslug;
             MetaDescription = metaDescription;
             Keywords = keywords;
             ParentId = parentId;
@@ -76,6 +79,11 @@ namespace ShopManagement.Domain.ProductCategoryAgg
                 p = p.Parent;
             }
             return false;
+        }
+
+        public void SetFullSlug(string fullSlug)
+        {
+            FullSlug = fullSlug;
         }
     }
 }

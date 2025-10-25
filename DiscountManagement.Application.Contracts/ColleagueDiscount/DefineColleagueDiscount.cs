@@ -12,6 +12,6 @@ namespace DiscountManagement.Application.Contracts.ColleagueDiscount
 
         [Range(1, 99, ErrorMessage = ValidationMessages.IsRequired)]
         public int DiscountRate { get; set; }
-        public List<ProductViewModel> Products { get; set; }
+        public List<ProductViewModel> Products { get; set; } = new();
     }
 }

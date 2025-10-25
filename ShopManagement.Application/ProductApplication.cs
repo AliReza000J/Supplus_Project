@@ -25,8 +25,8 @@ namespace ShopManagement.Application
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var slug = command.Slug.Slugify();
-            var categorySlug = _productCategoryRepository.GetSlugById(command.CategoryId);
-            var path = $"Products/{categorySlug}/{slug}";
+            var categoryFullSlug = _productCategoryRepository.GetFullSlugById(command.CategoryId);
+            var path = $"ProductCategories/{categoryFullSlug}/Products/{slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
             var product = new Product(command.Name, command.Code,
@@ -53,7 +53,7 @@ namespace ShopManagement.Application
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var slug = command.Slug.Slugify();
-            var path = $"Products/{product.Category.Slug}/{slug}";
+            var path = $"ProductCategories/{product.Category.FullSlug}/Products/{slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
             product.Edit(command.Name, command.Code,

@@ -256,3 +256,17 @@ function initializeSelect2() {
         }
     });
 }
+
+$(function () {
+    $("form").each(function () {
+        var $form = $(this);
+        var hasId = $form.find("input[name='Id']").length > 0; // یعنی حالت Edit
+        if (hasId) {
+            var $pic = $form.find("input[name='Picture']");
+            $pic.removeAttr("data-val-required");
+            $form.removeData("validator");
+            $form.removeData("unobtrusiveValidation");
+            $.validator.unobtrusive.parse($form);
+        }
+    });
+});

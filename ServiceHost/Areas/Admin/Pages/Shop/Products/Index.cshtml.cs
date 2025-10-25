@@ -45,6 +45,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         //[NeedsPermission(ShopPermissions.CreateProduct)]
         public JsonResult OnPostCreate(CreateProduct command)
         {
+            command.Categories = _productCategoryApplication.GetLeafCategories();
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
@@ -55,7 +56,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         public IActionResult OnGetEdit(long id)
         {
             var product = _productApplication.GetDetails(id);
-            product.Categories = _productCategoryApplication.GetProductCategories();
+            product.Categories = _productCategoryApplication.GetLeafCategories();
             return Partial("Edit", product);
         }
 

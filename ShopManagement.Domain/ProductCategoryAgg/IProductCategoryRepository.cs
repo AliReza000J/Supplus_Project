@@ -7,8 +7,10 @@ namespace ShopManagement.Domain.ProductCategoryAgg
     {
         List<ProductCategoryViewModel> GetProductCategories(); //with parent
         EditProductCategory GetDetails(long id);
-        string GetSlugById(long id);
+        string GetFullSlugById(long id);
         List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel);
+
+        public ProductCategory GetWithChildren(long id);
 
         // queries for tree
         //List<ProductCategoryViewModel> GetAllWithChildren();

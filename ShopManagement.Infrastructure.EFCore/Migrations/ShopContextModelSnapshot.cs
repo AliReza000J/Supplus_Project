@@ -108,8 +108,11 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FullSlug")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Keywords")
                         .IsRequired()
@@ -150,6 +153,8 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                         .HasColumnType("nvarchar(250)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FullSlug");
 
                     b.HasIndex("ParentId");
 
@@ -260,7 +265,7 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.HasOne("ShopManagement.Domain.ProductCategoryAgg.ProductCategory", "Category")
                         .WithMany("Products")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");

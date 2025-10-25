@@ -20,6 +20,6 @@ namespace ShopManagement.Application.Contracts.ProductPicture
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string PictureTitle { get; set; }
-        public List<ProductViewModel> Products { get; set; }
+        public List<ProductViewModel> Products { get; set; } = new();
     }
 }

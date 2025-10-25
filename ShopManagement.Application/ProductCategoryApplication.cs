@@ -24,19 +24,20 @@ namespace ShopManagement.Application
             if (command.ParentId.HasValue)
             {
                 var parent = _productCategoryRepository.Get(command.ParentId.Value);
-                if (parent != null && parent.IsDescendantOf(command.ParentId.Value))
-                    return operation.Failed("انتخاب والد باعث ایجاد حلقه می‌شود.");
+                if (parent == null)
+                    return operation.Failed("گروه والد یافت نشد.");
+
             }
 
             var slug = command.Slug.Slugify();
+            var fullSlug = GetFullSlug(command.ParentId, slug);
 
-            string fullPath = GetCategoryFullPath(command.ParentId, slug);
-
-            var pictureName = _fileUploader.Upload(command.Picture, fullPath);
+            var picturePath = $"ProductCategories/{fullSlug}";
+            var pictureName = _fileUploader.Upload(command.Picture, picturePath);
 
             var productCategory = new ProductCategory(
                 command.Name, command.Description, pictureName, command.PictureTitle,
-                command.PictureAlt, slug, command.MetaDescription, command.Keywords, command.ParentId);
+                command.PictureAlt, slug, fullSlug, command.MetaDescription, command.Keywords, command.ParentId);
 
             _productCategoryRepository.Create(productCategory);
 
@@ -44,23 +45,22 @@ namespace ShopManagement.Application
             return operation.Succeeded();
         }
 
-        private string GetCategoryFullPath(long? parentId, string currentSlug)
+        private string GetFullSlug(long? parentId, string slug)
         {
             if (!parentId.HasValue)
-                return $"ProductCategories/{currentSlug}";
+                return slug;
 
             var parent = _productCategoryRepository.Get(parentId.Value);
             if (parent == null)
-                return $"ProductCategories/{currentSlug}";
+                return slug;
 
-            var parentPath = GetCategoryFullPath(parent.ParentId, parent.Slug);
-            return $"{parentPath}/{currentSlug}";
+            return $"{parent.FullSlug}/{slug}";
         }
 
         public OperationResult Edit(EditProductCategory command)
         {
             var operation = new OperationResult();
-            var productCategory = _productCategoryRepository.Get(command.Id);
+            var productCategory = _productCategoryRepository.GetWithChildren(command.Id);
 
             if (productCategory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
@@ -71,26 +71,47 @@ namespace ShopManagement.Application
             // Check for cycle: if command.ParentId is descendant of category.Id -> invalid
             if (command.ParentId.HasValue)
             {
+                if (command.ParentId.Value == command.Id)
+                    return operation.Failed("دسته نمی‌تواند والد خودش باشد.");
+
                 var parent = _productCategoryRepository.Get(command.ParentId.Value);
-                if (parent != null && parent.IsDescendantOf(command.Id))
-                    return operation.Failed("انتخاب والد باعث ایجاد حلقه می‌شود.");
+                if (parent == null)
+                    return operation.Failed("گروه والد یافت نشد.");
+
+                if (parent.IsDescendantOf(productCategory.Id))
+                    return operation.Failed("نمی‌توانید دسته را به فرزند خودش منتقل کنید (ایجاد حلقه).");
             }
 
             var slug = command.Slug.Slugify();
+            var fullSlug = GetFullSlug(command.ParentId, slug);
 
-            string fullPath = GetCategoryFullPath(command.ParentId, slug);
-            string pictureName = productCategory.Picture;
+            var picturePath = $"ProductCategories/{fullSlug}";
+            var pictureName = _fileUploader.Upload(command.Picture, picturePath);
 
             if (command.Picture != null)
             {
-                pictureName = _fileUploader.Upload(command.Picture, fullPath);
+                pictureName = _fileUploader.Upload(command.Picture, picturePath);
             }
 
             productCategory.Edit(command.Name, command.Description, pictureName, command.PictureTitle,
-                command.PictureAlt, slug, command.MetaDescription, command.Keywords, command.ParentId);
+                command.PictureAlt, slug, fullSlug, command.MetaDescription, command.Keywords, command.ParentId);
+
+            UpdateChildrenFullSlugs(productCategory); //Update
 
             _productCategoryRepository.SaveChanges();
             return operation.Succeeded();
+        }
+
+        private void UpdateChildrenFullSlugs(ProductCategory parent)
+        {
+            if (parent.Children == null || !parent.Children.Any())
+                return;
+
+            foreach (var child in parent.Children)
+            {
+                child.SetFullSlug($"{parent.FullSlug}/{child.Slug}");
+                UpdateChildrenFullSlugs(child);
+            }
         }
 
         public EditProductCategory GetDetails(long id)
