@@ -1,9 +1,6 @@
 ﻿@page
 @model ServiceHost.Areas.Admin.Pages.Shop.Products.IndexModel
 @{
-}
-
-@{
     Layout = "Shared/_AdminLayout";
     ViewData["title"] = "مدیریت محصولات";
 }
@@ -12,7 +9,7 @@
     <div class="col-sm-12">
         <h4 class="page-title pull-right">@ViewData["title"]</h4>
         <p class="pull-left">
-            <a class="btn btn-success btn-lg" href="#showmodal=@Url.Page("./Index", "Create")">ایجاد محصول جدید</a>
+            <a class="btn btn-success btn-lg" asp-page="./Create">ایجاد محصول جدید</a>
         </p>
     </div>
 </div>
@@ -81,8 +78,7 @@
                                         <td>@item.Category</td>
                                         <td>@item.CreationDate</td>
                                         <td>
-                                            <a class="btn btn-warning waves-effect waves-light m-b-5"
-                                               href="#showmodal=@Url.Page("./Index", "Edit", new { id = item.Id})">
+                                            <a class="btn btn-warning pull-right m-rl-5" asp-page="./Edit" asp-route-id="@item.Id">
                                                 <i class="fa fa-edit"></i> ویرایش
                                             </a>
                                         </td>

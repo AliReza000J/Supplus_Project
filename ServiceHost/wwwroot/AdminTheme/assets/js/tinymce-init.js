@@ -1,7 +1,12 @@
-function initTinyMCE_Description() {
+﻿function initTinyMCE_Description(target) {
+    const copyToMeta = $(target).data('copy-meta') === true;
+
+    const existingEditor = tinymce.get(target.id);
+    if (existingEditor) tinymce.remove(existingEditor);
+
     tinymce.init({
-        selector: '#descEditor',
-        height: 400,
+        target: target,
+        height: 700,
         directionality: 'rtl',
         language: 'fa',
         menubar: 'file edit view insert format table tools help',
@@ -16,41 +21,44 @@ function initTinyMCE_Description() {
             'undo redo | formatselect | bold italic underline forecolor backcolor | alignright aligncenter alignleft alignjustify |',
             'bullist numlist outdent indent | link image table | removeformat | code fullscreen'
         ].join(' '),
-        table_default_attributes: { border: '1' },
-        table_default_styles: { width: '100%', borderCollapse: 'collapse' },
-        content_style: `
-            body {
-                font-family: Vazir, sans-serif;
-                direction: rtl;
-                text-align: right;
-            }
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-            table, th, td {
-                border: 1px solid #ccc;
-                padding: 6px;
-            }
-        `,
+        content_style: "body { font-family: Vazir, sans-serif; direction: rtl; text-align: right; font-size: 18px; }",
         setup: function (editor) {
-            editor.on('change', function () {
+            editor.on('init', function () {
                 tinymce.triggerSave();
+            });
+
+            editor.on('change input', function () {
+                tinymce.triggerSave();
+
+                if (copyToMeta) {
+                    const text = editor.getContent({ format: 'text' });
+                    $('#MetaDescription').val(text);
+                    $('#MetaDescription').valid();
+                }
+
+                // validation Razor
+                $('#' + target.id).valid();
             });
         }
     });
 }
 
-function initTinyMCE_Specifications() {
+function initTinyMCE_Specifications(target) {
+    const existingEditor = tinymce.get(target.id);
+    if (existingEditor) tinymce.remove(existingEditor);
+
     tinymce.init({
-        selector: '#specEditor',
-        height: 300,
+        target: target,
+        height: 700,
         directionality: 'rtl',
         language: 'fa',
-        menubar: false,
+        menubar: 'file edit view insert format table tools help',
         branding: false,
-        plugins: 'lists table textcolor colorpicker',
-        toolbar: 'undo redo | bold italic underline forecolor backcolor | bullist numlist | table',
+        plugins: [
+            'lists table textcolor colorpicker',
+            'wordcount fullscreen preview'
+        ],
+        toolbar: 'undo redo | bold italic underline forecolor backcolor | bullist numlist | outdent indent | table',
         table_default_attributes: { border: '1' },
         table_default_styles: { width: '100%', borderCollapse: 'collapse' },
         content_style: `
@@ -58,6 +66,7 @@ function initTinyMCE_Specifications() {
                 font-family: Vazir, sans-serif;
                 direction: rtl;
                 text-align: right;
+                font-size: 18px;
             }
             table {
                 border-collapse: collapse;
@@ -69,18 +78,41 @@ function initTinyMCE_Specifications() {
             }
         `,
         setup: function (editor) {
-            editor.on('change', function () {
+            // وقتی editor mount شد، textarea اصلی را sync کن
+            editor.on('init', function () {
                 tinymce.triggerSave();
+            });
+
+            // وقتی محتوا تغییر کرد
+            editor.on('change input', function () {
+                tinymce.triggerSave(); // sync مقدار textarea اصلی
+                $('#' + target.id).valid(); // validation Razor
             });
         }
     });
 }
 
-$(document).on('shown.bs.modal', function () {
-    if (tinymce.editors.length > 0) {
-        tinymce.remove();
-    }
 
-    if ($('#descEditor').length) initTinyMCE_Description();
-    if ($('#specEditor').length) initTinyMCE_Specifications();
+// init همه textarea ها در یک context (document یا modal)
+function initTinyMCE_Auto(context) {
+    context = context || $(document);
+
+    context.find('#descEditor').each(function () {
+        initTinyMCE_Description(this);
+    });
+
+    context.find('#specEditor').each(function () {
+        initTinyMCE_Specifications(this);
+    });
+
+}
+
+// وقتی صفحه load شد
+$(document).ready(function () {
+    initTinyMCE_Auto();
+});
+
+// وقتی مودال باز شد
+$(document).on('shown.bs.modal', function (e) {
+    initTinyMCE_Auto($(e.target));
 });

@@ -72,7 +72,7 @@
             <div class="col-md-12">
                 <div class="form-group no-margin">
                     <label asp-for="Description" class="control-label">توضیحات</label>
-                    <textarea class="form-control" asp-for="Description" id="descEditor" onchange="fillField('Description', 'MetaDescription')"></textarea>
+                    <textarea class="form-control" asp-for="Description" id="descEditor" data-copy-meta="true"></textarea>
                     <span asp-validation-for="Description" class="error"></span>
                 </div>
             </div>
@@ -90,7 +90,7 @@
             <div class="col-md-12">
                 <div class="form-group no-margin">
                     <label asp-for="MetaDescription" class="control-label">توضیحات متا</label>
-                    <textarea class="form-control autogrow" asp-for="MetaDescription"
+                    <textarea class="form-control autogrow" asp-for="MetaDescription" id="MetaDescription"
                               style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 104px;"></textarea>
                     <span asp-validation-for="MetaDescription" class="error"></span>
                 </div>

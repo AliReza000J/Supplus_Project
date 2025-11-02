@@ -1,0 +1,97 @@
+﻿@page "{id:long}"
+@model ServiceHost.Areas.Admin.Pages.Comments.DetailsModel
+@{
+    Layout = "Shared/_AdminLayout";
+    ViewData["Title"] = "مشاهده کامنت";
+    var model = Model.Comment;
+    bool canReply = model != null && model.IsConfirmed && !model.IsCanceled;
+    bool canConfirm = model != null && !model.IsConfirmed && !model.IsCanceled;
+    bool canCancel = model != null && model.IsConfirmed && !model.IsCanceled;
+}
+<div class="row">
+    <div class="col-md-12">
+        <h3>مشاهده کامنت @Model.Comment.Username برای @Model.Comment.OwnerName</h3>
+        <hr />
+        <dl class="row">
+            <dt class="col-md-2">کاربر</dt>
+            <dt class="col-md-10">@Model.Comment?.Username</dt>
+            <dt class="col-md-2">ایمیل</dt>
+            <dt class="col-md-10">@Model.Comment?.Email</dt>
+            <dt class="col-md-2">مربوط به</dt>
+            <dt class="col-md-10">@Model.Comment?.OwnerName (@(Model.Comment?.Type))</dt>
+            <dt class="col-md-2">امتیاز</dt>
+            <dt class="col-md-10">@Model.Comment?.Rate</dt>
+            <dt class="col-md-2">تاریخ</dt>
+            <dt class="col-md-10">@Model.Comment?.CommentDate</dt>
+            <dt class="col-md-2">وضعیت</dt>
+            <dt class="col-md-10">
+                @if (Model.Comment.IsCanceled)
+                {
+                    <span class="badge badge-danger">کنسل شده</span>
+                }
+                else if (Model.Comment.IsConfirmed)
+                {
+                    <span class="badge badge-success">تأیید شده</span>
+                }
+                else
+                {
+                    <span class="badge badge-warning">در انتظار</span>
+                }
+            </dt>
+        </dl>
+
+        <div class="form-group">
+            <label>متن کاربر</label>
+            <textarea readonly class="form-control" rows="6">@Model.Comment?.Message</textarea>
+        </div>
+
+        @* نمایش پاسخ ادمین در صورت وجود *@
+        @if (!string.IsNullOrWhiteSpace(Model.Comment?.Reply))
+        {
+            <div class="alert alert-info">
+                <strong>پاسخ ادمین:</strong>
+                <p>@Model.Comment.Reply</p>
+                <small class="text-muted">(@Model.Comment.ReplyDate)</small>
+            </div>
+        }
+
+        @if (canReply)
+        {
+            <hr />
+            <form method="post" asp-page-handler="Reply" class="form-inline" id="replyForm">
+                <input type="hidden" asp-for="Comment.Id" />
+                <div class="form-group w-100">
+                    <label class="sr-only" for="Reply">پاسخ ادمین</label>
+                    <textarea class="form-control w-100" asp-for="Comment.Reply" id="Reply" rows="3"
+                              placeholder="پاسخ ادمین..."></textarea>
+                </div>
+                <div class="mt-2 text-left">
+                    <button type="submit" class="btn btn-primary">@(string.IsNullOrWhiteSpace(Model.Comment.Reply) ? "ارسال پاسخ" : "ویرایش پاسخ")</button>
+                </div>
+            </form>
+        }
+
+        <hr />
+        <div class="btn-group">
+            @* @if (canConfirm) *@
+            @* { *@
+            @*     <form method="post" asp-page-handler="Confirm" class="d-inline"> *@
+            @*         <input type="hidden" asp-for="Comment.Id" /> *@
+            @*         <button type="submit" class="btn btn-success">تأیید</button> *@
+            @*     </form> *@
+            @* } *@
+            @* @if (canCancel) *@
+            @* { *@
+            @*     <form method="post" asp-page-handler="Cancel" class="d-inline ml-2"> *@
+            @*         <input type="hidden" asp-for="Comment.Id" /> *@
+            @*         <button type="submit" class="btn btn-danger">رد / لغو</button> *@
+            @*     </form> *@
+            @* } *@
+            <a asp-page="./Index" class="btn btn-secondary ml-2">بازگشت</a>
+        </div>
+
+        <hr />
+        
+    </div>
+</div>
+

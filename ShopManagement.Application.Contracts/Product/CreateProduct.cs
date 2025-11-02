@@ -16,14 +16,21 @@ namespace ShopManagement.Application.Contracts.Product
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string ShortDescription { get; set; }
 
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string Description { get; set; }
+
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string Specifications { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         [FileExtensionLimitation(new[] { ".jpeg", ".jpg", ".png" }, ErrorMessage = ValidationMessages.InvalidFileFormat)]
         [MaxFileSize(2 * 1024 * 1024, ErrorMessage = ValidationMessages.MaxFileSize)]
         public IFormFile Picture { get; set; }
+
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string PictureAlt { get; set; }
+
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string PictureTitle { get; set; }
 
         [Range(1, 100000, ErrorMessage = ValidationMessages.IsRequired)]

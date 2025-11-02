@@ -56,9 +56,7 @@ namespace ShopManagement.Configuration
             //services.AddTransient<IShopInventoryAcl, ShopInventoryAcl>();
             //services.AddTransient<IShopAccountAcl, ShopAccountAcl>();
 
-            //services.AddTransient<ISlideQuery, SlideQuery>();
-            //services.AddTransient<IProductCategoryQuery, ProductCategoryQuery>();
-            //services.AddTransient<IProductQuery, ProductQuery>();
+            
             //services.AddTransient<ICartCalculatorService, CartCalculatorService>();
 
             // API

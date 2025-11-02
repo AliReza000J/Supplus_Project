@@ -1,14 +1,13 @@
 ﻿using _0_Framework.Application;
+using _01_LampshadeQuery.Contracts.Comment;
+using _01_PharmaPlusQuery.Contracts.DTOs;
 using _01_PharmaPlusQuery.Contracts.Product;
-//using CommnetManagement.Infrastructure.EFCore;
+using CommentManagement.Domain.CommentAgg;
+using CommnetManagement.Infrastructure.EFCore;
 using DiscountManagement.Infrastructure.EFCore;
 using InventoryMangement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
-using ShopManagement.Domain.ProductPictureAgg;
 using ShopManagement.Infrastructure.EFCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 //using ShopManagement.Application.Contracts.Order;
 
 namespace _01_PharmaPlusQuery.Query
@@ -18,105 +17,149 @@ namespace _01_PharmaPlusQuery.Query
         private readonly ShopContext _shopContext;
         private readonly InventoryContext _inventoryContext;
         private readonly DiscountContext _discountContext;
-        //private readonly CommentContext _commentContext;
+        private readonly CommentContext _commentContext;
 
         public ProductQuery(ShopContext context, InventoryContext inventoryContext,
-            DiscountContext discountContext)
-            //DiscountContext discountContext, CommentContext commentContext)
+        DiscountContext discountContext, CommentContext commentContext)
         {
             _shopContext = context;
             _discountContext = discountContext;
             _inventoryContext = inventoryContext;
-            //_commentContext = commentContext;
+            _commentContext = commentContext;
         }
 
-        public async Task<ProductQueryModel> GetProductDetails(string slug)
+        public async Task<ProductQueryModel> GetProductDetails(string productSlug)
         {
-            var inventory = await _inventoryContext.Inventory.Select
-                (x => new {x.ProductId, x.UnitPrice, x.InStock}).ToListAsync();
-
-            var discounts = await _discountContext.CustomerDiscounts
-                .Where(x => x.StartDate < DateTime.Now && x.EndDate > DateTime.Now)
-                .Select(x => new {x.DiscountRate, x.ProductId, x.EndDate}).ToListAsync();
-
             var product = await _shopContext.Products
-                .Include(x => x.Category)
-                .Include(x => x.ProductPictures)
-                .Select(x => new ProductQueryModel
+            .Include(x => x.Category)
+            .Include(x => x.ProductPictures)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Slug == productSlug);
+
+            if (product == null)
+                return null;
+
+            var inventoryTask = _inventoryContext.Inventory
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.ProductId == product.Id);
+
+            var discountTask = _discountContext.CustomerDiscounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                x.ProductId == product.Id &&
+                x.StartDate <= DateTime.Now &&
+                x.EndDate >= DateTime.Now);
+
+            await Task.WhenAll(inventoryTask, discountTask);
+
+            var inventory = inventoryTask.Result;
+            var discount = discountTask.Result;
+
+            double unitPrice = inventory?.UnitPrice ?? 0;
+            bool hasDiscount = discount != null && discount.DiscountRate > 0;
+
+            double priceWithDiscount = unitPrice;
+            if (hasDiscount)
+                priceWithDiscount = Math.Round(unitPrice * (100 - discount.DiscountRate) / 100);
+
+            var result = new ProductQueryModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Code = product.Code,
+                Description = product.Description,
+                ShortDescription = product.ShortDescription,
+                MetaDescription = product.MetaDescription,
+                Specifications = product.Specifications,
+                Keywords = product.Keywords,
+                Slug = product.Slug,
+                Category = product.Category?.Name,
+                CategorySlug = product.Category?.Slug,
+                CategoryFullSlug = product.Category?.FullSlug,
+                Picture = product.Picture,
+                PictureAlt = product.PictureAlt,
+                PictureTitle = product.PictureTitle,
+                Pictures = product.ProductPictures
+                .Where(x => !x.IsRemoved)
+                .Select(x => new ProductPictureQueryModel
                 {
-                    Id = x.Id,
-                    Category = x.Category.Name,
-                    Name = x.Name,
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    Slug = x.Slug,
-                    CategorySlug = x.Category.Slug,
-                    Code = x.Code,
-                    Description = x.Description,
-                    Keywords = x.Keywords,
-                    MetaDescription = x.MetaDescription,
-                    ShortDescription = x.ShortDescription,
-                    Pictures = MapProductPictures(x.ProductPictures)
-                }).AsNoTracking().FirstOrDefaultAsync(x => x.Slug == slug);
+                    ProductId = product.Id,
+                }).ToList(),
+                    Price = unitPrice.ToMoney(),
+                    HasDiscount = hasDiscount,
+                    DiscountRate = hasDiscount ? discount.DiscountRate : 0,
+                    DiscountExpireDate = hasDiscount ? discount.EndDate.ToDiscountFormat() : "",
+                    PriceWithDiscount = hasDiscount ? priceWithDiscount.ToMoney() : unitPrice.ToMoney()
+                };
 
-            if (product == null)
-                return new ProductQueryModel();
-
-            var productInventory = inventory.FirstOrDefault(x => x.ProductId == product.Id);
-            if (productInventory != null)
-            {
-                product.IsInStock = productInventory.InStock;
-                var price = productInventory.UnitPrice;
-                product.Price = price.ToMoney();
-                product.DoublePrice = price;
-                var discount = discounts.FirstOrDefault(x => x.ProductId == product.Id);
-                if (discount != null)
+            result.Comments = await _commentContext.Comments
+                .Where(x => !x.IsCanceled)
+                .Where(x => x.IsConfirmed)
+                .Where(x => x.Type == ((int)CommentType.Product))
+                .Where(x => x.OwnerRecordId == product.Id)
+                .Select(x => new CommentQueryModel
                 {
-                    var discountRate = discount.DiscountRate;
-                    product.DiscountRate = discountRate;
-                    product.DiscountExpireDate = discount.EndDate.ToDiscountFormat();
-                    product.HasDiscount = discountRate > 0;
-                    var discountAmount = Math.Round((price * discountRate) / 100);
-                    product.PriceWithDiscount = (price - discountAmount).ToMoney();
+                    Id = x.Id,
+                    Message = x.Message,
+                    Username = x.Username,
+                    CreationDate = x.CreationDate.ToFarsi(),
+                    Reply = x.AdminReply,
+                    DislikeCount = x.DislikeCount,
+                    LikeCount = x.LikeCount,
+                    Rate = x.Rate,
+                    ReplyDate = x.AdminReplyDate.ToFarsi(),
+                    IsBuyer = x.IsBuyer
+                }).OrderByDescending(x => x.Id).ToListAsync();
+
+            if(result.Comments.Any())
+            {
+                int sum = 0;
+                foreach (var comment in result.Comments.Where(comment => comment.Rate >= 1 && comment.Rate <= 5))
+                {
+                    sum += comment.Rate;
                 }
+
+                int count = result.Comments.Count;
+
+                result.AvgRate = sum / count;
+            }
+            else
+            {
+                result.AvgRate = 0;
             }
 
-            //product.Comments = _commentContext.Comments
-            //    .Where(x => !x.IsCanceled)
-            //    .Where(x => x.IsConfirmed)
-            //    .Where(x => x.Type == CommentType.Product)
-            //    .Where(x => x.OwnerRecordId == product.Id)
-            //    .Select(x => new CommentQueryModel
-            //    {
-            //        Id = x.Id,
-            //        Message = x.Message,
-            //        Name = x.Name,
-            //        CreationDate = x.CreationDate.ToFarsi()
-            //    }).OrderByDescending(x => x.Id).ToList();
-
-            return product;
+                return result;
         }
 
-        private static List<ProductPictureQueryModel> MapProductPictures(List<ProductPicture> pictures)
-        {
-            return pictures.Select(x => new ProductPictureQueryModel
-            {
-                IsRemoved = x.IsRemoved,
-                Picture = x.Picture,
-                PictureAlt = x.PictureAlt,
-                PictureTitle = x.PictureTitle,
-                ProductId = x.ProductId
-            }).Where(x => !x.IsRemoved).ToList();
-        }
+        //private static List<ProductPictureQueryModel> MapProductPictures(List<ProductPicture> pictures)
+        //{
+        //    return pictures.Select(x => new ProductPictureQueryModel
+        //    {
+        //        IsRemoved = x.IsRemoved,
+        //        Picture = x.Picture,
+        //        PictureAlt = x.PictureAlt,
+        //        PictureTitle = x.PictureTitle,
+        //        ProductId = x.ProductId
+        //    }).Where(x => !x.IsRemoved).ToList();
+        //}
 
         public async Task<List<ProductQueryModel>> GetLatestArrivals()
         {
+            var now = DateTime.Now;
+
+            // ===== Load Inventory & Discounts =====
             var inventory = await _inventoryContext.Inventory
-                .Select(x => new {x.ProductId, x.UnitPrice}).ToListAsync();
+            .Select(x => new ProductInventoryDto { ProductId = x.ProductId, UnitPrice = x.UnitPrice })
+            .ToListAsync();
+
             var discounts = await _discountContext.CustomerDiscounts
-                .Where(x => x.StartDate < DateTime.Now && x.EndDate > DateTime.Now)
-                .Select(x => new {x.DiscountRate, x.ProductId}).ToListAsync();
+                .Where(x => x.StartDate < now && x.EndDate > now)
+                .Select(x => new ProductDiscountDto { ProductId = x.ProductId, DiscountRate = x.DiscountRate, EndDate = x.EndDate })
+                .ToListAsync();
+
             var products = await _shopContext.Products.Include(x => x.Category)
                 .Select(product => new ProductQueryModel
                 {
@@ -160,7 +203,7 @@ namespace _01_PharmaPlusQuery.Query
             {
                 Id = product.Id,
                 Category = product.Category.Name,
-                CategorySlug = product.Category.Slug,
+                CategoryFullSlug = product.Category.FullSlug,
                 Name = product.Name,
                 Picture = product.Picture,
                 PictureAlt = product.PictureAlt,

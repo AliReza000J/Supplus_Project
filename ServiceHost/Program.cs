@@ -1,9 +1,13 @@
 using _0_Framework.Application;
+using BlogManagement.Configuration;
+using CommentManagement.Infrastructure.Configuration;
 using DiscountManagement.Configuration;
 using InventoryManagement.Configuration;
 using Microsoft.OpenApi.Models;
 using ServiceHost;
 using ShopManagement.Configuration;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +17,13 @@ var connectionString = builder.Configuration.GetConnectionString("PharmaPlusDB")
 ShopManagementBootstrapper.Configure(builder.Services, connectionString);
 DiscountManagementBootstrapper.Configure(builder.Services, connectionString);
 InventoryManagementBootstrapper.Configure(builder.Services, connectionString);
+BlogManagementBootstrapper.Configure(builder.Services, connectionString);
+CommentManagementBootstrapper.Configure(builder.Services, connectionString);
 
 // Add services to the container.
 builder.Services.AddTransient<IFileUploader, FileUploader>();
+
+builder.Services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Arabic));
 
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
@@ -50,7 +58,7 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapRazorPages();   // Admin
-//app.MapDefaultControllerRoute();
+app.MapDefaultControllerRoute();
 app.MapControllers();  // API
 
 app.Run();

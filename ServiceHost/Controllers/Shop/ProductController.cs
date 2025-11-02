@@ -1,4 +1,6 @@
 ﻿using _01_PharmaPlusQuery.Contracts.Product;
+using _01_PharmaPlusQuery.Contracts.ProductCategory;
+using _01_PharmaPlusQuery.Query;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ServiceHost.Controllers.Shop
@@ -8,13 +10,47 @@ namespace ServiceHost.Controllers.Shop
     public class ProductController : ControllerBase
     {
         private readonly IProductQuery _productQuery;
+        private readonly IProductCategoryQuery _productCategoryQuery;
         private readonly ILogger<ProductController> _logger;
 
 
-        public ProductController(IProductQuery productQuery, ILogger<ProductController> logger)
+        public ProductController(IProductQuery productQuery, ILogger<ProductController> logger, IProductCategoryQuery productCategoryQuery)
         {
             _productQuery = productQuery;
             _logger = logger;
+            _productCategoryQuery = productCategoryQuery;
+        }
+
+        [HttpGet("{*fullPath}")]
+        public async Task<IActionResult> GetProductDetails(string fullPath)
+        {
+            if (string.IsNullOrWhiteSpace(fullPath))
+                return BadRequest("مسیر محصول معتبر نیست.");
+
+            try
+            {
+                var segments = fullPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (segments.Length < 2)
+                    return BadRequest("آدرس محصول ناقص است.");
+
+                var productSlug = segments.Last();
+                var categoryPath = string.Join('/', segments.Take(segments.Length - 1));
+
+                var product = await _productQuery.GetProductDetails(productSlug);
+                if (product == null)
+                    return NotFound("محصول یافت نشد.");
+
+                var category = await _productCategoryQuery.GetCategoryByFullSlug(categoryPath);
+                if (category == null || product.CategorySlug != category.Slug)
+                    return NotFound("محصول با مسیر گروه محصول موردنظر مطابقت ندارد.");
+
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Product details failed: {ex.Message}");
+                return StatusCode(500, "خطای داخلی سرور هنگام دریافت جزئیات محصول.");
+            }
         }
 
         [HttpGet("latest-arrivals")]

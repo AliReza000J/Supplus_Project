@@ -3,15 +3,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
 using ShopManagement.Application.Contracts.ProductCategory;
-using System.Collections.Generic;
-using _0_Framework.Infrastructure;
 //using ShopManagement.Configuration.Permissions;
 
 namespace ServiceHost.Areas.Admin.Pages.Shop.Products
 {
     public class IndexModel : PageModel
     {
-        [TempData] public string Message { get; set; }
+        //[TempData] public string Message { get; set; }
         public ProductSearchModel SearchModel;
         public List<ProductViewModel> Products;
         public SelectList ProductCategories;
@@ -33,41 +31,41 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
             Products = _productApplication.Search(searchModel);
         }
 
-        public IActionResult OnGetCreate()
-        {
-            var command = new CreateProduct
-            {
-                Categories = _productCategoryApplication.GetLeafCategories()
-            };
-            return Partial("./Create", command);
-        }
+        //public IActionResult OnGetCreate()
+        //{
+        //    var command = new CreateProduct
+        //    {
+        //        Categories = _productCategoryApplication.GetLeafCategories()
+        //    };
+        //    return Partial("./Create", command);
+        //}
 
         //[NeedsPermission(ShopPermissions.CreateProduct)]
-        public JsonResult OnPostCreate(CreateProduct command)
-        {
-            command.Categories = _productCategoryApplication.GetLeafCategories();
-            if (!ModelState.IsValid)
-                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+        //public JsonResult OnPostCreate(CreateProduct command)
+        //{
+        //    command.Categories = _productCategoryApplication.GetLeafCategories();
+        //    if (!ModelState.IsValid)
+        //        return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = _productApplication.Create(command);
-            return new JsonResult(result);
-        }
+        //    var result = _productApplication.Create(command);
+        //    return new JsonResult(result);
+        //}
 
-        public IActionResult OnGetEdit(long id)
-        {
-            var product = _productApplication.GetDetails(id);
-            product.Categories = _productCategoryApplication.GetLeafCategories();
-            return Partial("Edit", product);
-        }
+        //public IActionResult OnGetEdit(long id)
+        //{
+        //    var product = _productApplication.GetDetails(id);
+        //    product.Categories = _productCategoryApplication.GetLeafCategories();
+        //    return Partial("Edit", product);
+        //}
 
-        //[NeedsPermission(ShopPermissions.EditProduct)]
-        public JsonResult OnPostEdit(EditProduct command)
-        {
-            if (!ModelState.IsValid)
-                return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
+        ////[NeedsPermission(ShopPermissions.EditProduct)]
+        //public JsonResult OnPostEdit(EditProduct command)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = _productApplication.Edit(command);
-            return new JsonResult(result);
-        }
+        //    var result = _productApplication.Edit(command);
+        //    return new JsonResult(result);
+        //}
     }
 }
