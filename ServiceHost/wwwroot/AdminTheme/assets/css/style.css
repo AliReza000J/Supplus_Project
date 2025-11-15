@@ -1387,9 +1387,9 @@ body.fixed-left .side-menu.left {
 #sidebar-menu > ul > li > a:hover { text-decoration: none; }
 
 #sidebar-menu > ul > li > a.active,
-#sidebar-menu > ul > li > a.active.subdrop { background: #f3f3f3 !important; }
+#sidebar-menu > ul > li > a.active.subdrop { }
 
-.subdrop { background: #f3f3f3; }
+.subdrop {  }
 
 #sidebar-menu ul ul { display: none; }
 

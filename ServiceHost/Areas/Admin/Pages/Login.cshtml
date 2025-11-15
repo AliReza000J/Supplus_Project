@@ -1,0 +1,41 @@
+﻿@page
+@model ServiceHost.Areas.Admin.Pages.LoginModel
+@{
+    Layout = "~/Areas/Admin/Pages/Shared/_AuthLayout.cshtml";
+    ViewData["Title"] = "ورود به پنل مدیریتی";
+}
+
+<div class="login-card text-center">
+    <div class="mb-4">
+        @* <img src="~/AdminTheme/assets/img/logo.png" alt="Logo" style="height:60px;" /> *@
+        <h4 class="mt-3 mb-1 text-dark">ورود به پنل مدیریتی</h4>
+        <p class="text-muted small">لطفاً اطلاعات ورود خود را وارد کنید</p>
+    </div>
+
+    @if (Model.LoginMessage != null)
+    {
+        <div class="alert alert-danger text-center">@Model.LoginMessage</div>
+    }
+
+    <form method="post" asp-page-handler="Login">
+        <div class="mb-3 text-start">
+            <label class="form-label fw-semibold">نام کاربری</label>
+            <input type="text" name="username" class="form-control form-control-lg" placeholder="نام کاربری" required />
+        </div>
+
+        <div class="mb-3 text-start">
+            <label class="form-label fw-semibold">کلمه عبور</label>
+            <input type="password" name="password" class="form-control form-control-lg" placeholder="کلمه عبور" required />
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="remember_me" />
+                <label class="form-check-label small" for="remember_me">مرا به خاطر بسپار</label>
+            </div>
+            <a href="#" class="forget-pass-link small">رمز عبور را فراموش کرده‌اید؟</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fs-5 rounded-3">ورود</button>
+    </form>
+</div>

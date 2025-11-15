@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommentManagement.Infrastructure.EFCore.Migrations
 {
     [DbContext(typeof(CommentContext))]
-    [Migration("20251102170753_CommentInit")]
-    partial class CommentInit
+    [Migration("20251114150049_CommentUpdated")]
+    partial class CommentUpdated
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -33,8 +33,8 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
                     b.Property<string>("AdminReply")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<DateTime?>("AdminReplyDate")
                         .HasColumnType("datetime2");
@@ -44,10 +44,6 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<int>("DislikeCount")
                         .HasColumnType("int");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<bool?>("IsBuyer")
                         .HasColumnType("bit");
@@ -65,8 +61,8 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Message")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<long>("OwnerRecordId")
                         .HasColumnType("bigint");
@@ -77,8 +73,9 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<long?>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<string>("UserIdentifier")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Username")
                         .IsRequired()

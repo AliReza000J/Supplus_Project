@@ -5,10 +5,16 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CommentManagement.Infrastructure.EFCore.Migrations
 {
-    public partial class CommentInit : Migration
+    public partial class CommentUpdated : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "CommentReactions");
+
+            migrationBuilder.DropTable(
+                name: "Comments");
+
             migrationBuilder.CreateTable(
                 name: "Comments",
                 columns: table => new
@@ -16,8 +22,8 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Username = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Message = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    UserIdentifier = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
                     OwnerRecordId = table.Column<long>(type: "bigint", nullable: false),
                     Type = table.Column<int>(type: "int", nullable: false),
                     Rate = table.Column<int>(type: "int", nullable: false),
@@ -25,9 +31,8 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     DislikeCount = table.Column<int>(type: "int", nullable: false),
                     IsConfirmed = table.Column<bool>(type: "bit", nullable: false),
                     IsCanceled = table.Column<bool>(type: "bit", nullable: false),
-                    UserId = table.Column<long>(type: "bigint", nullable: true),
                     IsBuyer = table.Column<bool>(type: "bit", nullable: true),
-                    AdminReply = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    AdminReply = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
                     AdminReplyDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreationDate = table.Column<DateTime>(type: "datetime2", nullable: false)

@@ -1,81 +1,191 @@
-﻿@using _0_Framework.Infrastructure
-@* @inject _0_Framework.Application.IAuthHelper AuthHelper; *@
+﻿@using AccountManagement.Domain.RoleAgg
+@using _0_Framework.Infrastructure
+@inject _0_Framework.Application.IAuthHelper AuthHelper;
+@inject AccountManagement.Application.Contracts.Account.IAccountApplication accountApplication;
+
 @{
-    // var currentAccout = AuthHelper.CurrentAccountInfo();
+    var currentAccout = AuthHelper.CurrentAccountInfo();
+    var user = accountApplication.GetAccountBy(currentAccout.Id);
+    var photo = user.ProfilePhoto;
 }
+
+<style>
+    #sidebar-menu ul li a {
+        transition: all 0.3s ease;
+    }
+
+        #sidebar-menu ul li a:hover {
+            background-color: #f0f4f8;
+            color: #007bff; 
+        }
+
+            #sidebar-menu ul li a:hover i {
+                color: #007bff; 
+            }
+
+    #sidebar-menu i {
+        width: 20px;
+        text-align: center;
+        margin-right: 10px;
+    }
+
+    .user-details {
+        background: #f3f3f3;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+</style>
+
 <div class="left side-menu">
     <div class="sidebar-inner slimscrollleft">
         <div class="user-details">
             <div class="pull-right">
-                <img src="~/AdminTheme/assets/images/users/avatar-1.jpg" alt="" class="thumb-md img-circle">
+                <img src="~/Pictures/@photo" alt="" class="thumb-md img-circle">
             </div>
             <div class="user-info">
                 <div class="dropdown">
-                    @* <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">@currentAccout.Fullname <span class="caret"></span></a> *@
-                    <ul class="dropdown-menu">
-                        <li><a href="javascript:void(0)"><i class="md md-face-unlock"></i> Profile<div class="ripple-wrapper"></div></a></li>
-                        <li><a href="javascript:void(0)"><i class="md md-settings"></i> Settings</a></li>
-                        <li><a href="javascript:void(0)"><i class="md md-lock"></i> Lock screen</a></li>
-                        <li><a href="javascript:void(0)"><i class="md md-settings-power"></i> Logout</a></li>
-                    </ul>
+                    <p class="dropdown-toggle" aria-expanded="false">@currentAccout.Fullname</p>
                 </div>
-
-                @* <p class="text-muted m-0">@currentAccout.Role</p> *@
+                <p class="text-muted m-0">@currentAccout.Role</p>
             </div>
         </div>
-        <!--- Divider -->
+
+        <!-- Sidebar Menu -->
         <div id="sidebar-menu">
             <ul>
                 <li>
-                    <a asp-page="/Index" class="waves-effect active"><i class="md md-home"></i><span> داشبورد </span></a>
+                    <a asp-page="/Index" class="waves-effect active">
+                        <i class="fa fa-tachometer"></i>
+                        <span> داشبورد </span>
+                    </a>
                 </li>
+
                 <li>
-                    <a asp-page="/Comments/Index" class="waves-effect"><i class="md md-home"></i><span> کامنت ها </span></a>
+                    <a asp-page="/Comments/Index" class="waves-effect">
+                        <i class="ion-chatbubble-working"></i>
+                        <span> مدیریت کامنت‌ها </span>
+                    </a>
                 </li>
-                @* @if (AuthHelper.CurrentAccountRole() == Roles.Administrator) *@
+
+                @if (AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(1))
                 {
+                    <li>
+                        <a asp-page="/Inventory/Index" class="waves-effect">
+                            <i class="ion-archive"></i>
+                            <span> مدیریت انبار </span>
+                        </a>
+                    </li>
 
                     <li>
-                        <a asp-page="/Inventory/Index" class="waves-effect"><i class="md md-home"></i><span> انبارداری </span></a>
+                        <a asp-page="/Shop/Orders/Index" class="waves-effect">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span> مدیریت سفارش‌ها </span>
+                        </a>
                     </li>
-                    <li>
-                        <a asp-page="/Shop/Orders/Index" class="waves-effect"><i class="md md-home"></i><span> سفارشات </span></a>
-                    </li>
+
                     <li class="has_sub">
-                        <a class="waves-effect"><i class="md md-mail"></i><span> فروشگاه </span><span class="pull-right"><i class="md md-add"></i></span></a>
+                        <a class="waves-effect">
+                            <i class="ion-bag"></i>
+                            <span> مدیریت فروشگاه </span>
+                            <span class="pull-right"><i class="fa fa-angle-down"></i></span>
+                        </a>
                         <ul class="list-unstyled">
-                            <li><a asp-page="/Shop/Slides/Index">اسلایدر</a></li>
-                            <li><a asp-page="/Shop/ProductCategories/Index">گروه محصولات</a></li>
-                            <li><a asp-page="/Shop/Products/Index">محصولات</a></li>
-                            <li><a asp-page="/Shop/ProductPictures/Index">عکس محصولات</a></li>
+                            <li><a asp-page="/Shop/Slides/Index"><i class="ion-images"></i> اسلایدها</a></li>
+                            <li><a asp-page="/Shop/ProductCategories/Index"><i class="ion-grid"></i> گروه محصولات</a></li>
+                            <li><a asp-page="/Shop/Products/Index"><i class="ion-ios-box"></i> محصولات</a></li>
+                            <li><a asp-page="/Shop/ProductPictures/Index"><i class="ion-image"></i> عکس محصولات</a></li>
                         </ul>
                     </li>
+
                     <li class="has_sub">
-                        <a class="waves-effect"><i class="md md-mail"></i><span> سیستم تخفیفات </span><span class="pull-right"><i class="md md-add"></i></span></a>
+                        <a class="waves-effect">
+                            <i class="ion-pricetag"></i>
+                            <span> مدیریت تخفیف‌ها </span>
+                            <span class="pull-right"><i class="fa fa-angle-down"></i></span>
+                        </a>
                         <ul class="list-unstyled">
-                            <li><a asp-page="/Discounts/CustomerDiscounts/Index">تخفیف مشتری</a></li>
-                            <li><a asp-page="/Discounts/ColleagueDiscounts/Index">تخفیف همکاری</a></li>
+                            <li><a asp-page="/Discounts/CustomerDiscounts/Index"><i class="ion-person-stalker"></i> تخفیف مشتریان</a></li>
+                            <li><a asp-page="/Discounts/ColleagueDiscounts/Index"><i class="ion-ios-people"></i> تخفیف همکاران</a></li>
                         </ul>
                     </li>
+
                     <li class="has_sub">
-                        <a class="waves-effect"><i class="md md-mail"></i><span> سیستم کاربران </span><span class="pull-right"><i class="md md-add"></i></span></a>
+                        <a class="waves-effect">
+                            <i class="ion-person"></i>
+                            <span> مدیریت کاربران </span>
+                            <span class="pull-right"><i class="fa fa-angle-down"></i></span>
+                        </a>
                         <ul class="list-unstyled">
-                            <li><a asp-page="/Accounts/Account/Index">کاربران</a></li>
-                            <li><a asp-page="/Accounts/Role/Index">نقش ها</a></li>
+                            <li><a asp-page="/Accounts/Account/Index"><i class="ion-person-add"></i> کاربران</a></li>
+                            <li><a asp-page="/Accounts/Role/Index"><i class="fa fa-shield"></i> نقش‌ها</a></li>
                         </ul>
                     </li>
                 }
+                else if (AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(3))
+                {
+                    <li>
+                        <a asp-page="/Inventory/Index" class="waves-effect">
+                            <i class="ion-archive"></i>
+                            <span> مدیریت انبار </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Orders/Index" class="waves-effect">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span> مدیریت سفارش‌ها </span>
+                        </a>
+                    </li>
+
+                    <li class="has_sub">
+                        <a class="waves-effect">
+                            <i class="ion-bag"></i>
+                            <span> مدیریت فروشگاه </span>
+                            <span class="pull-right"><i class="fa fa-angle-down"></i></span>
+                        </a>
+                        <ul class="list-unstyled">
+                            <li><a asp-page="/Shop/Slides/Index"><i class="ion-images"></i> اسلایدها</a></li>
+                            <li><a asp-page="/Shop/ProductCategories/Index"><i class="ion-grid"></i> گروه محصولات</a></li>
+                            <li><a asp-page="/Shop/Products/Index"><i class="ion-ios-box"></i> محصولات</a></li>
+                            <li><a asp-page="/Shop/ProductPictures/Index"><i class="ion-image"></i> عکس محصولات</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="has_sub">
+                        <a class="waves-effect">
+                            <i class="ion-pricetag"></i>
+                            <span> مدیریت تخفیف‌ها </span>
+                            <span class="pull-right"><i class="fa fa-angle-down"></i></span>
+                        </a>
+                        <ul class="list-unstyled">
+                            <li><a asp-page="/Discounts/CustomerDiscounts/Index"><i class="ion-person-stalker"></i> تخفیف مشتریان</a></li>
+                            <li><a asp-page="/Discounts/ColleagueDiscounts/Index"><i class="ion-ios-people"></i> تخفیف همکاران</a></li>
+                        </ul>
+                    </li>
+                }
+
+                <!-- Blog -->
                 <li class="has_sub">
-                    <a class="waves-effect"><i class="md md-mail"></i><span> سیستم بلاگینگ </span><span class="pull-right"><i class="md md-add"></i></span></a>
+                    <a class="waves-effect">
+                        <i class="fa fa-newspaper-o"></i>
+                        <span> مدیریت بلاگ </span>
+                        <span class="pull-right"><i class="fa fa-angle-down"></i></span>
+                    </a>
                     <ul class="list-unstyled">
-                        <li><a asp-page="/Blog/Articles/Index">مقالات</a></li>
-                        <li><a asp-page="/Blog/ArticleCategories/Index">گروه مقالات</a></li>
+                        <li><a asp-page="/Blog/Articles/Index"><i class="fa fa-file-text-o"></i> مقالات</a></li>
+                        <li><a asp-page="/Blog/ArticleCategories/Index"><i class="fa fa-folder-open-o"></i> گروه مقالات</a></li>
                     </ul>
                 </li>
 
+                <!-- Logout -->
                 <li>
-                    <a asp-page="/Account" asp-page-handler="Logout" class="waves-effect active"><i class="fa fa-sign-out"></i><span> خروج </span></a>
+                    <a asp-page="/Login" asp-page-handler="Logout" class="waves-effect">
+                        <i class="fa fa-power-off"></i>
+                        <span> خروج </span>
+                    </a>
                 </li>
+
             </ul>
             <div class="clearfix"></div>
         </div>

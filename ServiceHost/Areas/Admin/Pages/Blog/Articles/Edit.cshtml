@@ -17,14 +17,14 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label asp-for="Command.Title" class="control-label">عنوان مقاله</label>
-                                <input type="text" class="form-control" asp-for="Command.Title" onchange="makeSlug('Title', 'Slug')">
+                                <input type="text" class="form-control" id="Title" asp-for="Command.Title" onchange="makeSlug('Title', 'Slug')">
                                 <span asp-validation-for="Command.Title" class="error"></span>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label asp-for="Command.Slug" class="control-label">اسلاگ</label>
-                                <input type="text" class="form-control" asp-for="Command.Slug">
+                                <input type="text" class="form-control" id="Slug" asp-for="Command.Slug">
                                 <span asp-validation-for="Command.Slug" class="error"></span>
                             </div>
                         </div>
@@ -73,7 +73,7 @@
                         <div class="col-md-12">
                             <div class="form-group no-margin">
                                 <label asp-for="Command.ShortDescription" class="control-label">توضیحات کوتاه</label>
-                                <textarea class="form-control autogrow" asp-for="Command.ShortDescription" onchange="fillField('ShortDescription', 'MetaDescription')"
+                                <textarea class="form-control autogrow" id="ShortDescription" asp-for="Command.ShortDescription" onchange="fillField('ShortDescription', 'MetaDescription')"
                                           style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 104px;"></textarea>
                                 <span asp-validation-for="Command.ShortDescription" class="error"></span>
                             </div>
@@ -101,7 +101,7 @@
                         <div class="col-md-12">
                             <div class="form-group no-margin">
                                 <label asp-for="Command.MetaDescription" class="control-label">توضیحات متا</label>
-                                <textarea class="form-control autogrow" asp-for="Command.MetaDescription"
+                                <textarea class="form-control autogrow" id="MetaDescription" asp-for="Command.MetaDescription"
                                           style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 104px;"></textarea>
                                 <span asp-validation-for="Command.MetaDescription" class="error"></span>
                             </div>

@@ -1,7 +1,6 @@
 ﻿
 using _0_Framework.Domain;
 using BlogManagement.Domain.ArticleCategoryAgg;
-using System;
 
 namespace BlogManagement.Domain.ArticleAgg
 {

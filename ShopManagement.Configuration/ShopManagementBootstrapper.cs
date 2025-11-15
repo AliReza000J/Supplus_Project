@@ -15,7 +15,6 @@ using ShopManagement.Domain.ProductAgg;
 
 using ShopManagement.Application.Contracts.ProductPicture;
 using ShopManagement.Application.Contracts.Slide;
-//using ShopManagement.Configuration.Permissions;
 //using ShopManagement.Domain.OrderAgg;
 using ShopManagement.Domain.ProductCategoryAgg;
 using ShopManagement.Domain.ProductPictureAgg;
@@ -28,6 +27,7 @@ using _01_PharmaPlusQuery.Query;
 using _01_PharmaPlusQuery.Contracts.Slide;
 using _01_PharmaPlusQuery.Contracts.ProductCategory;
 using _01_PharmaPlusQuery.Contracts.Product;
+using ShopManagement.Configuration.Permissions;
 //using ShopManagement.Infrastructure.InventoryAcl;
 
 namespace ShopManagement.Configuration
@@ -65,7 +65,7 @@ namespace ShopManagement.Configuration
             services.AddTransient<IProductQuery, ProductQuery>();
 
 
-            //services.AddTransient<IPermissionExposer, ShopPermissionExposer>();
+            services.AddTransient<IPermissionExposer, ShopPermissionExposer>();
             services.AddDbContext<ShopContext>(x => x.UseSqlServer(connectionString));
         }
     }

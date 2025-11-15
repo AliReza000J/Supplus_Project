@@ -11,16 +11,10 @@ namespace CommnetManagement.Infrastructure.EFCore.Mapping
             builder.ToTable("Comments");
             builder.HasKey(c => c.Id);
             builder.Property(c => c.Username).IsRequired().HasMaxLength(200);
-            builder.Property(c => c.Email).HasMaxLength(200);
-            builder.Property(c => c.Message).HasMaxLength(2000);
-            builder.Property(c => c.AdminReply).HasMaxLength(2000);
+            builder.Property(c => c.UserIdentifier).IsRequired();
+            builder.Property(c => c.Message).HasMaxLength(4000);
+            builder.Property(c => c.AdminReply).HasMaxLength(4000);
             builder.Property(c => c.LastModified);
-
-            //// self relation: one parent -> many children
-            //builder.HasMany(c => c.Children)
-            //    .WithOne(c => c.Parent)
-            //    .HasForeignKey(c => c.ParentId)
-            //    .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(c => new { c.OwnerRecordId, c.Type });
             builder.HasIndex(c => c.IsConfirmed);

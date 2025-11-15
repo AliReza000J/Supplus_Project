@@ -1,5 +1,8 @@
 ﻿using CommentManagement.Application.Contracts.Comment;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ServiceHost.Controllers
 {
@@ -16,6 +19,7 @@ namespace ServiceHost.Controllers
             _logger = logger;
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("add")]
         public IActionResult AddComment([FromBody] AddComment command)
         {
@@ -24,7 +28,17 @@ namespace ServiceHost.Controllers
 
             try
             {
-                var result = _commentApplication.Add(command);
+                // userId JWT
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("کاربر شناسایی نشد.");
+
+                // username JWT
+                var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("کاربر شناسایی نشد.");
+
+                var result = _commentApplication.Add(command, userIdClaim, usernameClaim);
                 if (result.IsSucceeded)
                     return Ok(result);
 
@@ -37,6 +51,7 @@ namespace ServiceHost.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("edit")]
         public IActionResult Edit([FromBody] EditComment command)
         {
@@ -45,7 +60,12 @@ namespace ServiceHost.Controllers
 
             try
             {
-                var result = _commentApplication.Edit(command);
+                // userId JWT
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("کاربر شناسایی نشد.");
+
+                var result = _commentApplication.Edit(command, userIdClaim);
                 if (result.IsSucceeded)
                     return Ok(result);
 
@@ -58,12 +78,21 @@ namespace ServiceHost.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("delete/{id:long}")]
         public IActionResult Delete(long id)
         {
+            if (id <= 0)
+                return BadRequest("شناسه کامنت نامعتبر است.");
+
             try
             {
-                var result = _commentApplication.Delete(id);
+                // userId JWT
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("کاربر شناسایی نشد.");
+
+                var result = _commentApplication.Delete(id, userIdClaim);
                 if (result.IsSucceeded)
                     return Ok(result);
 
@@ -76,6 +105,7 @@ namespace ServiceHost.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("like/{commentId:long}")]
         public IActionResult Like(long commentId)
         {
@@ -84,7 +114,14 @@ namespace ServiceHost.Controllers
 
             try
             {
-                var result = _commentApplication.Like(commentId, User?.Identity?.Name ?? "anonymous");
+                // userId JWT
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("کاربر شناسایی نشد.");
+
+                //var userId = long.Parse(userIdClaim);
+
+                var result = _commentApplication.Like(commentId, userIdClaim);
 
                 if (!result.IsSucceeded)
                     return BadRequest(result.Message);
@@ -98,6 +135,7 @@ namespace ServiceHost.Controllers
             }
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("dislike/{commentId:long}")]
         public IActionResult Dislike(long commentId)
         {
@@ -106,7 +144,13 @@ namespace ServiceHost.Controllers
 
             try
             {
-                var result = _commentApplication.Dislike(commentId, User?.Identity?.Name ?? "anonymous");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userIdClaim))
+                    return Unauthorized("کاربر شناسایی نشد.");
+
+                //var userId = long.Parse(userIdClaim);
+
+                var result = _commentApplication.Dislike(commentId, userIdClaim);
 
                 if (!result.IsSucceeded)
                     return BadRequest(result.Message);
@@ -119,5 +163,6 @@ namespace ServiceHost.Controllers
                 return StatusCode(500, "خطایی در دیسلایک کردن کامنت رخ داد.");
             }
         }
+
     }
 }

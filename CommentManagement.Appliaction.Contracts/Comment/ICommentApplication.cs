@@ -5,9 +5,9 @@ namespace CommentManagement.Application.Contracts.Comment
     public interface ICommentApplication
     {
         // --- CRUD اصلی ---
-        OperationResult Add(AddComment command);                 // ثبت کامنت / امتیاز
-        OperationResult Edit(EditComment command);               // ویرایش کامنت (توسط کاربر یا ادمین)
-        OperationResult Delete(long id);                         // حذف کامل (درصورت نیاز)
+        OperationResult Add(AddComment command, string userIdentifier, string username);                 // ثبت کامنت / امتیاز
+        OperationResult Edit(EditComment command, string userIdentifier);               // ویرایش کامنت (توسط کاربر )
+        OperationResult Delete(long id, string userIdentifier);                         // حذف کامل (درصورت نیاز)
         OperationResult Confirm(long id);                        // تأیید توسط ادمین
         OperationResult Cancel(long id);                         // رد توسط ادمین
 

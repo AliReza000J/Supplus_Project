@@ -5,7 +5,7 @@ namespace CommentManagement.Domain.CommentAgg
     public class Comment : BaseEntity
     {
         public string Username { get; private set; }
-        public string? Email { get; private set; }
+        public string UserIdentifier { get; set; } = string.Empty;
         public string? Message { get; private set; }
         public long OwnerRecordId { get; private set; }
         public int Type { get; private set; } // store enum as int for EF mapping
@@ -14,22 +14,24 @@ namespace CommentManagement.Domain.CommentAgg
         public int DislikeCount { get; private set; }
         public bool IsConfirmed { get; private set; }
         public bool IsCanceled { get; private set; }
-        public long? UserId { get; private set; }
         public bool? IsBuyer { get; private set; }
 
         public string? AdminReply { get; private set; }
         public DateTime? AdminReplyDate { get; private set; }
         public DateTime? LastModified { get; private set; }
 
-        public Comment(string username, string? email, string? message, long ownerRecordId,
-            int type, int rate)
+
+        protected Comment() { }
+
+        public Comment(string username, string userIdentifier, string? message,
+            long ownerRecordId, int type, int rate)
         {
             Username = username;
-            Email = email;
+            UserIdentifier = userIdentifier;
             Message = message;
             OwnerRecordId = ownerRecordId;
             Type = type;
-            
+
             if (rate != 0)
                 Rate = Math.Clamp(rate, 1, 5);
 
@@ -40,7 +42,7 @@ namespace CommentManagement.Domain.CommentAgg
             LastModified = DateTime.Now;
         }
 
-        // admin or user
+        // user
         public void Edit(string? message, int? rate)
         {
             if (!string.IsNullOrWhiteSpace(message))
@@ -48,12 +50,6 @@ namespace CommentManagement.Domain.CommentAgg
 
             if (rate.HasValue && rate.Value is >= 1 and <= 5)
                 Rate = rate.Value;
-
-            //if (!string.IsNullOrWhiteSpace(reply))
-            //{
-            //    AdminReply = reply;
-            //    AdminReplyDate = DateTime.Now;
-            //}
 
             LastModified = DateTime.Now;
         }
@@ -112,7 +108,7 @@ namespace CommentManagement.Domain.CommentAgg
         {
             IsCanceled = true;
             IsConfirmed = false;
-            Message = "[این نظر حذف شده است]";
+            Message = "[این نظر توسط نویسنده آن حذف شده است]";
             LastModified = DateTime.Now;
         }
 

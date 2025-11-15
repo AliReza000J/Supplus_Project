@@ -15,8 +15,8 @@
         <dl class="row">
             <dt class="col-md-2">کاربر</dt>
             <dt class="col-md-10">@Model.Comment?.Username</dt>
-            <dt class="col-md-2">ایمیل</dt>
-            <dt class="col-md-10">@Model.Comment?.Email</dt>
+            <dt class="col-md-2">خریدار بوده است؟</dt>
+            <dt class="col-md-10">@Model.Comment?.IsBuyer ?? false</dt>
             <dt class="col-md-2">مربوط به</dt>
             <dt class="col-md-10">@Model.Comment?.OwnerName (@(Model.Comment?.Type))</dt>
             <dt class="col-md-2">امتیاز</dt>

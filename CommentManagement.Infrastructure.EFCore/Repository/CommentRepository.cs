@@ -28,7 +28,6 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                 {
                     Id = c.Id,
                     Username = c.Username,
-                    Email = c.Email,
                     Message = c.Message,
                     OwnerRecordId = c.OwnerRecordId,
                     OwnerName = "", // fill later
@@ -66,7 +65,7 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
 
             var list = query.OrderByDescending(x => x.Id).ToList();
 
-            // Resolve OwnerName for product comments (optional)
+            // Resolve OwnerName for product comments
             var productIds = list.Where(l => l.Type == (int)CommentType.Product).Select(l => l.OwnerRecordId).Distinct().ToList();
             if (productIds.Any())
             {
@@ -112,7 +111,6 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             {
                 Id = c.Id,
                 Username = c.Username,
-                Email = c.Email,
                 Message = c.Message,
                 OwnerRecordId = c.OwnerRecordId,
                 OwnerName = "", // fill below
@@ -170,6 +168,12 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
         public CommentReaction? GetUserReaction(long commentId, string userIdentifier)
         {
             return _context.CommentReactions.FirstOrDefault(r => r.CommentId == commentId && r.UserIdentifier == userIdentifier);
+        }
+
+        public bool OwnsComment(long commentId, string userIdentifier)
+        {
+            var comment = _context.Comments.FirstOrDefault(c=>c.Id == commentId);
+            return comment.UserIdentifier == userIdentifier && comment != null;
         }
     }
 }

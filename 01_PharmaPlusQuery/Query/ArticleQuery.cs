@@ -95,6 +95,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => x.PublishDate <= DateTime.Now)
                 .Select(x => new ArticleQueryModel
                 {
+                    Id = x.Id,
                     Title = x.Title,
                     Slug = x.Slug,
                     Picture = x.Picture,

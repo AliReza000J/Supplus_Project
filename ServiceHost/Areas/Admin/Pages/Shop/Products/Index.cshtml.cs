@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using _0_Framework.Infrastructure;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
 using ShopManagement.Application.Contracts.ProductCategory;
-//using ShopManagement.Configuration.Permissions;
+using ShopManagement.Configuration.Permissions;
 
 namespace ServiceHost.Areas.Admin.Pages.Shop.Products
 {
@@ -24,7 +24,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
             _productCategoryApplication = productCategoryApplication;
         }
 
-        //[NeedsPermission(ShopPermissions.ListProducts)]
+        [NeedsPermission(ShopPermissions.ListProducts)]
         public void OnGet(ProductSearchModel searchModel)
         {
             ProductCategories = new SelectList(_productCategoryApplication.GetLeafCategories(), "Id", "Name");

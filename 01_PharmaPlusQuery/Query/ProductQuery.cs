@@ -88,33 +88,36 @@ namespace _01_PharmaPlusQuery.Query
                     PictureTitle = x.PictureTitle,
                     ProductId = product.Id,
                 }).ToList(),
-                    Price = unitPrice.ToMoney(),
-                    HasDiscount = hasDiscount,
-                    DiscountRate = hasDiscount ? discount.DiscountRate : 0,
-                    DiscountExpireDate = hasDiscount ? discount.EndDate.ToDiscountFormat() : "",
-                    PriceWithDiscount = hasDiscount ? priceWithDiscount.ToMoney() : unitPrice.ToMoney()
-                };
+                Price = unitPrice.ToMoney(),
+                DoublePrice = unitPrice,
+                HasDiscount = hasDiscount,
+                DiscountRate = hasDiscount ? discount.DiscountRate : 0,
+                DiscountExpireDate = hasDiscount ? discount.EndDate.ToDiscountFormat() : "",
+                PriceWithDiscount = hasDiscount ? priceWithDiscount.ToMoney() : unitPrice.ToMoney(),
+            };
+
+            result.IsInStock = inventory != null && inventory.InStock;
 
             result.Comments = await _commentContext.Comments
-                .Where(x => !x.IsCanceled)
-                .Where(x => x.IsConfirmed)
-                .Where(x => x.Type == ((int)CommentType.Product))
-                .Where(x => x.OwnerRecordId == product.Id)
-                .Select(x => new CommentQueryModel
-                {
-                    Id = x.Id,
-                    Message = x.Message,
-                    Username = x.Username,
-                    CreationDate = x.CreationDate.ToFarsi(),
-                    Reply = x.AdminReply,
-                    DislikeCount = x.DislikeCount,
-                    LikeCount = x.LikeCount,
-                    Rate = x.Rate,
-                    ReplyDate = x.AdminReplyDate.ToFarsi(),
-                    IsBuyer = x.IsBuyer
-                }).OrderByDescending(x => x.Id).ToListAsync();
+                    .Where(x => !x.IsCanceled)
+                    .Where(x => x.IsConfirmed)
+                    .Where(x => x.Type == ((int)CommentType.Product))
+                    .Where(x => x.OwnerRecordId == product.Id)
+                    .Select(x => new CommentQueryModel
+                    {
+                        Id = x.Id,
+                        Message = x.Message,
+                        Username = x.Username,
+                        CreationDate = x.CreationDate.ToFarsi(),
+                        Reply = x.AdminReply,
+                        DislikeCount = x.DislikeCount,
+                        LikeCount = x.LikeCount,
+                        Rate = x.Rate,
+                        ReplyDate = x.AdminReplyDate.ToFarsi(),
+                        IsBuyer = x.IsBuyer
+                    }).OrderByDescending(x => x.Id).ToListAsync();
 
-            if(result.Comments.Any())
+            if (result.Comments.Any())
             {
                 int sum = 0;
                 foreach (var comment in result.Comments.Where(comment => comment.Rate >= 1 && comment.Rate <= 5))
@@ -131,7 +134,7 @@ namespace _01_PharmaPlusQuery.Query
                 result.AvgRate = 0;
             }
 
-                return result;
+            return result;
         }
 
         //private static List<ProductPictureQueryModel> MapProductPictures(List<ProductPicture> pictures)
@@ -152,7 +155,8 @@ namespace _01_PharmaPlusQuery.Query
 
             // ===== Load Inventory & Discounts =====
             var inventory = await _inventoryContext.Inventory
-            .Select(x => new ProductInventoryDto { ProductId = x.ProductId, UnitPrice = x.UnitPrice })
+            .Select(x => new ProductInventoryDto
+            { ProductId = x.ProductId, UnitPrice = x.UnitPrice, InStock = x.InStock })
             .ToListAsync();
 
             var discounts = await _discountContext.CustomerDiscounts
@@ -165,6 +169,7 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     Id = product.Id,
                     Category = product.Category.Name,
+                    CategoryFullSlug = product.Category.FullSlug,
                     Name = product.Name,
                     Picture = product.Picture,
                     PictureAlt = product.PictureAlt,
@@ -180,6 +185,7 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     var price = productInventory.UnitPrice;
                     product.Price = price.ToMoney();
+                    product.IsInStock = productInventory.InStock;
                     var discount = discounts.FirstOrDefault(x => x.ProductId == product.Id);
                     if (discount != null)
                     {
@@ -236,8 +242,8 @@ namespace _01_PharmaPlusQuery.Query
 
             var inventory = await _inventoryContext.Inventory
                 .Where(x => productIds.Contains(x.ProductId))
-                .Select(x => new { x.ProductId, x.UnitPrice })
-                .ToDictionaryAsync(x => x.ProductId, x => x.UnitPrice);
+                .Select(x => new { x.ProductId, x.UnitPrice, x.InStock })
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock });
 
             var discounts = await _discountContext.CustomerDiscounts
                 .Where(x => productIds.Contains(x.ProductId)
@@ -248,9 +254,10 @@ namespace _01_PharmaPlusQuery.Query
 
             foreach (var product in products)
             {
-                if (inventory.TryGetValue(product.Id, out var price))
+                if (inventory.TryGetValue(product.Id, out var inv))
                 {
-                    product.Price = price.ToMoney();
+                    product.Price = inv.UnitPrice.ToMoney();
+                    product.IsInStock = inv.InStock;
 
                     if (discounts.TryGetValue(product.Id, out var discount) && discount.DiscountRate > 0)
                     {
@@ -259,8 +266,8 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountExpireDate = discount.EndDate.ToDiscountFormat();
                         product.HasDiscount = true;
 
-                        var discountAmount = Math.Round((price * rate) / 100);
-                        product.PriceWithDiscount = (price - discountAmount).ToMoney();
+                        var discountAmount = Math.Round((inv.UnitPrice * rate) / 100);
+                        product.PriceWithDiscount = (inv.UnitPrice - discountAmount).ToMoney();
                     }
                 }
             }

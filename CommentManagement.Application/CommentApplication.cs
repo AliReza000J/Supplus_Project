@@ -1,35 +1,62 @@
 ﻿using _0_Framework.Application;
+using AccountManagement.Domain.AccountAgg;
+using BlogManagement.Domain.ArticleAgg;
 using CommentManagement.Application.Contracts.Comment;
 using CommentManagement.Domain.CommentAgg;
+using ShopManagement.Domain.ProductAgg;
 
 namespace CommentManagement.Application
 {
     public class CommentApplication : ICommentApplication
     {
         private readonly ICommentRepository _commentRepository;
+        private readonly IAccountRepository _accountRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly IArticleRepository _blogRepository;
 
-        public CommentApplication(ICommentRepository commentRepository)
+        public CommentApplication(ICommentRepository commentRepository, IAccountRepository accountRepository, IProductRepository productRepository, IArticleRepository blogRepository)
         {
             _commentRepository = commentRepository;
+            _accountRepository = accountRepository;
+            _productRepository = productRepository;
+            _blogRepository = blogRepository;
         }
 
-        public OperationResult Add(AddComment command)
+        public OperationResult Add(AddComment command, string userIdentifier, string username)
         {
             var op = new OperationResult();
 
-            if (string.IsNullOrWhiteSpace(command.Username))
+            if (string.IsNullOrWhiteSpace(username))
                 return op.Failed("نام کاربر الزامی است.");
 
             if (command.Rate < 1 || command.Rate > 5)
                 return op.Failed("امتیاز باید بین ۱ تا ۵ باشد.");
 
+            if (command.Type == 1)
+            {
+                var product = _productRepository.Get(command.OwnerRecordId);
+
+                if (product == null)
+                    return op.Failed($"محصول {command.OwnerRecordId} یافت نشد.");
+            }
+            else if (command.Type == 2)
+            {
+                var article = _blogRepository.Get(command.OwnerRecordId);
+
+                if (article == null)
+                    return op.Failed($"مقاله {command.OwnerRecordId} یافت نشد.");
+            }
+            else
+            {
+                return op.Failed($"نوع {command.Type} یافت نشد.");
+            }
+
             var comment = new Comment(
-                command.Username,
-                command.Email,
+                username,
+                userIdentifier,
                 command.Message,
                 command.OwnerRecordId,
                 command.Type,
-                //command.ParentId,
                 command.Rate);
 
             if (string.IsNullOrWhiteSpace(comment.Message))
@@ -41,28 +68,36 @@ namespace CommentManagement.Application
             return op.Succeeded("کامنت ثبت شد و پس از بررسی نمایش داده خواهد شد.");
         }
 
-        public OperationResult Edit(EditComment command)
+        public OperationResult Edit(EditComment command, string userIdentifier)
         {
             var op = new OperationResult();
             var comment = _commentRepository.Get(command.Id);
             if (comment == null) return op.Failed("کامنت یافت نشد.");
 
-            comment.Edit(command.Message, command.Rate);
-            _commentRepository.SaveChanges();
-
-            return op.Succeeded("ویرایش انجام شد.");
+            if(_commentRepository.OwnsComment(comment.Id, userIdentifier))
+            {
+                comment.Edit(command.Message, command.Rate);
+                _commentRepository.SaveChanges();
+                return op.Succeeded("ویرایش انجام شد.");
+            }
+            
+            return op.Failed("شما مجاز به انجام این کار نیستید.");
         }
 
-        public OperationResult Delete(long id)
+        public OperationResult Delete(long id, string userIdentifier)
         {
             var op = new OperationResult();
             var comment = _commentRepository.Get(id);
             if (comment == null) return op.Failed("کامنت یافت نشد.");
 
-            comment.Remove();
-            _commentRepository.SaveChanges();
+            if (_commentRepository.OwnsComment(id, userIdentifier))
+            {
+                comment.Remove();
+                _commentRepository.SaveChanges();
+                return op.Succeeded("کامنت حذف شد.");
+            }
 
-            return op.Succeeded("کامنت حذف شد.");
+            return op.Failed("شما مجاز به انجام این کار نیستید.");
         }
 
         public OperationResult Confirm(long id)

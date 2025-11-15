@@ -7,7 +7,8 @@ namespace CommentManagement.Domain.CommentAgg
     {
         List<CommentViewModel> Search(CommentSearchModel searchModel);
         CommentViewModel GetDetails(long id);
-        
+        bool OwnsComment(long commentId, string userIdentifier);
+
         // reactions
         bool HasUserLiked(long commentId, string userIdentifier);
         bool HasUserDisliked(long commentId, string userIdentifier);
