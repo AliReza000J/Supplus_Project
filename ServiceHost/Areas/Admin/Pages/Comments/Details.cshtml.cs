@@ -15,11 +15,11 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
 
         public CommentViewModel Comment;
 
-        public IActionResult OnGet(long id)
+        public async Task<IActionResult> OnGet(long id)
         {
-            Comment = _commentApplication.GetDetails(id);
+            Comment = await _commentApplication.GetDetailsAsync(id);
             if (Comment == null)
-                return RedirectToPage("./Index"); // or NotFound
+                return RedirectToPage();
 
 
             return Page();
@@ -48,13 +48,14 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
         //}
 
         // Reply (admin)
-        public IActionResult OnPostReply(CommentViewModel comment)
+        public async Task<IActionResult> OnPostReply(CommentViewModel comment, bool reset)
         {
             if (comment == null) return RedirectToPage();
 
-            var result = _commentApplication.Reply(comment.Id, comment.Reply ?? string.Empty);
+            var result = await _commentApplication.Reply(comment.Id, comment.Reply ?? string.Empty);
             TempData["Message"] = result.Message;
-            return RedirectToPage();
+
+            return RedirectToPage("./Index");
         }
     }
 }

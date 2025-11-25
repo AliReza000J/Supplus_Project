@@ -48,9 +48,9 @@ namespace AccountManagement.Application
             return _roleRepository.GetDetails(id);
         }
 
-        public List<RoleViewModel> List()
+        public async Task<IEnumerable<RoleViewModel>> ListAsync()
         {
-            return _roleRepository.List();
+            return await _roleRepository.ListAsync();
         }
     }
 }

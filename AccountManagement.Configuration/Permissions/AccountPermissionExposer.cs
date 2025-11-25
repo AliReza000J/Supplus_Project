@@ -15,14 +15,14 @@ namespace AccountManagement.Configuration.Permissions
                         new PermissionDto(AccountPermissions.SearchAccounts, "جستجو کاربران"),
                         new PermissionDto(AccountPermissions.CreateAccount, "ایجاد کاربر"),
                         new PermissionDto(AccountPermissions.EditAccount, "ویرایش کاربر"),
-                        new PermissionDto(AccountPermissions.DeleteAccount, "غبرفعال‌سازی کاربر"),
-                        new PermissionDto(AccountPermissions.ActivateAccount, "غبرفعال‌سازی کاربر"),
+                        new PermissionDto(AccountPermissions.DeleteAccount, "غیرفعال‌سازی کاربر"),
+                        new PermissionDto(AccountPermissions.ActivateAccount, "فعال‌سازی کاربر"),
                     }
                 },
                 {
                     "roles", new List<PermissionDto>
                     {
-                        new PermissionDto(AccountPermissions.SearchRoles, "جستجو نقض‌ها"),
+                        new PermissionDto(AccountPermissions.SearchRoles, "جستجو نقش‌ها"),
                         new PermissionDto(AccountPermissions.ListRoles, "لیست نقش‌ها"),
                         new PermissionDto(AccountPermissions.CreateRole, "ایجاد نقش"),
                         new PermissionDto(AccountPermissions.EditRole, "ویرایش نقش"),

@@ -16,9 +16,9 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public EditAccount GetDetails(long id)
+        public async Task<EditAccount> GetDetailsAsync(long id)
         {
-            return _context.Accounts.Select(x => new EditAccount
+            return await _context.Accounts.Select(x => new EditAccount
             {
                 Id = x.Id,
                 Fullname = x.Fullname,
@@ -26,22 +26,22 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
                 RoleId = x.RoleId,
                 Username = x.Username,
                 Email = x.Email
-            }).FirstOrDefault(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public List<AccountViewModel> GetAccounts()
+        public async Task<List<AccountViewModel>> GetAccountsAsync()
         {
-            return _context.Accounts.Select(x => new AccountViewModel
+            return await _context.Accounts.Select(x => new AccountViewModel
             {
                 Id = x.Id,
                 Fullname = x.Fullname,
                 RoleName = x.Role.Name,
                 Username = x.Username,
                 IsActive = x.IsActive
-            }).ToList();
+            }).ToListAsync();
         }
 
-        public List<AccountViewModel> Search(AccountSearchModel searchModel)
+        public async Task<List<AccountViewModel>> SearchAsync(AccountSearchModel searchModel)
         {
             var query = _context.Accounts.Include(x => x.Role).Select(x => new AccountViewModel
             {
@@ -68,17 +68,17 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             if (searchModel.IsActive != null)
                 query = query.Where(x => x.IsActive == searchModel.IsActive);
 
-            return query.OrderByDescending(x => x.Id).ToList();
+            return await query.OrderByDescending(x => x.Id).ToListAsync();
         }
 
-        public bool Exists(string username, string mobile)
+        public async Task<bool> ExistsAsync(string username, string mobile)
         {
-            return _context.Accounts.Any(x => x.Username == username || x.Mobile == mobile);
+            return await _context.Accounts.AnyAsync(x => x.Username == username || x.Mobile == mobile);
         }
 
-        public Account GetByUsername(string username)
+        public async Task<Account> GetByUsernameAsync(string username)
         {
-            return _context.Accounts.FirstOrDefault(x => x.Username == username);
+            return await _context.Accounts.FirstOrDefaultAsync(x => x.Username == username);
         }
     }
 }

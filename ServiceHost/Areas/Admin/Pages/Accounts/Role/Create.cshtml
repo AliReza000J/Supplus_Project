@@ -1,4 +1,5 @@
 ﻿@page
+@using AccountManagement.Configuration.Permissions
 @model ServiceHost.Areas.Admin.Pages.Accounts.Role.CreateModel
 
 <div class="modal-header">
@@ -7,7 +8,7 @@
 </div>
 
 
-<div class="row">
+<div class="row" Permission="AccountPermissions.CreateRole">
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">

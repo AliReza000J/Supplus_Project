@@ -31,11 +31,11 @@ namespace ServiceHost.Areas.Admin.Pages
             return Page();
         }
 
-        public IActionResult OnPostLogin(Login command)
+        public async Task<IActionResult> OnPostLoginAsync(Login command)
         {
-            if (_accountApplication.GetRoleIdByUsername(command.Username) != 2)
+            if (await _accountApplication.GetRoleIdByUsername(command.Username) != 5)
             {
-                var result = _accountApplication.Login(command);
+                var result = await _accountApplication.Login(command);
                 if (result.IsSucceeded)
                     return RedirectToPage("/Index");
 

@@ -1,7 +1,6 @@
 ﻿using _0_Framework.Application;
 using AccountManagement.Configuration;
 using AccountManagement.Domain.RoleAgg;
-using AccountManagement.Domain.TokenAgg;
 using BlogManagement.Configuration;
 using CommentManagement.Infrastructure.Configuration;
 using DiscountManagement.Configuration;
@@ -11,7 +10,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ServiceHost;
+using ServiceHost.Filters;
+using ServiceHost.Middleware;
 using ShopManagement.Configuration;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -20,7 +22,7 @@ using System.Text.Unicode;
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
-var connectionString = builder.Configuration.GetConnectionString("PharmaPlusDB");
+var connectionString = config.GetConnectionString("PharmaPlusDB");
 
 builder.Services.AddHttpContextAccessor();
 
@@ -39,7 +41,29 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Arabic));
 
 builder.Services.AddRazorPages();
-builder.Services.AddControllers();
+//builder.Services.AddControllers();
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ApiValidationFilter>(); // your custom filter
+})
+.ConfigureApiBehaviorOptions(options =>
+{
+    options.SuppressModelStateInvalidFilter = true; // DISABLE default ProblemDetails
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .AllowAnyOrigin()    // Allow requests from any domain
+            .AllowAnyMethod()    // Allow all HTTP methods (GET, POST, etc.)
+            .AllowAnyHeader();   // Allow all headers
+    });
+});
+
+builder.Services.AddScoped<CustomJwtEvents>();
 
 // Auth
 builder.Services.AddAuthentication(options =>
@@ -71,47 +95,46 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"])),
         ClockSkew = TimeSpan.Zero
     };
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                var repo = context.HttpContext.RequestServices.GetService<ITokenRepository>();
-                if (repo != null && repo.IsRevoked(token))
-                {
-                    context.Fail("این توکن باطل شده است.");
-                }
-            }
-            return Task.CompletedTask;
-        }
-    };
+    options.EventsType = typeof(CustomJwtEvents);
 });
 
 // Authorization policies (example using permission claim or role)
 builder.Services.AddAuthorization(options =>
 {
-    // example: require roleId=1 (Admin)
-    options.AddPolicy("AdminOnly", policy => policy.RequireClaim(ClaimTypes.Role, Roles.GetRoleBy(1)));
-    options.AddPolicy("Support", policy => policy.RequireClaim(ClaimTypes.Role, new List<string> { Roles.GetRoleBy(1), Roles.GetRoleBy(3) }));
-    options.AddPolicy("ContentUploader", policy => policy.RequireClaim(ClaimTypes.Role, new List<string> { Roles.GetRoleBy(1), Roles.GetRoleBy(3), Roles.GetRoleBy(4) }));
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole(
+            Roles.GetRoleBy(1),
+            Roles.GetRoleBy(2)
+            ));
 
-    //options.AddPolicy("AdminOnly", policy => policy.RequireRole(new List<string> { "1"}));
+    options.AddPolicy("Seller", policy =>
+        policy.RequireRole(
+            Roles.GetRoleBy(1),
+            Roles.GetRoleBy(2),
+            Roles.GetRoleBy(3)
+        ));
+
+    options.AddPolicy("ContentUploader", policy =>
+        policy.RequireRole(
+            Roles.GetRoleBy(1),
+            Roles.GetRoleBy(2),
+            Roles.GetRoleBy(3),
+            Roles.GetRoleBy(4)
+        ));
 });
 
 builder.Services.AddRazorPages()
     .AddMvcOptions(options => options.Filters.Add<SecurityPageFilter>())
     .AddRazorPagesOptions(options =>
     {
+        //
         options.Conventions.AuthorizeAreaFolder("Admin", "/Accounts", "AdminOnly");
-        ///
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Shop", "Support");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Blog", "Support");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Comments", "Support");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Inventory", "Support");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Discounts", "Support");
-        ///
+        //
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Shop", "Seller");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Inventory", "Seller");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Discounts", "Seller");
+        //
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Comments", "ContentUploader");
         options.Conventions.AuthorizeAreaFolder("Admin", "/Blog", "ContentUploader");
     });
 //.AddRazorPagesOptions(options =>
@@ -129,46 +152,51 @@ builder.Services.AddSwaggerGen(c =>
         Title = "PharmaPlus Shop API",
         Version = "v1"
     });
-});
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        policy
-            .AllowAnyOrigin()    // Allow requests from any domain
-            .AllowAnyMethod()    // Allow all HTTP methods (GET, POST, etc.)
-            .AllowAnyHeader();   // Allow all headers
+        Description = "JWT Bearer token",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
+
+    // Include XML comments (for better docs)
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
+    // OperationFilter for adding common responses (401/403) or examples (see below)
+    c.OperationFilter<SwaggerDefaultResponsesOperationFilter>();
+    c.OperationFilter<AddAuthRequirementOperationFilter>();
+
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PharmaPlus Shop API v1");
-        c.RoutePrefix = "swagger";
-    });
-}
-
-app.UseAuthentication();
-
-app.UseStaticFiles();
-
-app.UseCookiePolicy();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapRazorPages();   // Admin
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseStaticFiles();
+app.UseCookiePolicy();
+app.UseCors("AllowAll");
+
+app.MapControllers();
+app.MapRazorPages();
 app.MapDefaultControllerRoute();
-app.MapControllers();  // API
 
 app.Run();

@@ -121,7 +121,7 @@ namespace _0_Framework.Application
             return new AuthViewModel(id, roleId, fullname, username, permissions) { Role = role };
         }
 
-        public bool IsAdmin()
+        public bool IsSuperAdmin()
         {
             var http = _contextAccessor.HttpContext;
             if (http?.User == null || !http.User.Identity.IsAuthenticated) return false;
@@ -133,7 +133,7 @@ namespace _0_Framework.Application
             if (roleIdClaim != null) long.TryParse(roleIdClaim.Value, out roleId);
             var username = user.Claims.FirstOrDefault(x => x.Type == "Username")?.Value ?? string.Empty;
 
-            if (username == "admin" && roleId == 1)
+            if (username == "admin" && roleId == 1 && id == 1)
                 return true;
 
             return false;

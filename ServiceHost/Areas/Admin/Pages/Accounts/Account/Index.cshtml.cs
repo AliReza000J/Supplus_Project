@@ -13,6 +13,7 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
     {
         [TempData]
         public string Message { get; set; }
+
         public AccountSearchModel SearchModel;
         public List<AccountViewModel> Accounts;
         public SelectList Roles;
@@ -21,49 +22,53 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
         private readonly IAccountApplication _accountApplication;
         private readonly IAuthHelper _authHelper;
 
-        public IndexModel(IAccountApplication accountApplication, IRoleApplication roleApplication, IAuthHelper authHelper)
+        public IndexModel(IAccountApplication accountApplication,
+            IRoleApplication roleApplication, IAuthHelper authHelper)
         {
             _roleApplication = roleApplication;
             _accountApplication = accountApplication;
             _authHelper = authHelper;
         }
 
-        public void OnGet(AccountSearchModel searchModel)
+        public async Task OnGetAsync(AccountSearchModel searchModel)
         {
-            Roles = new SelectList(_roleApplication.List(), "Id", "Name");
-            Accounts = _accountApplication.Search(searchModel);
+            Roles = new SelectList((await _roleApplication.ListAsync())
+                .Where(x => x.Id != 1).ToList(), "Id", "Name");
+            Accounts = await _accountApplication.Search(searchModel);
         }
 
         [NeedsPermission(AccountPermissions.CreateAccount)]
-        public IActionResult OnGetCreate()
+        public async Task<IActionResult> OnGetCreateAsync()
         {
             var command = new RegisterAccount
             {
-                Roles = _roleApplication.List()
+                Roles = (await _roleApplication.ListAsync())
+                .Where(x => x.Id != 1).ToList()
             };
             return Partial("./Create", command);
         }
 
         [NeedsPermission(AccountPermissions.CreateAccount)]
-        public JsonResult OnPostCreate(RegisterAccount command)
+        public async Task<JsonResult> OnPostCreateAsync(RegisterAccount command)
         {
-            var result = _accountApplication.Register(command);
+            var result = await _accountApplication.Register(command);
             return new JsonResult(result);
         }
 
         [NeedsPermission(AccountPermissions.EditAccount)]
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEditAsync(long id)
         {
-            var account = _accountApplication.GetDetails(id);
-            account.Roles = _roleApplication.List();
+            var account = await _accountApplication.GetDetails(id);
+            account.Roles = (await _roleApplication.ListAsync())
+                .Where(x => x.Id != 1).ToList();
             return Partial("Edit", account);
         }
 
         [NeedsPermission(AccountPermissions.EditAccount)]
-        public JsonResult OnPostEdit(EditAccount command)
+        public async Task<JsonResult> OnPostEditAsync(EditAccount command)
         {
             var userId = _authHelper.CurrentAccountId();
-            var result = _accountApplication.Edit(command, userId.ToString());
+            var result = await _accountApplication.Edit(command, userId.ToString());
             return new JsonResult(result);
         }
 
@@ -73,17 +78,20 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
             return Partial("ChangePassword", command);
         }
 
-        public JsonResult OnPostChangePassword(ChangePassword command)
+        public async Task<JsonResult> OnPostChangePasswordAsync(ChangePassword command)
         {
             var userId = _authHelper.CurrentAccountId();
-            var result = _accountApplication.ChangePassword(command, userId.ToString());
+            var result = await _accountApplication.ChangePassword(command, userId.ToString());
             return new JsonResult(result);
         }
 
         [NeedsPermission(AccountPermissions.DeleteAccount)]
-        public IActionResult OnGetDelete(long id)
+        public async Task<IActionResult> OnGetDeleteAsync(long id)
         {
-            var result = _accountApplication.Delete(id);
+            if (id == 1)
+                return RedirectToPage();
+
+            var result = await _accountApplication.Delete(id);
             if (result.IsSucceeded)
                 return RedirectToPage();
 
@@ -92,9 +100,12 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
         }
 
         [NeedsPermission(AccountPermissions.ActivateAccount)]
-        public IActionResult OnGetActivate(long id)
+        public async Task<IActionResult> OnGetActivateAsync(long id)
         {
-            var result = _accountApplication.Activate(id);
+            if (id == 1)
+                return RedirectToPage();
+
+            var result = await _accountApplication.Activate(id);
             if (result.IsSucceeded)
                 return RedirectToPage();
 

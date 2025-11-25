@@ -1,5 +1,8 @@
-﻿using _01_PharmaPlusQuery.Contracts.Slide;
+﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Slide;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace ServiceHost.Controllers.Shop
 {
@@ -16,44 +19,30 @@ namespace ServiceHost.Controllers.Shop
             _logger = logger;
         }
 
+        /// <summary>
+        /// Retrieves all active slides for the shop homepage.
+        /// </summary>
+        /// <remarks>
+        /// This endpoint returns all enabled slides that should be displayed
+        /// in the shop UI (e.g., homepage carousel or promotional banners).
+        /// If no slides are available, the API responds with 404.
+        /// </remarks>
+        /// <response code="200">Slides retrieved successfully.</response>
+        /// <response code="404">No slides were found.</response>
+        [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> GetSlides()
+        public async Task<ActionResult<ApiResponse<List<SlideQueryModel>>>> GetSlides()
         {
-            try
-            {
-                var slides = await _slideQuery.GetSlides();
+            // Retrieve the slide list from the query service
+            var slides = await _slideQuery.GetSlides();
 
-                if (slides == null || !slides.Any())
-                    return NotFound("هیچ اسلایدی برای نمایش یافت نشد.");
+            // Return a 404 response if no slides exist
+            if (slides == null || !slides.Any())
+                return NotFound(ApiResponse<List<SlideQueryModel>>
+                    .Fail(message: "هیچ اسلایدی برای نمایش یافت نشد."));
 
-                return Ok(slides);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "ورودی نامعتبر در دریافت اسلایدها");
-                return BadRequest(new
-                {
-                    error = "خطای ورودی",
-                    message = "داده‌های ارسال‌شده معتبر نیستند."
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "خطای منطقی در پردازش اسلایدها");
-                return StatusCode(StatusCodes.Status409Conflict, new
-                {
-                    error = "تداخل در پردازش",
-                    message = "عملیات مورد نظر با مشکل مواجه شد."
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "خطای غیرمنتظره در دریافت اسلایدها");
-                return Problem(
-                    title: "خطای سرور",
-                    detail: "در هنگام پردازش درخواست خطایی رخ داده است. لطفاً مجدداً تلاش کنید.",
-                    statusCode: StatusCodes.Status500InternalServerError);
-            }
+            // Return the slide list wrapped in a standard API response object
+            return Ok(ApiResponse<List<SlideQueryModel>>.Ok(data: slides));
         }
     }
 }

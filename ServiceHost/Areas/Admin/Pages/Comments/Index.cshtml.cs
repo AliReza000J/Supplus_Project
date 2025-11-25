@@ -19,14 +19,26 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
             _commentApplication = commentApplication;
         }
 
-        public void OnGet()
+        public async Task OnGet()
         {
-            Comments = _commentApplication.Search(SearchModel);
+            if (SearchModel.ShowPendingOnly)
+            {
+                Comments = await _commentApplication.SearchAsync(new CommentSearchModel
+                {
+                    ShowPendingOnly = true
+                });
+            }
+            else
+            {
+                Comments = await _commentApplication.SearchAsync(SearchModel);
+            }
+
         }
 
-        public IActionResult OnGetCancel(long id)
+        public async Task<IActionResult> OnGetCancel(long id)
         {
-            var result = _commentApplication.Cancel(id);
+            var result = await _commentApplication.Cancel(id);
+
             if (result.IsSucceeded)
                 return RedirectToPage();
 
@@ -34,9 +46,10 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
             return RedirectToPage();
         }
 
-        public IActionResult OnGetConfirm(long id)
+        public async Task<IActionResult> OnGetConfirm(long id, bool reset)
         {
-            var result = _commentApplication.Confirm(id);
+            var result = await _commentApplication.Confirm(id);
+
             if (result.IsSucceeded)
                 return RedirectToPage();
 

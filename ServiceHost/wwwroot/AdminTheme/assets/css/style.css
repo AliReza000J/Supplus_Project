@@ -69,6 +69,31 @@ body {
     direction: rtl;
 }
 
+
+.message-cell {
+    position: relative;
+    cursor: pointer;
+}
+
+    .message-cell .full-message {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: #072025cc;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 5px;
+        max-width: 300px;
+        z-index: 10;
+        white-space: pre-wrap;
+    }
+
+    .message-cell:hover .full-message {
+        display: block;
+    }
+
+
 h1,
 h2,
 h3,
@@ -162,6 +187,15 @@ a:focus {
     margin-bottom: 15px;
 }
 
+.pending-row {
+    background-color: #706e85a8 !important;
+}
+
+.centered-table td,
+.centered-table th {
+    text-align: center !important; 
+    vertical-align: middle !important;
+}
 
 
 /******** 2. Bootstrap RESET ********/

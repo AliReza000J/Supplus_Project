@@ -28,7 +28,8 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public List<CommentQueryModel> Comments { get; set; }
         public List<ProductPictureQueryModel> Pictures { get; set; }
         public string CategorySlug { get; set; }
-
+        public int CommentCount { get; set; }
         public float AvgRate { get; set; }
+        public int RateCount { get; set; }
     }
 }

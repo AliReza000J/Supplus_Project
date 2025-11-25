@@ -1,18 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 
 namespace _0_Framework.Domain
 {
     public interface IRepository<TKey, T> where T : class
     {
-        T Get(TKey id);
+        Task<T?> GetAsync(TKey id);
+        T? Get(TKey id);
+
+        Task<List<T>> GetAllAsync();
         List<T> Get();
+
+        Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+        bool Exists(Expression<Func<T, bool>> predicate);
+
         void Create(T entity);
-        bool Exists(Expression<Func<T, bool>> expression);
+
+        Task SaveChangesAsync();
         void SaveChanges();
     }
 }

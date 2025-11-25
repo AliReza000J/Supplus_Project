@@ -12,11 +12,12 @@
         public bool IsConfirmed { get; set; }
         public bool IsCanceled { get; set; }
         public string CommentDate { get; set; }
+        public string LastModified { get; set; }
         public int Rate { get; set; }
 
         public int LikeCount { get; set; }
         public int DislikeCount { get; set; }
-        public bool? IsBuyer { get; set; }
+        public bool IsBuyer { get; set; } = false;
 
         public string? Reply { get; set; }
         public string? ReplyDate { get; set; }

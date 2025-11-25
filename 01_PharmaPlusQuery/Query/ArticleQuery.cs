@@ -5,7 +5,6 @@ using BlogManagement.Infrastructure.EFCore;
 using CommentManagement.Domain.CommentAgg;
 using CommnetManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
 namespace _01_PharmaPlusQuery.Query
 {
@@ -43,6 +42,9 @@ namespace _01_PharmaPlusQuery.Query
                    ShortDescription = x.ShortDescription,
                }).FirstOrDefaultAsync(x => x.Slug == slug);
 
+            if (article == null)
+                return article;
+
             if (!string.IsNullOrWhiteSpace(article.Keywords))
                 article.KeywordList = article.Keywords.Split(",").ToList();
 
@@ -63,27 +65,32 @@ namespace _01_PharmaPlusQuery.Query
                     LikeCount = x.LikeCount,
                     Rate = x.Rate,
                     ReplyDate = x.AdminReplyDate.ToFarsi(),
-                    IsBuyer = x.IsBuyer
+                    IsBuyer = x.IsBuyer,
+                    UserId = long.Parse(x.UserIdentifier),
+                    LastModifedDate = x.LastModified.ToFarsi()
                 }).OrderByDescending(x => x.Id).ToListAsync();
 
-            if(comments.Any())
+            article.RateCount = comments.Count;
+
+            if (comments.Any())
             {
                 int sum = 0;
-                foreach (var comment in comments.Where(comment => comment.Rate >= 1 && comment.Rate <= 5))
+                foreach (var comment in comments.Where(
+                    comment => comment.Rate >= 1 && comment.Rate <= 5))
                 {
                     sum += comment.Rate;
                 }
 
-                int count = comments.Count;
-
-                article.AvgRate = sum / count;
+                article.AvgRate = (float)sum / (float)article.RateCount;
             }
             else
             {
                 article.AvgRate = 0;
             }
 
-                article.Comments = comments;
+            article.Comments = comments.Where(
+                x => !string.IsNullOrWhiteSpace(x.Message)).ToList();
+            article.CommentCount = article.Comments.Count;
 
             return article;
         }
@@ -108,24 +115,15 @@ namespace _01_PharmaPlusQuery.Query
                 }).ToListAsync();
         }
 
-        public async Task<List<ArticleQueryModel>> Search(string value)
+        public async Task<PagedResult<ArticleQueryModel>> Search(string value, int page, int pageSize)
         {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var query = _blogContext.Articles
-            .Include(x => x.Category)
-            .Select(x => new ArticleQueryModel
-            {
-                Id = x.Id,
-                Title = x.Title,
-                Slug = x.Slug,
-                Picture = x.Picture,
-                PictureAlt = x.PictureAlt,
-                PictureTitle = x.PictureTitle,
-                PublishDate = x.PublishDate.ToFarsi(),
-                ShortDescription = x.ShortDescription,
-                CategoryName = x.Category.Name,
-                CategorySlug = x.Category.Slug,
-            })
-            .AsNoTracking();
+                .Include(x => x.Category)
+                .AsQueryable()
+                .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(value))
             {
@@ -137,12 +135,39 @@ namespace _01_PharmaPlusQuery.Query
                     EF.Functions.Like(x.Title.ToLower(), $"%{value}%") ||
                     EF.Functions.Like(x.ShortDescription.ToLower(), $"%{value}%") ||
                     EF.Functions.Like(x.Keywords.ToLower(), $"%{value}%") ||
-                    EF.Functions.Like(x.CategoryName.ToLower(), $"%{value}%"));
+                    EF.Functions.Like(x.Category.Name.ToLower(), $"%{value}%"));
             }
 
-            var articles = await query.OrderByDescending(x => x.Id).ToListAsync();
+            var totalCount = await query.CountAsync();
 
-            return articles;
+            var items = await query
+                .OrderByDescending(x => x.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new ArticleQueryModel
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Slug = x.Slug,
+                    Picture = x.Picture,
+                    PictureAlt = x.PictureAlt,
+                    PictureTitle = x.PictureTitle,
+                    PublishDate = x.PublishDate.ToFarsi(),
+                    ShortDescription = x.ShortDescription,
+                    CategoryName = x.Category.Name,
+                    CategorySlug = x.Category.Slug
+                })
+                .ToListAsync();
+
+            return new PagedResult<ArticleQueryModel>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
         }
     }
 }
+

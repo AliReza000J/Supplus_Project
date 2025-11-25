@@ -1,7 +1,6 @@
 ﻿using _0_Framework.Application;
 using _01_PharmaPlusQuery.Contracts.Article;
 using _01_PharmaPlusQuery.Contracts.ArticleCategory;
-using BlogManagement.Domain.ArticleAgg;
 using BlogManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,8 +32,8 @@ namespace _01_PharmaPlusQuery.Query
 
         public async Task<ArticleCategoryQueryModel> GetArticleCategory(string slug)
         {
-            var articleCategory = await _blogContext.ArticleCategories
-                .Include(x => x.Articles)
+            var category = await _blogContext.ArticleCategories
+                .Where(x => x.Slug == slug)
                 .Select(x => new ArticleCategoryQueryModel
                 {
                     Slug = x.Slug,
@@ -46,28 +45,47 @@ namespace _01_PharmaPlusQuery.Query
                     Keywords = x.Keywords,
                     MetaDescription = x.MetaDescription,
                     CanonicalAddress = x.CanonicalAddress,
-                    ArticlesCount = x.Articles.Count,
-                    Articles = MapArticles(x.Articles)
-                }).FirstOrDefaultAsync(x => x.Slug == slug);
 
-            if (!string.IsNullOrWhiteSpace(articleCategory.Keywords))
-                articleCategory.KeywordList = articleCategory.Keywords.Split(",").ToList();
+                    ArticlesCount = x.Articles.Count(),
 
-            return articleCategory;
-        }
+                    ArticleIds = x.Articles.Select(a => a.Id).ToList()
+                })
+                .FirstOrDefaultAsync();
 
-        private static List<ArticleQueryModel> MapArticles(List<Article> articles)
-        {
-            return articles.Select(x => new ArticleQueryModel
+            if (category == null)
+                return null;
+
+            // Keywords Safe
+            if (!string.IsNullOrWhiteSpace(category.Keywords))
+                category.KeywordList = category.Keywords.Split(",").ToList();
+
+            if (category.ArticleIds != null && category.ArticleIds.Any())
             {
-                Slug = x.Slug,
-                ShortDescription = x.ShortDescription,
-                Title = x.Title,
-                Picture = x.Picture,
-                PictureAlt = x.PictureAlt,
-                PictureTitle = x.PictureTitle,
-                PublishDate = x.PublishDate.ToFarsi(),
-            }).ToList();
+                category.Articles = await _blogContext.Articles
+                    .Where(a => category.ArticleIds.Contains(a.Id))
+                    .Select(a => new ArticleQueryModel
+                    {
+                        Id = a.Id,
+                        Title = a.Title,
+                        Slug = a.Slug,
+                        Picture = a.Picture,
+                        PictureAlt = a.PictureAlt,
+                        PictureTitle = a.PictureTitle,
+                        PublishDate = a.PublishDate.ToFarsi(),
+                        ShortDescription = a.ShortDescription,
+                        CategoryName = a.Category.Name,
+                        CategorySlug = a.Category.Slug
+                    })
+                    .OrderByDescending(a => a.Id)
+                    .ToListAsync();
+            }
+            else
+            {
+                category.Articles = new List<ArticleQueryModel>();
+            }
+
+            return category;
         }
+
     }
 }

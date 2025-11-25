@@ -31,65 +31,67 @@ namespace AccountManagement.Application
             _jwtService = jwtService;
         }
 
-        public OperationResult Activate(long id)
+        public async Task<OperationResult> Activate(long id)
         {
             var op = new OperationResult();
-            var acc = _accountRepository.Get(id);
+            var acc = await _accountRepository.GetAsync(id);
 
             if (acc == null)
                 return op.Failed(ApplicationMessages.RecordNotFound);
 
             acc.Activate();
-            _accountRepository.SaveChanges();
+            await _accountRepository.SaveChangesAsync();
             return op.Succeeded();
         }
 
-        public OperationResult ChangePassword(ChangePassword command, string userId)
+        public async Task<OperationResult> ChangePassword(ChangePassword command, string userId)
         {
             var operation = new OperationResult();
-            var account = _accountRepository.Get(command.Id);
+            var account = await _accountRepository.GetAsync(command.Id);
             if (account == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             if (command.Password != command.RePassword)
                 return operation.Failed(ApplicationMessages.PasswordsNotMatch);
 
-            if (command.Id == long.Parse(userId))
+            if (command.Id == long.Parse(userId) || _authHelper.IsSuperAdmin())
             {
                 var password = _passwordHasher.Hash(command.Password);
                 account.ChangePassword(password);
-                _accountRepository.SaveChanges();
+                await _accountRepository.SaveChangesAsync();
                 return operation.Succeeded("رمز عبور تغییر یافت.");
             }
 
             return operation.Failed("شما مجاز به انجام این کار نیستید.");
         }
 
-        public OperationResult Delete(long id)
+        public async Task<OperationResult> Delete(long id)
         {
             var op = new OperationResult();
-            var acc = _accountRepository.Get(id);
+            var acc = await _accountRepository.GetAsync(id);
 
             if (acc == null)
                 return op.Failed(ApplicationMessages.RecordNotFound);
 
-            acc.Deactivate();
-            _accountRepository.SaveChanges();
+            if (id != 1)
+                acc.Deactivate();
+
+            await _accountRepository.SaveChangesAsync();
             return op.Succeeded();
         }
 
-        public OperationResult Edit(EditAccount command, string userId)
+        public async Task<OperationResult> Edit(EditAccount command, string userId)
         {
             var operation = new OperationResult();
-            var account = _accountRepository.Get(command.Id);
+            var account = await _accountRepository.GetAsync(command.Id);
             if (account == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_accountRepository.Exists(x =>
+            if (await _accountRepository.ExistsAsync(x =>
                 (x.Username.ToLower() == command.Username.ToLower() || x.Mobile == command.Mobile) && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
-            if (command.Id == long.Parse(userId) || _authHelper.IsAdmin())
+            if (command.Id == long.Parse(userId) || _authHelper.IsSuperAdmin())
             {
                 var roleName = Roles.GetRoleBy(command.RoleId);
 
@@ -99,48 +101,50 @@ namespace AccountManagement.Application
                 account.Edit(
                     command.Fullname, command.Username.ToLower(), command.Email, command.Mobile, command.RoleId, picturePath);
 
-                _accountRepository.SaveChanges();
+                await _accountRepository.SaveChangesAsync();
                 return operation.Succeeded("ویرایش انجام شد.");
             }
 
             return operation.Failed("شما مجاز به انجام این کار نیستید.");
         }
 
-        public AccountViewModel GetAccountBy(long id)
+        public async Task<AccountViewModel> GetAccountBy(long id)
         {
-            var account = _accountRepository.Get(id);
+            var account = await _accountRepository.GetAsync(id);
 
             return new AccountViewModel()
             {
+                Id = id,
                 Fullname = account.Fullname,
                 Mobile = account.Mobile,
                 Username = account.Username.ToLower(),
                 RoleName = Roles.GetRoleBy(account.RoleId),
                 IsActive = account.IsActive,
                 ProfilePhoto = account.ProfilePhoto,
+                CreationDate = account.CreationDate.ToFarsi(),
             };
         }
 
-        public List<AccountViewModel> GetAccounts()
+        public async Task<List<AccountViewModel>> GetAccounts()
         {
-            return _accountRepository.GetAccounts();
+            return await _accountRepository.GetAccountsAsync();
         }
 
-        public EditAccount GetDetails(long id)
+        public async Task<EditAccount> GetDetails(long id)
         {
-            return _accountRepository.GetDetails(id);
+            return await _accountRepository.GetDetailsAsync(id);
         }
 
-        public long GetRoleIdByUsername(string username)
+        public async Task<long> GetRoleIdByUsername(string username)
         {
-            var acc = _accountRepository.GetByUsername(username.ToLower());
+            var acc = await _accountRepository.GetByUsernameAsync(username.ToLower());
             return acc.RoleId;
         }
 
-        public OperationResult Login(Login command)
+        public async Task<OperationResult> Login(Login command)
         {
             var operation = new OperationResult();
-            var account = _accountRepository.GetByUsername(command.Username.ToLower());
+            var account = await _accountRepository.GetByUsernameAsync(command.Username.ToLower());
             if (account == null)
                 return operation.Failed(ApplicationMessages.WrongUserPass);
 
@@ -154,10 +158,10 @@ namespace AccountManagement.Application
             if (!account.IsActive)
                 return operation.Failed("حساب کاربری غیرفعال است.");
 
-            var permissions = _roleRepository.Get(account.RoleId)
-                .Permissions
-                .Select(x => x.Code)
-                .ToList();
+            var role = await _roleRepository.GetAsync(account.RoleId);
+            var permissions = role?.Permissions
+            .Select(x => x.Code)
+            .ToList();
 
             var authViewModel = new AuthViewModel(account.Id, account.RoleId, account.Fullname, account.Username.ToLower(), permissions);
             authViewModel.Role = Roles.GetRoleBy(account.RoleId);
@@ -166,22 +170,24 @@ namespace AccountManagement.Application
             return operation.Succeeded();
         }
 
-        public (OperationResult Result, JwtResponseDto Data) LoginWithJwt(Login command)
+        public async Task<(OperationResult, JwtResponseDto? Data)> LoginWithJwt(Login command)
         {
             var op = new OperationResult();
+            var account = await _accountRepository.GetByUsernameAsync(command.Username.ToLower());
 
-            var account = _accountRepository.GetByUsername(command.Username.ToLower());
-            if (account == null) return (op.Failed(ApplicationMessages.WrongUserPass), null);
+            if (account == null)
+                return (op.Failed(ApplicationMessages.RecordNotFound), null);
 
             if (!account.IsActive)
-                return (op.Failed("حساب کاربری غیرفعال است. با پشتیبانی تماس بگیرید."), null);
+                return (op.Failed("حساب کاربری غیرفعال است."), null);
 
             var check = _passwordHasher.Check(account.Password, command.Password);
-            if (!check.Verified) return (op.Failed(ApplicationMessages.WrongUserPass), null);
+            if (!check.Verified)
+                return (op.Failed(ApplicationMessages.WrongUserPass), null);
 
-            if (!account.IsActive) return (op.Failed("حساب کاربری غیرفعال است."), null);
-
-            var permissions = _roleRepository.Get(account.RoleId)?.Permissions?.Select(p => p.Code).ToList() ?? new List<int>();
+            var role = await _roleRepository.GetAsync(account.RoleId);
+            var permissions = role?.Permissions?.Select(p => p.Code).ToList()
+                              ?? new List<int>();
 
             var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 15;
             var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 7;
@@ -193,7 +199,7 @@ namespace AccountManagement.Application
             var refreshExpiry = DateTime.UtcNow.AddDays(refreshDays);
 
             var tokenEntity = new Token(account.Id, accessToken, accessExpiry, refreshToken, refreshExpiry);
-            _tokenRepository.Add(tokenEntity);
+            await _tokenRepository.AddAsync(tokenEntity);
 
             var dto = new JwtResponseDto
             {
@@ -203,47 +209,59 @@ namespace AccountManagement.Application
                 RefreshTokenExpiry = refreshExpiry
             };
 
-            return (op.Succeeded("ورود موفق"), dto);
+            return (op.Succeeded("ورود موفق."), dto);
         }
+
 
         public void Logout()
         {
             _authHelper.SignOut();
         }
 
-        public OperationResult LogoutWithJwt(string accessToken)
+        public async Task<OperationResult> LogoutWithJwt(string accessToken)
         {
             var op = new OperationResult();
             if (string.IsNullOrWhiteSpace(accessToken)) return op.Failed("توکن نامعتبر است");
 
-            var tokenRecord = _tokenRepository.GetByAccessToken(accessToken);
+            var tokenRecord = await _tokenRepository.GetByAccessTokenAsync(accessToken);
             if (tokenRecord == null) return op.Failed("توکن یافت نشد");
 
-            _tokenRepository.Revoke(tokenRecord);
+            await _tokenRepository.RevokeAsync(tokenRecord);
             return op.Succeeded("خروج انجام شد.");
         }
 
-        public (OperationResult Result, JwtResponseDto Data) RefreshToken(string refreshToken)
+        public async Task<(OperationResult, JwtResponseDto? Data)> RefreshToken(string refreshToken)
         {
             var op = new OperationResult();
-            if (string.IsNullOrWhiteSpace(refreshToken)) return (op.Failed("توکن معتبر نیست"), null);
 
-            var tokenRecord = _tokenRepository.GetByRefreshToken(refreshToken);
-            if (tokenRecord == null) return (op.Failed("توکن بازنشانی یافت نشد یا باطل شده"), null);
-            if (tokenRecord.IsRefreshExpired()) return (op.Failed("Refresh token منقضی شده"), null);
-            if (tokenRecord.IsRevoked) return (op.Failed("Refresh token باطل شده است"), null);
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return (op.Failed("توکن معتبر نیست"), null);
 
-            var account = _accountRepository.Get(tokenRecord.AccountId);
-            if (account == null) return (op.Failed("کاربر مرتبط با توکن یافت نشد"), null);
+            var tokenRecord = await _tokenRepository.GetByRefreshTokenAsync(refreshToken);
 
-            var permissions = _roleRepository.Get(account.RoleId)?.Permissions?.Select(p => p.Code).ToList() ?? new List<int>();
+            if (tokenRecord == null)
+                return (op.Failed("توکن بازنشانی یافت نشد یا باطل شده"), null);
+
+            if (tokenRecord.IsRefreshExpired())
+                return (op.Failed("Refresh token منقضی شده"), null);
+
+            if (tokenRecord.IsRevoked)
+                return (op.Failed("Refresh token باطل شده است"), null);
+
+            var account = await _accountRepository.GetAsync(tokenRecord.AccountId);
+            if (account == null)
+                return (op.Failed("کاربر مرتبط با توکن یافت نشد"), null);
+
+            var role = await _roleRepository.GetAsync(account.RoleId);
+
+            var permissions = role?.Permissions?.Select(p => p.Code).ToList() ?? new List<int>();
 
             var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 15;
             var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 7;
 
             // revoke old token
             tokenRecord.Revoke();
-            _tokenRepository.Revoke(tokenRecord);
+            await _tokenRepository.RevokeAsync(tokenRecord);
 
             // generate new tokens
             var newAccess = _jwtService.GenerateAccessToken(account.Id, account.Username.ToLower(), account.RoleId, permissions, accessMinutes);
@@ -252,7 +270,7 @@ namespace AccountManagement.Application
             var refreshExpiry = DateTime.UtcNow.AddDays(refreshDays);
 
             var newTokenEntity = new Token(account.Id, newAccess, accessExpiry, newRefresh, refreshExpiry);
-            _tokenRepository.Add(newTokenEntity);
+            await _tokenRepository.AddAsync(newTokenEntity);
 
             var dto = new JwtResponseDto
             {
@@ -265,12 +283,13 @@ namespace AccountManagement.Application
             return (op.Succeeded("توکن تجدید شد"), dto);
         }
 
-        public OperationResult Register(RegisterAccount command)
+        public async Task<OperationResult> Register(RegisterAccount command)
         {
             var operation = new OperationResult();
 
-            if (_accountRepository.Exists(x => x.Username.ToLower() == command.Username.ToLower() || x.Mobile == command.Mobile))
-                return operation.Failed(ApplicationMessages.DuplicatedRecord);
+            if (await _accountRepository.ExistsAsync(x => x.Username.ToLower() == command.Username.ToLower() || x.Mobile == command.Mobile))
+                return operation.Failed
+                    ($"کاربری با نام {command.Username} و یا شماره موبایل {command.Mobile} وجود دارد.");
 
             var password = _passwordHasher.Hash(command.Password);
 
@@ -299,13 +318,13 @@ namespace AccountManagement.Application
                 picturePath);
 
             _accountRepository.Create(account);
-            _accountRepository.SaveChanges();
+            await _accountRepository.SaveChangesAsync();
             return operation.Succeeded("ثبت‌نام با موفقیت انجام شد.");
         }
 
-        public List<AccountViewModel> Search(AccountSearchModel searchModel)
+        public async Task<List<AccountViewModel>> Search(AccountSearchModel searchModel)
         {
-            return _accountRepository.Search(searchModel);
+            return await _accountRepository.SearchAsync(searchModel);
         }
     }
 }

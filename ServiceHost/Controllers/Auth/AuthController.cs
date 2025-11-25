@@ -1,4 +1,5 @@
-﻿using AccountManagement.Application.Contracts.Account;
+﻿using _0_Framework.Application;
+using AccountManagement.Application.Contracts.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,10 @@ using System.Security.Claims;
 
 namespace ServiceHost.Controllers.Auth
 {
+    /// <summary>
+    /// Handles user authentication operations such as registration, login,
+    /// token refresh, logout, and retrieving authenticated user information.
+    /// </summary>
     [Route("auth")]
     [ApiController]
     public class AuthController : ControllerBase
@@ -13,102 +18,176 @@ namespace ServiceHost.Controllers.Auth
         private readonly IAccountApplication _accountApp;
         private readonly ILogger<AuthController> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthController"/>.
+        /// </summary>
         public AuthController(IAccountApplication accountApp, ILogger<AuthController> logger)
         {
             _accountApp = accountApp;
             _logger = logger;
         }
 
+        // ============================================================
+        // Register
+        // ============================================================
+
+        /// <summary>
+        /// Registers a new account and automatically logs in the user
+        /// by issuing a JWT access token and refresh token.
+        /// </summary>
+        /// <param name="command">Registration details: username, password, mobile, etc.</param>
+        /// <returns>
+        /// A JWT authentication response containing access/refresh tokens, 
+        /// or an error message if registration fails.
+        /// </returns>
+        /// <response code="200">Registration succeeded and token issued.</response>
+        /// <response code="400">Validation error or registration failed.</response>
+        [AllowAnonymous]
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterAccount command)
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Register([FromBody] RegisterAccount command)
         {
-            try
+            var op = await _accountApp.Register(command);
+
+            var res = new ApiResponse<JwtResponseDto>
             {
-                var res = _accountApp.Register(command);
-                return res.IsSucceeded ? Ok(res) : BadRequest(res);
-            }
-            catch (Exception ex)
+                Success = op.IsSucceeded,
+                Message = op.Message,
+            };
+
+            if (!op.IsSucceeded)
+                return BadRequest(res);
+
+            var loginCommand = new Login
             {
-                _logger.LogError(ex, "خطا هنگام ثبت‌نام.");
-                return Problem("خطای غیرمنتظره‌ای در هنگام ثبت‌نام رخ داد.");
-            }
+                Username = command.Username,
+                Password = command.Password
+            };
+
+            var (loginOp, data) = await _accountApp.LoginWithJwt(loginCommand);
+
+            if (!loginOp.IsSucceeded)
+                return Unauthorized(res);
+
+            res.Data = data;
+
+            return Ok(res);
         }
 
+        // ============================================================
+        // Login
+        // ============================================================
+
+        /// <summary>
+        /// Authenticates the user and returns a signed JWT access token
+        /// along with a refresh token.
+        /// </summary>
+        /// <param name="command">Login credentials.</param>
+        /// <returns>JWT tokens if authentication succeeds.</returns>
+        /// <response code="200">Login successful.</response>
+        /// <response code="401">Invalid credentials.</response>
+        [AllowAnonymous]
         [HttpPost("login")]
-        public IActionResult Login([FromBody] Login command)
+        [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Login([FromBody] Login command)
         {
-            try
-            {
-                var (res, data) = _accountApp.LoginWithJwt(command);
-                return res.IsSucceeded ? Ok(data) : BadRequest(res);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "خطا هنگام ورود.");
-                return Problem("خطای غیرمنتظره‌ای در هنگام ورود رخ داد.");
-            }
+            var (op, data) = await _accountApp.LoginWithJwt(command);
+
+            if (!op.IsSucceeded)
+                return Unauthorized(ApiResponse<JwtResponseDto>.Fail(message: op.Message));
+
+            return Ok(ApiResponse<JwtResponseDto>.Ok(data: data, message: op.Message));
         }
 
+        // ============================================================
+        // Refresh Token
+        // ============================================================
+
+        /// <summary>
+        /// Refreshes the JWT access token using a valid refresh token.
+        /// </summary>
+        /// <param name="request">Refresh token request data.</param>
+        /// <returns>New access and refresh tokens.</returns>
+        /// <response code="200">Token successfully refreshed.</response>
+        /// <response code="401">Invalid or expired refresh token.</response>
+        [AllowAnonymous]
+        //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("refresh")]
-        public IActionResult Refresh([FromBody] RefreshRequestDto request)
+        [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Refresh([FromBody] RefreshRequestDto request)
         {
-            try
-            {
-                var (res, data) = _accountApp.RefreshToken(request.RefreshToken);
-                return res.IsSucceeded ? Ok(data) : BadRequest(res);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "خطا هنگام به‌روزرسانی توکن.");
-                return Problem("خطای غیرمنتظره‌ای هنگام به‌روزرسانی توکن رخ داد.");
-            }
+            var (op, data) = await _accountApp.RefreshToken(request.RefreshToken);
+
+            if (!op.IsSucceeded)
+                return Unauthorized(ApiResponse<JwtResponseDto>.Fail(message: op.Message));
+
+            return Ok(ApiResponse<JwtResponseDto>.Ok(data: data, message: op.Message));
         }
 
+        // ============================================================
+        // Logout
+        // ============================================================
+
+        /// <summary>
+        /// Logs out the user by invalidating the provided JWT access token.
+        /// </summary>
+        /// <remarks>
+        /// This action requires a valid <c>Bearer</c> access token.
+        /// </remarks>
+        /// <returns>Success or failure response.</returns>
+        /// <response code="200">Logout successful.</response>
+        /// <response code="400">Logout failed.</response>
+        /// <response code="401">Token missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("logout")]
-        public IActionResult Logout()
+        public async Task<ActionResult<ApiResponse<object>>> Logout()
         {
-            try
-            {
-                var accessToken = Request.Headers["Authorization"]
+            var accessToken = Request.Headers["Authorization"]
                     .FirstOrDefault()?
                     .Split(" ")
                     .Last();
 
-                if (string.IsNullOrWhiteSpace(accessToken))
-                    return Unauthorized("توکن ارسال نشده است.");
+            if (string.IsNullOrWhiteSpace(accessToken))
+                return Unauthorized(ApiResponse<JwtResponseDto>.Fail(message: "توکن ارسال نشده است."));
 
-                var res = _accountApp.LogoutWithJwt(accessToken);
-                return res.IsSucceeded ? Ok(res) : BadRequest(res);
-            }
-            catch (Exception ex)
+            var op = await _accountApp.LogoutWithJwt(accessToken);
+
+            var res = new ApiResponse<object>
             {
-                _logger.LogError(ex, "خطا هنگام خروج از حساب.");
-                return Problem("خطای غیرمنتظره‌ای در هنگام خروج از حساب رخ داد.");
-            }
+                Success = op.IsSucceeded,
+                Message = op.Message
+            };
+
+            return res.Success ? Ok(res) : BadRequest(res);
         }
 
+        // ============================================================
+        // ME (Current user profile)
+        // ============================================================
+
+        /// <summary>
+        /// Retrieves the authenticated user's profile information
+        /// based on the <c>NameIdentifier</c> claim inside the JWT token.
+        /// </summary>
+        /// <returns>User profile information.</returns>
+        /// <response code="200">User details retrieved successfully.</response>
+        /// <response code="401">Token missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("me")]
-        public IActionResult Me()
+        public async Task<ActionResult<ApiResponse<AccountViewModel>>> Me()
         {
-            try
-            {
-                var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrWhiteSpace(idClaim))
-                    return Unauthorized("شناسه کاربر یافت نشد.");
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                if (!long.TryParse(idClaim, out var id))
-                    return Unauthorized("شناسه کاربر نامعتبر است.");
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربر یافت نشد."));
 
-                var model = _accountApp.GetAccountBy(id);
-                return Ok(model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "خطا هنگام دریافت اطلاعات کاربر.");
-                return Problem("خطای غیرمنتظره‌ای در هنگام دریافت اطلاعات کاربر رخ داد.");
-            }
+            if (!long.TryParse(idClaim, out var accountId))
+                return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربری نامعتبر است."));
+
+            var model = await _accountApp.GetAccountBy(accountId);
+
+            return Ok(ApiResponse<AccountViewModel>.Ok(model, "اطلاعات با موفقیت بازیابی شد."));
         }
     }
 }

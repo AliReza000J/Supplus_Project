@@ -16,7 +16,9 @@
             <dt class="col-md-2">کاربر</dt>
             <dt class="col-md-10">@Model.Comment?.Username</dt>
             <dt class="col-md-2">خریدار بوده است؟</dt>
-            <dt class="col-md-10">@Model.Comment?.IsBuyer ?? false</dt>
+            <dt class="col-md-10">
+                @(Model.Comment?.IsBuyer == true ? "بله" : "خیر")
+            </dt>
             <dt class="col-md-2">مربوط به</dt>
             <dt class="col-md-10">@Model.Comment?.OwnerName (@(Model.Comment?.Type))</dt>
             <dt class="col-md-2">امتیاز</dt>
@@ -73,25 +75,11 @@
 
         <hr />
         <div class="btn-group">
-            @* @if (canConfirm) *@
-            @* { *@
-            @*     <form method="post" asp-page-handler="Confirm" class="d-inline"> *@
-            @*         <input type="hidden" asp-for="Comment.Id" /> *@
-            @*         <button type="submit" class="btn btn-success">تأیید</button> *@
-            @*     </form> *@
-            @* } *@
-            @* @if (canCancel) *@
-            @* { *@
-            @*     <form method="post" asp-page-handler="Cancel" class="d-inline ml-2"> *@
-            @*         <input type="hidden" asp-for="Comment.Id" /> *@
-            @*         <button type="submit" class="btn btn-danger">رد / لغو</button> *@
-            @*     </form> *@
-            @* } *@
             <a asp-page="./Index" class="btn btn-secondary ml-2">بازگشت</a>
         </div>
 
         <hr />
-        
+
     </div>
 </div>
 

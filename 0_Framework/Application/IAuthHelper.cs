@@ -4,7 +4,7 @@
     {
         void SignIn(AuthViewModel account);
         bool IsAuthenticated();
-        bool IsAdmin();
+        bool IsSuperAdmin();
         void SignOut();
         string CurrentAccountRole();
         //string CurrentAccountMobile();

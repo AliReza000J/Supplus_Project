@@ -1,5 +1,6 @@
 using _0_Framework.Infrastructure;
 using AccountManagement.Application.Contracts.Role;
+using AccountManagement.Configuration.Permissions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -19,12 +20,16 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
             _exposers = exposers;
         }
 
-        public void OnGet(long id)
+        [NeedsPermission(AccountPermissions.EditRole)]
+        public IActionResult OnGet(long id)
         {
+            if (id == 1)
+                return RedirectToPage("/AccessDenied");
+
             var groups = new Dictionary<string, SelectListGroup>();
             Command = _roleApplication.GetDetails(id);
-            foreach(var exposer in _exposers)
-{
+            foreach (var exposer in _exposers)
+            {
                 var exposedPermissions = exposer.Expose();
 
                 foreach (var (key, value) in exposedPermissions)
@@ -48,8 +53,11 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
                     }
                 }
             }
+
+            return Page();
         }
 
+        [NeedsPermission(AccountPermissions.EditRole)]
         public IActionResult OnPost(EditRole command)
         {
             var result = _roleApplication.Edit(command);

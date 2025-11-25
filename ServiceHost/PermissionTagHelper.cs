@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using _0_Framework.Application;
+﻿using _0_Framework.Application;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace ServiceHost
@@ -25,7 +24,7 @@ namespace ServiceHost
             }
 
             var permissions = _authHelper.GetPermissions();
-            if (permissions.All(x => x != Permission) && !_authHelper.IsAdmin())
+            if (permissions.All(x => x != Permission) && !_authHelper.IsSuperAdmin())
             {
                 output.SuppressOutput();
                 return;

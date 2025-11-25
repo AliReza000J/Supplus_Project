@@ -18,11 +18,11 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
         public EditRole GetDetails(long id)
         {
             var role = _accountContext.Roles.Select(x => new EditRole
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    MappedPermissions = MapPermissions(x.Permissions)
-                }).AsNoTracking()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                MappedPermissions = MapPermissions(x.Permissions)
+            }).AsNoTracking()
                 .FirstOrDefault(x => x.Id == id);
 
             role.Permissions = role.MappedPermissions.Select(x => x.Code).ToList();
@@ -35,14 +35,14 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             return permissions.Select(x => new PermissionDto(x.Code, x.Name)).ToList();
         }
 
-        public List<RoleViewModel> List()
+        public async Task<IEnumerable<RoleViewModel>> ListAsync()
         {
-            return _accountContext.Roles.Select(x => new RoleViewModel
+            return await _accountContext.Roles.Select(x => new RoleViewModel
             {
                 Id = x.Id,
                 Name = x.Name,
                 CreationDate = x.CreationDate.ToFarsi()
-            }).ToList();
+            }).ToListAsync();
         }
     }
 }

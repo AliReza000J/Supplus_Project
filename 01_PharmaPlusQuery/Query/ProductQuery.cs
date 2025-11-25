@@ -1,7 +1,10 @@
 ﻿using _0_Framework.Application;
 using _01_LampshadeQuery.Contracts.Comment;
+using _01_PharmaPlusQuery.Contracts.Article;
 using _01_PharmaPlusQuery.Contracts.DTOs;
 using _01_PharmaPlusQuery.Contracts.Product;
+using Azure;
+using BlogManagement.Domain.ArticleAgg;
 using CommentManagement.Domain.CommentAgg;
 using CommnetManagement.Infrastructure.EFCore;
 using DiscountManagement.Infrastructure.EFCore;
@@ -114,8 +117,12 @@ namespace _01_PharmaPlusQuery.Query
                         LikeCount = x.LikeCount,
                         Rate = x.Rate,
                         ReplyDate = x.AdminReplyDate.ToFarsi(),
-                        IsBuyer = x.IsBuyer
+                        IsBuyer = x.IsBuyer,
+                        UserId = long.Parse(x.UserIdentifier),
+                        LastModifedDate = x.LastModified.ToFarsi()
                     }).OrderByDescending(x => x.Id).ToListAsync();
+
+            result.RateCount = result.Comments.Count;
 
             if (result.Comments.Any())
             {
@@ -125,14 +132,17 @@ namespace _01_PharmaPlusQuery.Query
                     sum += comment.Rate;
                 }
 
-                int count = result.Comments.Count;
-
-                result.AvgRate = sum / count;
+                result.AvgRate = (float)sum / (float)result.RateCount;
             }
             else
             {
                 result.AvgRate = 0;
             }
+
+            result.Comments = result.Comments
+                .Where(x => !string.IsNullOrWhiteSpace(x.Message)).ToList();
+
+            result.CommentCount = result.Comments.Count;
 
             return result;
         }
@@ -201,24 +211,14 @@ namespace _01_PharmaPlusQuery.Query
             return products;
         }
 
-        public async Task<List<ProductQueryModel>> Search(string value)
+        public async Task<PagedResult<ProductQueryModel>> Search(string value, int page, int pageSize)
         {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var query = _shopContext.Products
             .Include(x => x.Category)
-            .Select(product => new ProductQueryModel
-            {
-                Id = product.Id,
-                Category = product.Category.Name,
-                CategoryFullSlug = product.Category.FullSlug,
-                Name = product.Name,
-                Picture = product.Picture,
-                PictureAlt = product.PictureAlt,
-                PictureTitle = product.PictureTitle,
-                ShortDescription = product.ShortDescription,
-                Slug = product.Slug,
-                Keywords = product.Keywords,
-                MetaDescription = product.MetaDescription,
-            })
+            .AsQueryable()
             .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(value))
@@ -231,12 +231,29 @@ namespace _01_PharmaPlusQuery.Query
                     EF.Functions.Like(x.Name.ToLower(), $"%{value}%") ||
                     EF.Functions.Like(x.ShortDescription.ToLower(), $"%{value}%") ||
                     EF.Functions.Like(x.Keywords.ToLower(), $"%{value}%") ||
-                    EF.Functions.Like(x.Category.ToLower(), $"%{value}%"));
+                    EF.Functions.Like(x.Category.Name.ToLower(), $"%{value}%"));
             }
 
-            var products = await query.OrderByDescending(x => x.Id).ToListAsync();
-            if (products.Count == 0)
-                return products;
+            var totalCount = await query.CountAsync();
+
+            var products = await query.OrderByDescending(x => x.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(product => new ProductQueryModel
+                {
+                    Id = product.Id,
+                    Category = product.Category.Name,
+                    CategoryFullSlug = product.Category.FullSlug,
+                    Name = product.Name,
+                    Picture = product.Picture,
+                    PictureAlt = product.PictureAlt,
+                    PictureTitle = product.PictureTitle,
+                    ShortDescription = product.ShortDescription,
+                    Slug = product.Slug,
+                    Keywords = product.Keywords,
+                    MetaDescription = product.MetaDescription,
+                }).ToListAsync();
+
 
             var productIds = products.Select(x => x.Id).ToList();
 
@@ -272,7 +289,14 @@ namespace _01_PharmaPlusQuery.Query
                 }
             }
 
-            return products;
+            return new PagedResult<ProductQueryModel>
+            {
+                Items = products,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
         }
 
 

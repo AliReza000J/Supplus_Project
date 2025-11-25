@@ -3,7 +3,7 @@ using _0_Framework.Application;
 using _0_Framework.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace ServiceHost
+namespace ServiceHost.Filters
 {
     public class SecurityPageFilter : IPageFilter
     {
@@ -30,7 +30,7 @@ namespace ServiceHost
             var accountPermissions = _authHelper.GetPermissions();
 
             if (accountPermissions.All(x => x != handlerPermission.Permission) &&
-                !_authHelper.IsAdmin())
+                !_authHelper.IsSuperAdmin())
                 context.HttpContext.Response.Redirect("/Admin/AccessDenied");
         }
 

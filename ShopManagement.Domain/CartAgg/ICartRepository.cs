@@ -1,6 +1,8 @@
-﻿namespace ShopManagement.Domain.CartAgg
+﻿using _0_Framework.Domain;
+
+namespace ShopManagement.Domain.CartAgg
 {
-    public interface ICartRepository
+    public interface ICartRepository: IRepository<long, Cart>
     {
         Task<Cart?> GetByCartKeyAsync(string cartKey);
         Task CreateAsync(Cart cart);

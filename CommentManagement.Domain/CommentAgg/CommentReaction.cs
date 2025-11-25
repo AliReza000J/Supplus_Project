@@ -1,11 +1,5 @@
 ﻿namespace CommentManagement.Domain.CommentAgg
 {
-    public enum ReactionType
-    {
-        Like = 1,
-        Dislike = 2
-    }
-
     public class CommentReaction
     {
         public long Id { get; set; }

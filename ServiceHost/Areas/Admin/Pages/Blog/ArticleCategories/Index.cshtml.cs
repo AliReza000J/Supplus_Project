@@ -1,7 +1,6 @@
 using BlogManagement.Application.Contracts.ArticleCategory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Collections.Generic;
 
 namespace ServiceHost.Areas.Admin.Pages.Blog.ArticleCategories
 {

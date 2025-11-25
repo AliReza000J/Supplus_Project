@@ -1,4 +1,4 @@
-﻿using _01_PharmaPlusQuery.Contracts.Product;
+﻿using _0_Framework.Application;
 
 namespace _01_PharmaPlusQuery.Contracts.Article
 {
@@ -6,7 +6,6 @@ namespace _01_PharmaPlusQuery.Contracts.Article
     {
         Task<List<ArticleQueryModel>> LatestArticles();
         Task<ArticleQueryModel> GetArticleDetails(string slug);
-        Task<List<ArticleQueryModel>> Search(string value);
-
+        Task<PagedResult<ArticleQueryModel>> Search(string value, int page, int pageSize);
     }
 }

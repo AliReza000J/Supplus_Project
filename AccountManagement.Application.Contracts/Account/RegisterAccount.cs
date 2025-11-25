@@ -24,7 +24,7 @@ namespace AccountManagement.Application.Contracts.Account
         public string? Email { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        public long RoleId { get; set; } = 2;
+        public long RoleId { get; set; } = 5;
 
         [FileExtensionLimitation(new[] { ".jpeg", ".jpg", ".png" }, ErrorMessage = ValidationMessages.InvalidFileFormat)]
         [MaxFileSize(1 * 1024 * 1024, ErrorMessage = ValidationMessages.MaxFileSize)]

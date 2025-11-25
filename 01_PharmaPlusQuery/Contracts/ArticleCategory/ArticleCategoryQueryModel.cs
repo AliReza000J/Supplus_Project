@@ -17,5 +17,7 @@ namespace _01_PharmaPlusQuery.Contracts.ArticleCategory
         public string CanonicalAddress { get; set; }
         public long ArticlesCount { get; set; }
         public List<ArticleQueryModel> Articles { get; set; }
+        public List<long> ArticleIds { get; set; }
+
     }
 }

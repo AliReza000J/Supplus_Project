@@ -43,14 +43,28 @@ namespace CommentManagement.Domain.CommentAgg
         }
 
         // user
-        public void Edit(string? message, int? rate)
+        public void EditMessage(string message)
         {
             if (!string.IsNullOrWhiteSpace(message))
                 Message = message;
 
-            if (rate.HasValue && rate.Value is >= 1 and <= 5)
-                Rate = rate.Value;
+            IsConfirmed = false;
+            IsCanceled = false;
+            LastModified = DateTime.Now;
+        }
 
+        public void ClearMessage()
+        {
+            Message = null;
+        }
+
+        public void EditRate(int rate)
+        {
+            if (rate >= 1 && rate <= 5)
+                Rate = rate;
+
+            IsConfirmed = false;
+            IsCanceled = false;
             LastModified = DateTime.Now;
         }
 
@@ -71,27 +85,27 @@ namespace CommentManagement.Domain.CommentAgg
         public void AddLike()
         {
             LikeCount++;
-            LastModified = DateTime.Now;
+            //LastModified = DateTime.Now;
         }
 
         public void AddDislike()
         {
             DislikeCount++;
-            LastModified = DateTime.Now;
+            //LastModified = DateTime.Now;
         }
 
         public void AddReply(string reply)
         {
             AdminReply = reply;
             AdminReplyDate = DateTime.Now;
-            LastModified = DateTime.Now;
+            //LastModified = DateTime.Now;
         }
 
         public void EditReply(string reply)
         {
             AdminReply = reply;
             AdminReplyDate = DateTime.Now;
-            LastModified = DateTime.Now;
+            //LastModified = DateTime.Now;
         }
 
         public void RateComment(int rate)

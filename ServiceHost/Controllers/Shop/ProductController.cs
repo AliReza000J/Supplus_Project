@@ -1,6 +1,7 @@
-﻿using _01_PharmaPlusQuery.Contracts.Product;
+﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Product;
 using _01_PharmaPlusQuery.Contracts.ProductCategory;
-using _01_PharmaPlusQuery.Query;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ServiceHost.Controllers.Shop
@@ -13,119 +14,111 @@ namespace ServiceHost.Controllers.Shop
         private readonly IProductCategoryQuery _productCategoryQuery;
         private readonly ILogger<ProductController> _logger;
 
-
-        public ProductController(IProductQuery productQuery, ILogger<ProductController> logger, IProductCategoryQuery productCategoryQuery)
+        public ProductController(IProductQuery productQuery,
+            ILogger<ProductController> logger, IProductCategoryQuery productCategoryQuery)
         {
             _productQuery = productQuery;
             _logger = logger;
             _productCategoryQuery = productCategoryQuery;
         }
 
+        /// <summary>
+        /// Retrieves product details using a full hierarchical URL path.
+        /// </summary>
+        /// <param name="fullPath">The full slug path including category path + product slug.</param>
+        /// <remarks>
+        /// This endpoint supports nested category paths.  
+        /// Example: /shop/product/health/vitamins/magnesium/magnesium-500mg  
+        /// The last segment is considered the product slug, and the previous segments represent the category hierarchy.
+        /// The method validates that the product exists and it belongs to the provided category path.
+        /// </remarks>
+        /// <response code="200">Returns product details.</response>
+        /// <response code="400">Invalid or incomplete product path.</response>
+        /// <response code="404">Product not found or does not match the category path.</response>
+        [AllowAnonymous]
         [HttpGet("{*fullPath}")]
-        public async Task<IActionResult> GetProductDetails(string fullPath)
+        public async Task<ActionResult<ApiResponse<ProductQueryModel>>> GetProductDetails(string fullPath)
         {
             if (string.IsNullOrWhiteSpace(fullPath))
-                return BadRequest("مسیر محصول معتبر نیست.");
+                return BadRequest(ApiResponse<ProductQueryModel>
+                    .Fail(message: "مسیر محصول معتبر نیست."));
 
-            try
-            {
-                var segments = fullPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                if (segments.Length < 2)
-                    return BadRequest("آدرس محصول ناقص است.");
+            var segments = fullPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length < 2)
+                return BadRequest(ApiResponse<ProductQueryModel>
+                    .Fail(message: "آدرس محصول ناقص است."));
 
-                var productSlug = segments.Last();
-                var categoryPath = string.Join('/', segments.Take(segments.Length - 1));
+            // Extract product slug (last part of the URL)
+            var productSlug = segments.Last();
 
-                var product = await _productQuery.GetProductDetails(productSlug);
-                if (product == null)
-                    return NotFound("محصول یافت نشد.");
+            // Extract category path (all segments except the last)
+            var categoryPath = string.Join('/', segments.Take(segments.Length - 1));
 
-                var category = await _productCategoryQuery.GetCategoryByFullSlug(categoryPath);
-                if (category == null || product.CategorySlug != category.Slug)
-                    return NotFound("محصول با مسیر گروه محصول موردنظر مطابقت ندارد.");
+            // Fetch product by slug
+            var product = await _productQuery.GetProductDetails(productSlug);
+            if (product == null)
+                return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "محصول یافت نشد."));
 
-                return Ok(product);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] Product details failed: {ex.Message}");
-                return StatusCode(500, "خطای داخلی سرور هنگام دریافت جزئیات محصول.");
-            }
+            // Validate category path matches the product's category
+            var category = await _productCategoryQuery.GetCategoryByFullSlug(categoryPath);
+            if (category == null || product.CategorySlug != category.Slug)
+                return NotFound(ApiResponse<ProductQueryModel>
+                    .Fail(message: "محصول با مسیر گروه محصول موردنظر مطابقت ندارد."));
+
+            return Ok(ApiResponse<ProductQueryModel>.Ok(data: product));
         }
 
+        /// <summary>
+        /// Retrieves the latest product arrivals.
+        /// </summary>
+        /// <remarks>
+        /// This endpoint returns a list of recently added products.  
+        /// If no products exist, a 404 response is returned.
+        /// </remarks>
+        /// <response code="200">Returns the latest products.</response>
+        /// <response code="404">No products were found.</response>
+        [AllowAnonymous]
         [HttpGet("latest-arrivals")]
-        public async Task<IActionResult> GetLatestArrivals()
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> GetLatestArrivals()
         {
-            try
-            {
-                var products = await _productQuery.GetLatestArrivals();
+            var products = await _productQuery.GetLatestArrivals();
 
-                if (products == null || !products.Any())
-                    return NotFound("هیچ محصولی یافت نشد.");
+            if (products == null || !products.Any())
+                return NotFound(ApiResponse<List<ProductQueryModel>>
+                    .Fail(message: "هیچ محصولی یافت نشد."));
 
-                return Ok(products);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "ورودی نامعتبر در دریافت محصولات");
-                return BadRequest(new
-                {
-                    error = "خطای ورودی",
-                    message = "داده‌های ارسال‌شده معتبر نیستند."
-                });
-            }
+            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(data: products));
         }
 
+        /// <summary>
+        /// Searches for products based on a text value with pagination.
+        /// </summary>
+        /// <param name="value">Search term provided by the user.</param>
+        /// <param name="page">Page number for pagination.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        /// <remarks>
+        /// Performs a full-text search within product titles, descriptions, and related searchable fields.  
+        /// Returns a paged response with the list of matched products.
+        /// </remarks>
+        /// <response code="200">Returns search results (may be empty).</response>
+        /// <response code="400">Search value is empty.</response>
+        [AllowAnonymous]
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] string value)
+        public async Task<ActionResult<ApiResponse<PagedResult<ProductQueryModel>>>> Search(
+            string value, int page = 1, int pageSize = 10)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    return BadRequest(new
-                    {
-                        error = "ورودی نامعتبر",
-                        message = "عبارت جستجو نمی‌تواند خالی باشد."
-                    });
-                }
+            if (string.IsNullOrWhiteSpace(value))
+                return BadRequest(ApiResponse<PagedResult<ProductQueryModel>>
+                    .Fail("عبارت جستجو نمی‌تواند خالی باشد."));
 
-                var products = await _productQuery.Search(value);
+            var result = await _productQuery.Search(value, page, pageSize);
 
-                if (products == null || !products.Any())
-                    return NotFound(new
-                    {
-                        message = $"هیچ محصولی با عبارت «{value}» یافت نشد."
-                    });
-
-                return Ok(products);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "ورودی نامعتبر برای جستجوی محصولات: {Value}", value);
-                return BadRequest(new
-                {
-                    error = "خطای ورودی",
-                    message = "داده‌های ارسال‌شده معتبر نیستند."
-                });
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "خطای منطقی در جستجوی محصولات: {Value}", value);
-                return StatusCode(StatusCodes.Status409Conflict, new
-                {
-                    error = "تداخل در پردازش",
-                    message = "عملیات جستجو با خطا مواجه شد."
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "خطای غیرمنتظره در جستجوی محصولات: {Value}", value);
-                return Problem(
-                    title: "خطای سرور",
-                    detail: "در هنگام پردازش درخواست جستجو خطایی رخ داده است. لطفاً مجدداً تلاش کنید.",
-                    statusCode: StatusCodes.Status500InternalServerError);
-            }
+            return Ok(ApiResponse<PagedResult<ProductQueryModel>>.Ok(
+                result,
+                result.Items.Any()
+                    ? "جستجو با موفقیت انجام شد."
+                    : $"هیچ محصولی برای عبارت «{value}» یافت نشد."
+            ));
         }
     }
 }

@@ -6,7 +6,7 @@ namespace AccountManagement.Application.Contracts.Role
     {
         OperationResult Create(CreateRole command);
         OperationResult Edit(EditRole command);
-        List<RoleViewModel> List();
+        Task<IEnumerable<RoleViewModel>> ListAsync();
         EditRole GetDetails(long id);
     }
 }

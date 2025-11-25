@@ -1,9 +1,8 @@
-using AccountManagement.Application.Contracts.Account;
+using _0_Framework.Infrastructure;
 using AccountManagement.Application.Contracts.Role;
+using AccountManagement.Configuration.Permissions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Collections.Generic;
 
 namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
 {
@@ -20,9 +19,10 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
             _roleApplication = roleApplication;
         }
 
-        public void OnGet()
+        [NeedsPermission(AccountPermissions.ListRoles)]
+        public async Task OnGet()
         {
-            Roles = _roleApplication.List();
+            Roles = (await _roleApplication.ListAsync()).ToList();
         }
     }
 }

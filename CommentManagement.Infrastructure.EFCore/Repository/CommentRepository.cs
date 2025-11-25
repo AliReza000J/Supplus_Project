@@ -21,7 +21,7 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             _blogContext = blogContext;
         }
 
-        public List<CommentViewModel> Search(CommentSearchModel searchModel)
+        public async Task<List<CommentViewModel>> Search(CommentSearchModel searchModel)
         {
             var query = _context.Comments.AsNoTracking()
                 .Select(c => new CommentViewModel
@@ -34,11 +34,13 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                     Type = c.Type,
                     IsConfirmed = c.IsConfirmed,
                     IsCanceled = c.IsCanceled,
-                    CommentDate = c.LastModified.HasValue ? c.LastModified.Value.ToFarsi() : DateTime.Now.ToFarsi(),
+                    CommentDate = c.CreationDate.ToFarsi(),
                     Rate = c.Rate,
                     LikeCount = c.LikeCount,
                     DislikeCount = c.DislikeCount,
                     Reply = c.AdminReply,
+                    //IsBuyer = c.IsBuyer,
+                    LastModified = c.LastModified.ToFarsi(),
                     ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi() : null
                 });
 
@@ -61,18 +63,24 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
 
                 if (searchModel.Rate.HasValue)
                     query = query.Where(x => x.Rate == searchModel.Rate.Value);
+
+                if (searchModel.HasMessage == true)
+                    query = query.Where(x => !string.IsNullOrWhiteSpace(x.Message));
+
+                if (searchModel.ShowPendingOnly == true)
+                    query = query.Where(x => (!x.IsCanceled && !x.IsConfirmed));
             }
 
-            var list = query.OrderByDescending(x => x.Id).ToList();
+            var list = await query.OrderByDescending(x => x.Id).ToListAsync();
 
             // Resolve OwnerName for product comments
             var productIds = list.Where(l => l.Type == (int)CommentType.Product).Select(l => l.OwnerRecordId).Distinct().ToList();
             if (productIds.Any())
             {
-                var names = _shopContext.Products
+                var names = await _shopContext.Products
                     .Where(p => productIds.Contains(p.Id))
                     .Select(p => new { p.Id, p.Name })
-                    .ToDictionary(p => p.Id, p => p.Name);
+                    .ToDictionaryAsync(p => p.Id, p => p.Name);
 
                 foreach (var item in list.Where(x => x.Type == (int)CommentType.Product))
                 {
@@ -84,10 +92,10 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             var articleIds = list.Where(l => l.Type == (int)CommentType.Article).Select(l => l.OwnerRecordId).Distinct().ToList();
             if (articleIds.Any())
             {
-                var names = _blogContext.Articles
+                var names = await _blogContext.Articles
                     .Where(p => articleIds.Contains(p.Id))
                     .Select(p => new { p.Id, p.Title })
-                    .ToDictionary(p => p.Id, p => p.Title);
+                    .ToDictionaryAsync(p => p.Id, p => p.Title);
 
                 foreach (var item in list.Where(x => x.Type == (int)CommentType.Article))
                 {
@@ -99,11 +107,11 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             return list;
         }
 
-        public CommentViewModel GetDetails(long id)
+        public async Task<CommentViewModel> GetDetails(long id)
         {
-            var c = _context.Comments
+            var c = await _context.Comments
                 .AsNoTracking()
-                .FirstOrDefault(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (c == null) return null!;
 
@@ -117,23 +125,24 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                 Type = c.Type,
                 IsConfirmed = c.IsConfirmed,
                 IsCanceled = c.IsCanceled,
-                CommentDate = c.LastModified.HasValue ? c.LastModified.Value.ToFarsi() : DateTime.Now.ToFarsi(),
+                CommentDate = c.CreationDate.ToFarsi(),
                 Rate = c.Rate,
                 LikeCount = c.LikeCount,
                 DislikeCount = c.DislikeCount,
                 Reply = c.AdminReply,
+                LastModified = c.LastModified.ToFarsi(),
                 ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi() : null
             };
 
             if (c.Type == (int)CommentType.Product)
             {
-                var product = _shopContext.Products.Select(p => new { p.Id, p.Name }).FirstOrDefault(p => p.Id == vm.OwnerRecordId);
+                var product = await _shopContext.Products.Select(p => new { p.Id, p.Name }).FirstOrDefaultAsync(p => p.Id == vm.OwnerRecordId);
                 vm.OwnerName = product?.Name ?? "";
             }
 
             if (c.Type == (int)CommentType.Article)
             {
-                var product = _blogContext.Articles.Select(p => new { p.Id, p.Title }).FirstOrDefault(p => p.Id == vm.OwnerRecordId);
+                var product = await _blogContext.Articles.Select(p => new { p.Id, p.Title }).FirstOrDefaultAsync(p => p.Id == vm.OwnerRecordId);
                 vm.OwnerName = product?.Title ?? "";
             }
 
@@ -141,18 +150,22 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
         }
 
         // reactions
-        public bool HasUserLiked(long commentId, string userIdentifier)
+        public async Task<bool> HasUserLiked(long commentId, string userIdentifier)
         {
-            return _context.CommentReactions
+            return await _context.CommentReactions
                 .AsNoTracking()
-                .Any(r => r.CommentId == commentId && r.UserIdentifier == userIdentifier && r.Reaction == ReactionType.Like);
+                .AnyAsync(r => r.CommentId == commentId
+                && r.UserIdentifier == userIdentifier
+                && r.Reaction == ReactionType.Like);
         }
 
-        public bool HasUserDisliked(long commentId, string userIdentifier)
+        public async Task<bool> HasUserDisliked(long commentId, string userIdentifier)
         {
-            return _context.CommentReactions
+            return await _context.CommentReactions
                 .AsNoTracking()
-                .Any(r => r.CommentId == commentId && r.UserIdentifier == userIdentifier && r.Reaction == ReactionType.Dislike);
+                .AnyAsync(r => r.CommentId == commentId &&
+                r.UserIdentifier == userIdentifier &&
+                r.Reaction == ReactionType.Dislike);
         }
 
         public void AddReaction(CommentReaction reaction)
@@ -165,15 +178,26 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             _context.CommentReactions.Remove(reaction);
         }
 
-        public CommentReaction? GetUserReaction(long commentId, string userIdentifier)
+        public async Task<CommentReaction?> GetUserReaction(long commentId, string userIdentifier)
         {
-            return _context.CommentReactions.FirstOrDefault(r => r.CommentId == commentId && r.UserIdentifier == userIdentifier);
+            return await _context.CommentReactions.FirstOrDefaultAsync(
+                r => r.CommentId == commentId && r.UserIdentifier == userIdentifier);
         }
 
-        public bool OwnsComment(long commentId, string userIdentifier)
+        public async Task<bool> OwnsComment(long commentId, string userIdentifier)
         {
-            var comment = _context.Comments.FirstOrDefault(c=>c.Id == commentId);
-            return comment.UserIdentifier == userIdentifier && comment != null;
+            var comment = await _context.Comments.FirstOrDefaultAsync(c => c.Id == commentId);
+            return comment?.UserIdentifier == userIdentifier && comment != null;
+        }
+
+        public async Task<bool> HasUserCommented(string userIdentifier, int type, long ownerRecordId)
+        {
+            return await _context.Comments.AnyAsync(x =>
+            x.UserIdentifier == userIdentifier &&
+            x.Type == type &&
+            x.OwnerRecordId == ownerRecordId &&
+            !x.IsCanceled
+            );
         }
     }
 }

@@ -1,7 +1,8 @@
 ﻿@page
+@using AccountManagement.Configuration.Permissions
 @model ServiceHost.Areas.Admin.Pages.Accounts.Role.EditModel
 
-<div class="row">
+<div class="row" Permission="AccountPermissions.EditRole">
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">

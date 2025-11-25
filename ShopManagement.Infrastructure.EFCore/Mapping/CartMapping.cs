@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShopManagement.Domain.CartAgg;
-using ShopManagement.Domain.OrderAgg;
 
 namespace ShopManagement.Infrastructure.EFCore.Mapping
 {

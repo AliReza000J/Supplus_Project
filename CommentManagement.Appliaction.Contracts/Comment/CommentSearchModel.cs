@@ -8,6 +8,7 @@
         public bool? IsConfirmed { get; set; }
         public bool? IsCanceled { get; set; }
         public int? Rate { get; set; }
-
+        public bool HasMessage { get; set; } = true;
+        public bool ShowPendingOnly { get; set; } = false;
     }
 }

@@ -6,7 +6,7 @@ namespace AccountManagement.Domain.RoleAgg
 {
     public interface IRoleRepository : IRepository<long, Role>
     {
-        List<RoleViewModel> List();
+        Task<IEnumerable<RoleViewModel>> ListAsync();
         EditRole GetDetails(long id);
     }
 }

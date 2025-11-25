@@ -4,23 +4,28 @@ namespace AccountManagement.Application.Contracts.Account
 {
     public interface IAccountApplication
     {
-        AccountViewModel GetAccountBy(long id);
-        long GetRoleIdByUsername(string username);
-        OperationResult Register(RegisterAccount command);
-        OperationResult Edit(EditAccount command, string userId);
-        OperationResult ChangePassword(ChangePassword command, string userId);
-        OperationResult Login(Login command); // Admin panel - Cookie-based
+        Task<AccountViewModel> GetAccountBy(long id);
+        Task<long> GetRoleIdByUsername(string username);
+        Task<OperationResult> Register(RegisterAccount command);
+        Task<OperationResult> Edit(EditAccount command, string userId);
+        Task<OperationResult> ChangePassword(ChangePassword command, string userId);
+        Task<OperationResult> Login(Login command); // Admin panel - Cookie-based
         void Logout(); // Admin panel - Cookie-based
 
-        (OperationResult Result, JwtResponseDto Data) LoginWithJwt(Login command); // Shop - JWT-based
-        OperationResult LogoutWithJwt(string token); // JWT-based logout
-        (OperationResult Result, JwtResponseDto Data) RefreshToken(string refreshToken);
+        //
 
-        OperationResult Delete(long id);
-        OperationResult Activate(long id);
+        Task<(OperationResult, JwtResponseDto? Data)> LoginWithJwt(Login command); // Shop - JWT-based
+        Task<OperationResult> LogoutWithJwt(string token); // JWT-based logout
+        Task<(OperationResult, JwtResponseDto? Data)> RefreshToken(string refreshToken);
 
-        EditAccount GetDetails(long id);
-        List<AccountViewModel> Search(AccountSearchModel searchModel);
-        List<AccountViewModel> GetAccounts();
+        //
+
+        Task<OperationResult> Delete(long id);
+        Task<OperationResult> Activate(long id);
+        //
+
+        Task<EditAccount> GetDetails(long id);
+        Task<List<AccountViewModel>> Search(AccountSearchModel searchModel);
+        Task<List<AccountViewModel>> GetAccounts();
     }
 }

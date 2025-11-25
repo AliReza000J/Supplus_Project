@@ -14,7 +14,8 @@ namespace CommentManagement.Application
         private readonly IProductRepository _productRepository;
         private readonly IArticleRepository _blogRepository;
 
-        public CommentApplication(ICommentRepository commentRepository, IAccountRepository accountRepository, IProductRepository productRepository, IArticleRepository blogRepository)
+        public CommentApplication(ICommentRepository commentRepository, IAccountRepository accountRepository,
+            IProductRepository productRepository, IArticleRepository blogRepository)
         {
             _commentRepository = commentRepository;
             _accountRepository = accountRepository;
@@ -22,7 +23,7 @@ namespace CommentManagement.Application
             _blogRepository = blogRepository;
         }
 
-        public OperationResult Add(AddComment command, string userIdentifier, string username)
+        public async Task<OperationResult> AddAsync(AddComment command, string userIdentifier, string username)
         {
             var op = new OperationResult();
 
@@ -34,14 +35,14 @@ namespace CommentManagement.Application
 
             if (command.Type == 1)
             {
-                var product = _productRepository.Get(command.OwnerRecordId);
+                var product = await _productRepository.GetAsync(command.OwnerRecordId);
 
                 if (product == null)
                     return op.Failed($"محصول {command.OwnerRecordId} یافت نشد.");
             }
             else if (command.Type == 2)
             {
-                var article = _blogRepository.Get(command.OwnerRecordId);
+                var article = await _blogRepository.GetAsync(command.OwnerRecordId);
 
                 if (article == null)
                     return op.Failed($"مقاله {command.OwnerRecordId} یافت نشد.");
@@ -51,6 +52,10 @@ namespace CommentManagement.Application
                 return op.Failed($"نوع {command.Type} یافت نشد.");
             }
 
+            if (await _commentRepository.HasUserCommented
+                (userIdentifier, command.Type, command.OwnerRecordId))
+                return op.Failed($"شما قبلا نظر خود را ثبت کرده‌اید و امکان ثبت نظر مجدد در این صفحه برایتان وجود ندارد.");
+
             var comment = new Comment(
                 username,
                 userIdentifier,
@@ -59,95 +64,118 @@ namespace CommentManagement.Application
                 command.Type,
                 command.Rate);
 
-            if (string.IsNullOrWhiteSpace(comment.Message))
-                comment.Confirm();
-
             _commentRepository.Create(comment);
-            _commentRepository.SaveChanges();
+            await _commentRepository.SaveChangesAsync();
+
+            if (string.IsNullOrWhiteSpace(command.Message))
+            {
+                comment.Confirm();
+                return op.Succeeded("امتیاز شما ثبت گردید.");
+            }
 
             return op.Succeeded("کامنت ثبت شد و پس از بررسی نمایش داده خواهد شد.");
         }
 
-        public OperationResult Edit(EditComment command, string userIdentifier)
+        public async Task<OperationResult> EditAsync(EditComment command, string userIdentifier)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(command.Id);
-            if (comment == null) return op.Failed("کامنت یافت نشد.");
 
-            if(_commentRepository.OwnsComment(comment.Id, userIdentifier))
+            if (string.IsNullOrWhiteSpace(command.Message) && !command.Rate.HasValue)
+                return op.Failed("امکان خالی بودن همزمان متن نظر و همچنین امتیاز وجود ندارد.");
+
+            var comment = await _commentRepository.GetAsync(command.Id);
+            if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
+
+            if(await _commentRepository.OwnsComment(comment.Id, userIdentifier))
             {
-                comment.Edit(command.Message, command.Rate);
-                _commentRepository.SaveChanges();
-                return op.Succeeded("ویرایش انجام شد.");
+                if(!string.IsNullOrWhiteSpace(command.Message))
+                    comment.EditMessage(command.Message);
+                
+                if(command.Rate.HasValue && command.Rate.Value is >=1 and <=5)
+                    comment.EditRate(command.Rate.Value);
+
+
+                if (string.IsNullOrWhiteSpace(command.Message))
+                {
+                    comment.Confirm();
+                    comment.ClearMessage();
+
+                    await _commentRepository.SaveChangesAsync();
+
+                    return op.Succeeded("امتیاز شما ثبت گردید.");
+                }
+
+                await _commentRepository.SaveChangesAsync();
+                return op.Succeeded("ویرایش انجام شد. پس از بررسی و تایید در سایت نمایش داده می‌شود.");
             }
             
             return op.Failed("شما مجاز به انجام این کار نیستید.");
         }
 
-        public OperationResult Delete(long id, string userIdentifier)
+        public async Task<OperationResult> DeleteAsync(long id, string userIdentifier)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(id);
+            var comment = await _commentRepository.GetAsync(id);
             if (comment == null) return op.Failed("کامنت یافت نشد.");
 
-            if (_commentRepository.OwnsComment(id, userIdentifier))
+            if (await _commentRepository.OwnsComment(id, userIdentifier))
             {
                 comment.Remove();
-                _commentRepository.SaveChanges();
+                await _commentRepository.SaveChangesAsync();
                 return op.Succeeded("کامنت حذف شد.");
             }
 
             return op.Failed("شما مجاز به انجام این کار نیستید.");
         }
 
-        public OperationResult Confirm(long id)
+        public async Task<OperationResult> Confirm(long id)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(id);
+            var comment = await _commentRepository.GetAsync(id);
             if (comment == null) return op.Failed("کامنت یافت نشد.");
 
             comment.Confirm();
-            _commentRepository.SaveChanges();
+            await _commentRepository.SaveChangesAsync();
 
             return op.Succeeded("کامنت تأیید شد.");
         }
 
-        public OperationResult Cancel(long id)
+        public async Task<OperationResult> Cancel(long id)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(id);
+            var comment = await _commentRepository.GetAsync(id);
             if (comment == null) return op.Failed("کامنت یافت نشد.");
 
             comment.Cancel();
-            _commentRepository.SaveChanges();
+            await _commentRepository.SaveChangesAsync();
 
             return op.Succeeded("کامنت رد شد.");
         }
 
-        public OperationResult Reply(long id, string reply)
+        public async Task<OperationResult> Reply(long id, string reply)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(id);
+            var comment = await _commentRepository.GetAsync(id);
             if (comment == null) return op.Failed("کامنت یافت نشد.");
 
             if (string.IsNullOrWhiteSpace(reply)) return op.Failed("متن پاسخ نمی‌تواند خالی باشد.");
 
             comment.AddReply(reply);
-            _commentRepository.SaveChanges();
+            await _commentRepository.SaveChangesAsync();
 
             return op.Succeeded("پاسخ ثبت شد.");
         }
 
-        public OperationResult Like(long id, string userIdentifier)
+        public async Task<OperationResult> LikeAsync(long id, string userIdentifier)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(id);
-            if (comment == null) return op.Failed("کامنت یافت نشد.");
+            var comment = await _commentRepository.GetAsync(id);
+            if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
 
-            if (_commentRepository.HasUserLiked(id, userIdentifier))
+            if (await _commentRepository.HasUserLiked(id, userIdentifier))
                 return op.Failed("شما قبلاً لایک کرده‌اید.");
 
-            var existing = _commentRepository.GetUserReaction(id, userIdentifier);
+            var existing = await _commentRepository.GetUserReaction(id, userIdentifier);
             if (existing != null && existing.Reaction == ReactionType.Dislike)
             {
                 // remove previous
@@ -162,20 +190,20 @@ namespace CommentManagement.Application
             // update aggregate count
             comment.AddLike();
 
-            _commentRepository.SaveChanges();
+            await _commentRepository.SaveChangesAsync();
             return op.Succeeded("لایک ثبت شد.");
         }
 
-        public OperationResult Dislike(long id, string userIdentifier)
+        public async Task<OperationResult> DislikeAsync(long id, string userIdentifier)
         {
             var op = new OperationResult();
-            var comment = _commentRepository.Get(id);
-            if (comment == null) return op.Failed("کامنت یافت نشد.");
+            var comment = await _commentRepository.GetAsync(id);
+            if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
 
-            if (_commentRepository.HasUserDisliked(id, userIdentifier))
+            if (await _commentRepository.HasUserDisliked(id, userIdentifier))
                 return op.Failed("شما قبلاً دیسلایک کرده‌اید.");
 
-            var existing = _commentRepository.GetUserReaction(id, userIdentifier);
+            var existing = await _commentRepository.GetUserReaction(id, userIdentifier);
             if (existing != null && existing.Reaction == ReactionType.Like)
             {
                 _commentRepository.RemoveReaction(existing);
@@ -187,18 +215,18 @@ namespace CommentManagement.Application
 
             comment.AddDislike();
 
-            _commentRepository.SaveChanges();
+            await _commentRepository.SaveChangesAsync();
             return op.Succeeded("دیسلایک ثبت شد.");
         }
 
-        public CommentViewModel GetDetails(long id)
+        public async Task<CommentViewModel> GetDetailsAsync(long id)
         {
-            return _commentRepository.GetDetails(id);
+            return await _commentRepository.GetDetails(id);
         }
 
-        public List<CommentViewModel> Search(CommentSearchModel searchModel)
+        public async Task<List<CommentViewModel>> SearchAsync(CommentSearchModel searchModel)
         {
-            return _commentRepository.Search(searchModel);
+            return await _commentRepository.Search(searchModel);
         }
     }
 }

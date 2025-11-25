@@ -5,10 +5,10 @@ namespace AccountManagement.Domain.AccountAgg
 {
     public interface IAccountRepository : IRepository<long, Account>
     {
-        Account GetByUsername(string username);
-        bool Exists(string username, string mobile);
-        EditAccount GetDetails(long id);
-        List<AccountViewModel> GetAccounts();
-        List<AccountViewModel> Search(AccountSearchModel searchModel);
+        Task<Account> GetByUsernameAsync(string username);
+        Task<bool> ExistsAsync(string username, string mobile);
+        Task<EditAccount> GetDetailsAsync(long id);
+        Task<List<AccountViewModel>> GetAccountsAsync();
+        Task<List<AccountViewModel>> SearchAsync(AccountSearchModel searchModel);
     }
 }

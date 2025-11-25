@@ -2,7 +2,7 @@
 
 namespace ShopManagement.Domain.OrderAgg
 {
-    public class Order : BaseEntity
+    public partial class Order : BaseEntity
     {
         public long AccountId { get; private set; }
         public int PaymentMethod { get; private set; }
@@ -18,7 +18,8 @@ namespace ShopManagement.Domain.OrderAgg
         public List<OrderItem> Items { get; private set; } = new();
         protected Order() { }
 
-        public Order(long accountId, string fullName, string mobile, string address, List<OrderItem> items)
+        public Order(long accountId, string fullName, string mobile,
+            string address, List<OrderItem> items)
         {
             if (accountId <= 0) throw new ArgumentException(nameof(accountId));
             if (items == null || !items.Any()) throw new ArgumentException("Order must have items", nameof(items));
@@ -47,15 +48,18 @@ namespace ShopManagement.Domain.OrderAgg
 
         public void Cancel()
         {
-            Status = OrderStatus.Canceled;
+            Status = OrderStatus.Cancelled;
         }
 
         public enum OrderStatus
         {
-            Pending = 0,
-            Paid = 1,
-            Shipped = 2,
-            Canceled = 3
+            Pending = 0,           // سفارش ثبت شده ولی هنوز کار خاصی نشده
+            AwaitingPayment = 1,   // منتظر پرداخت (برای کارت به کارت)
+            Paid = 2,              // پرداخت موفق
+            Processing = 3,        // در حال آماده‌سازی
+            Shipped = 4,           // ارسال شده
+            Delivered = 5,         // تحویل داده شده به مشتری
+            Cancelled = 6          // لغو شده
         }
     }
 }

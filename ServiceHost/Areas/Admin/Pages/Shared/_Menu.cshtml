@@ -5,7 +5,7 @@
 
 @{
     var currentAccout = AuthHelper.CurrentAccountInfo();
-    var user = accountApplication.GetAccountBy(currentAccout.Id);
+    var user = await accountApplication.GetAccountBy(currentAccout.Id);
     var photo = user.ProfilePhoto;
 }
 
@@ -16,11 +16,11 @@
 
         #sidebar-menu ul li a:hover {
             background-color: #f0f4f8;
-            color: #007bff; 
+            color: #007bff;
         }
 
             #sidebar-menu ul li a:hover i {
-                color: #007bff; 
+                color: #007bff;
             }
 
     #sidebar-menu i {
@@ -68,7 +68,7 @@
                     </a>
                 </li>
 
-                @if (AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(1))
+                @if (AuthHelper.IsSuperAdmin() || AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(2))
                 {
                     <li>
                         <a asp-page="/Inventory/Index" class="waves-effect">
