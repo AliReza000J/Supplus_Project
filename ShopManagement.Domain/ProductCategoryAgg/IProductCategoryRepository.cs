@@ -5,15 +5,13 @@ namespace ShopManagement.Domain.ProductCategoryAgg
 {
     public interface IProductCategoryRepository: IRepository<long, ProductCategory>
     {
-        List<ProductCategoryViewModel> GetProductCategories(); //with parent for admin panel
-        EditProductCategory GetDetails(long id);
-        string GetFullSlugById(long id);
-        List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel);
+        Task<List<ProductCategoryViewModel>> GetProductCategories(); //with parent for admin panel
+        Task<EditProductCategory?> GetDetails(long id);
+        Task<string?> GetFullSlugById(long id);
+        Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel);
 
-        public ProductCategory GetWithChildren(long id);
+        Task<ProductCategory?> GetWithChildren(long id);
 
-        // queries for tree
-        //List<ProductCategoryViewModel> GetAllWithChildren();
-        List<ProductCategoryViewModel> GetLeafCategories();
+        Task<List<ProductCategoryViewModel>> GetLeafCategories();
     }
 }

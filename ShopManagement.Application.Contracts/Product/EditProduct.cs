@@ -1,6 +1,5 @@
 ﻿using _0_Framework.Application;
 using Microsoft.AspNetCore.Http;
-using System.ComponentModel.DataAnnotations;
 
 namespace ShopManagement.Application.Contracts.Product
 {

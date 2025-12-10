@@ -2,10 +2,10 @@
 {
     public interface IAuthHelper
     {
-        void SignIn(AuthViewModel account);
+        Task SignIn(AuthViewModel account);
         bool IsAuthenticated();
         bool IsSuperAdmin();
-        void SignOut();
+        Task SignOut();
         string CurrentAccountRole();
         //string CurrentAccountMobile();
         long CurrentAccountId();

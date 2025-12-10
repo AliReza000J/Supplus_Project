@@ -2,7 +2,8 @@
 @model ServiceHost.Areas.Admin.Pages.Blog.ArticleCategories.IndexModel
 @{
 }
-
+@using System.Text.RegularExpressions
+@using _0_Framework.Application
 @{
     Layout = "Shared/_AdminLayout";
     ViewData["title"] = "مدیریت گروه مقالات";
@@ -62,15 +63,21 @@
                             <tbody>
                                 @foreach (var item in Model.ArticleCategories)
                                 {
+                                    var plain = Regex.Replace(item.Description ?? "", "<.*?>", "");
+                                    var shortText = plain.Length > 50 ? plain.Substring(0, 50) + "..." : plain;
+
                                     <tr>
                                         <td>@item.Id</td>
                                         <td>
                                             <img src="~/Pictures/@item.Picture" style="width: 70px; height: 70px" />
                                         </td>
                                         <td>@item.Name</td>
-                                        <td>@item.Description</td>
-                                        <td>@item.ShowOrder</td>
-                                        <td>@item.ArticlesCount</td>
+                                        <td class="message-cell">
+                                            @shortText
+                                            <span class="full-message">@plain</span>
+                                        </td>
+                                        <td>@item.ShowOrder.ToString().ToPersianNumber()</td>
+                                        <td>@item.ArticlesCount.ToString().ToPersianNumber()</td>
                                         <td>@item.CreationDate</td>
                                         <td>
                                             <a class="btn btn-warning pull-right m-rl-5" 

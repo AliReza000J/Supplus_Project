@@ -10,7 +10,7 @@ namespace AccountManagement.Application.Contracts.Account
         Task<OperationResult> Edit(EditAccount command, string userId);
         Task<OperationResult> ChangePassword(ChangePassword command, string userId);
         Task<OperationResult> Login(Login command); // Admin panel - Cookie-based
-        void Logout(); // Admin panel - Cookie-based
+        Task Logout(); // Admin panel - Cookie-based
 
         //
 

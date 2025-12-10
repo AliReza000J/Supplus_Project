@@ -15,9 +15,9 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public EditArticle GetDetails(long id)
+        public async Task<EditArticle> GetDetails(long id)
         {
-            return _context.Articles.Select(x => new EditArticle
+            return await _context.Articles.Select(x => new EditArticle
             {
                 Id = x.Id,
                 CanonicalAddress = x.CanonicalAddress,
@@ -27,19 +27,20 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 MetaDescription = x.MetaDescription,
                 PictureAlt = x.PictureAlt,
                 PictureTitle = x.PictureTitle,
-                PublishDate = x.PublishDate.ToFarsi(),
+                PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
                 ShortDescription = x.ShortDescription,
                 Slug = x.Slug,
-                Title = x.Title
-            }).FirstOrDefault(x => x.Id == id);
+                Title = x.Title,
+            }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public Article GetWithCategory(long id)
+        public async Task<Article> GetWithCategory(long id)
         {
-            return _context.Articles.Include(x => x.Category).FirstOrDefault(x => x.Id == id);
+            return await _context.Articles.Include(x => x.Category)
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public List<ArticleViewModel> Search(ArticleSearchModel searchModel)
+        public async Task<List<ArticleViewModel>> Search(ArticleSearchModel searchModel)
         {
             var query = _context.Articles.Select(x => new ArticleViewModel
             {
@@ -47,9 +48,10 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 CategoryId = x.CategoryId,
                 Category = x.Category.Name,
                 Picture = x.Picture,
-                PublishDate = x.PublishDate.ToFarsi(),
-                ShortDescription = x.ShortDescription.Substring(0, Math.Min(x.ShortDescription.Length, 50)) + "...",
-                Title = x.Title
+                PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                ShortDescription = x.ShortDescription,
+                Title = x.Title,
+                ViewCount = x.ViewCount
             });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Title))
@@ -58,7 +60,7 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             if (searchModel.CategoryId > 0)
                 query = query.Where(x => x.CategoryId == searchModel.CategoryId);
 
-            return query.OrderByDescending(x => x.Id).ToList();
+            return await query.OrderByDescending(x => x.Id).ToListAsync();
         }
     }
 }

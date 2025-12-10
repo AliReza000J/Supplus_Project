@@ -9,7 +9,6 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
 {
     public class IndexModel : PageModel
     {
-        //[TempData] public string Message { get; set; }
         public ProductSearchModel SearchModel;
         public List<ProductViewModel> Products;
         public SelectList ProductCategories;
@@ -25,47 +24,10 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         }
 
         [NeedsPermission(ShopPermissions.ListProducts)]
-        public void OnGet(ProductSearchModel searchModel)
+        public async Task OnGet(ProductSearchModel searchModel)
         {
-            ProductCategories = new SelectList(_productCategoryApplication.GetLeafCategories(), "Id", "Name");
-            Products = _productApplication.Search(searchModel);
+            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(), "Id", "Name");
+            Products = await _productApplication.Search(searchModel);
         }
-
-        //public IActionResult OnGetCreate()
-        //{
-        //    var command = new CreateProduct
-        //    {
-        //        Categories = _productCategoryApplication.GetLeafCategories()
-        //    };
-        //    return Partial("./Create", command);
-        //}
-
-        //[NeedsPermission(ShopPermissions.CreateProduct)]
-        //public JsonResult OnPostCreate(CreateProduct command)
-        //{
-        //    command.Categories = _productCategoryApplication.GetLeafCategories();
-        //    if (!ModelState.IsValid)
-        //        return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
-
-        //    var result = _productApplication.Create(command);
-        //    return new JsonResult(result);
-        //}
-
-        //public IActionResult OnGetEdit(long id)
-        //{
-        //    var product = _productApplication.GetDetails(id);
-        //    product.Categories = _productCategoryApplication.GetLeafCategories();
-        //    return Partial("Edit", product);
-        //}
-
-        ////[NeedsPermission(ShopPermissions.EditProduct)]
-        //public JsonResult OnPostEdit(EditProduct command)
-        //{
-        //    if (!ModelState.IsValid)
-        //        return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
-
-        //    var result = _productApplication.Edit(command);
-        //    return new JsonResult(result);
-        //}
     }
 }

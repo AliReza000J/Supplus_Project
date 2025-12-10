@@ -29,5 +29,6 @@ namespace _01_PharmaPlusQuery.Contracts.Article
         public float AvgRate { get; set; }
         public int CommentCount { get; set; }
         public int RateCount { get; set; }
+        public int ViewCount { get; set; }
     }
 }

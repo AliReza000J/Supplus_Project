@@ -12,92 +12,214 @@ namespace _01_PharmaPlusQuery.Query
     {
         private readonly BlogContext _blogContext;
         private readonly CommentContext _commentContext;
+        private readonly ICacheService _cacheService;
 
-        public ArticleQuery(BlogContext blogContext, CommentContext commentContext)
+        public ArticleQuery(BlogContext blogContext,
+            CommentContext commentContext, ICacheService cache)
         {
             _blogContext = blogContext;
             _commentContext = commentContext;
+            _cacheService = cache;
         }
 
         public async Task<ArticleQueryModel> GetArticleDetails(string slug)
         {
-            var article = await _blogContext.Articles
-               .Include(x => x.Category)
-               .Where(x => x.PublishDate <= DateTime.Now)
-               .Select(x => new ArticleQueryModel
-               {
-                   Id = x.Id,
-                   Title = x.Title,
-                   CategoryName = x.Category.Name,
-                   CategorySlug = x.Category.Slug,
-                   Slug = x.Slug,
-                   CanonicalAddress = x.CanonicalAddress,
-                   Body = x.Body,
-                   Keywords = x.Keywords,
-                   MetaDescription = x.MetaDescription,
-                   Picture = x.Picture,
-                   PictureAlt = x.PictureAlt,
-                   PictureTitle = x.PictureTitle,
-                   PublishDate = x.PublishDate.ToFarsi(),
-                   ShortDescription = x.ShortDescription,
-               }).FirstOrDefaultAsync(x => x.Slug == slug);
+            var cacheKey = $"article-details-{slug}";
+
+            // -----------------------------
+            // 1) Get static parts from cache
+            // -----------------------------
+            var article = await _cacheService.GetOrCreateAsync(
+                cacheKey,
+                async () =>
+                {
+                    return await _blogContext.Articles
+                        .AsNoTracking()
+                        .Where(x => x.PublishDate <= DateTime.Now)
+                        .Where(x => x.Slug == slug)
+                        .Select(x => new ArticleQueryModel
+                        {
+                            Id = x.Id,
+                            Title = x.Title,
+                            Slug = x.Slug,
+                            CanonicalAddress = x.CanonicalAddress,
+                            Body = x.Body,
+                            Keywords = x.Keywords,
+                            MetaDescription = x.MetaDescription,
+                            Picture = x.Picture,
+                            PictureAlt = x.PictureAlt,
+                            PictureTitle = x.PictureTitle,
+                            ShortDescription = x.ShortDescription,
+                            PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+
+                            CategoryName = x.Category.Name,
+                            CategorySlug = x.Category.Slug
+                        })
+                        .FirstOrDefaultAsync();
+                },
+                absoluteExpiration: TimeSpan.FromMinutes(10),
+                slidingExpiration: TimeSpan.FromMinutes(5)
+            );
 
             if (article == null)
-                return article;
+                return null;
 
+            // -----------------------------
+            // 2) Split Keywords
+            // -----------------------------
             if (!string.IsNullOrWhiteSpace(article.Keywords))
                 article.KeywordList = article.Keywords.Split(",").ToList();
 
+            long articleId = article.Id;
 
+            // -----------------------------
+            // 3) Get comments (REAL-TIME)
+            // -----------------------------
             var comments = await _commentContext.Comments
-                .Where(x => !x.IsCanceled)
-                .Where(x => x.IsConfirmed)
-                .Where(x => x.Type == ((int)CommentType.Article))
-                .Where(x => x.OwnerRecordId == article.Id)
+                .AsNoTracking()
+                .Where(x => !x.IsCanceled && x.IsConfirmed)
+                .Where(x => x.Type == (int)CommentType.Article)
+                .Where(x => x.OwnerRecordId == articleId)
+                .OrderByDescending(x => x.Id)
                 .Select(x => new CommentQueryModel
                 {
                     Id = x.Id,
                     Message = x.Message,
                     Username = x.Username,
-                    CreationDate = x.CreationDate.ToFarsi(),
+                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber(),
                     Reply = x.AdminReply,
                     DislikeCount = x.DislikeCount,
                     LikeCount = x.LikeCount,
                     Rate = x.Rate,
-                    ReplyDate = x.AdminReplyDate.ToFarsi(),
+                    ReplyDate = x.AdminReplyDate.ToFarsi().ToPersianNumber(),
                     IsBuyer = x.IsBuyer,
                     UserId = long.Parse(x.UserIdentifier),
-                    LastModifedDate = x.LastModified.ToFarsi()
-                }).OrderByDescending(x => x.Id).ToListAsync();
+                    LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber()
+                })
+                .ToListAsync();
 
-            article.RateCount = comments.Count;
+            // -----------------------------
+            // 4) Calculate RateCount / AvgRate / CommentCount
+            // -----------------------------
+            int rateCount =
+                comments.Count(c => c.Rate >= 1 && c.Rate <= 5);
 
-            if (comments.Any())
-            {
-                int sum = 0;
-                foreach (var comment in comments.Where(
-                    comment => comment.Rate >= 1 && comment.Rate <= 5))
-                {
-                    sum += comment.Rate;
-                }
+            int commentCount =
+                comments.Count(c => !string.IsNullOrWhiteSpace(c.Message));
 
-                article.AvgRate = (float)sum / (float)article.RateCount;
-            }
-            else
-            {
-                article.AvgRate = 0;
-            }
+            float avgRate = rateCount == 0
+                ? 0
+                : (float)comments
+                    .Where(c => c.Rate >= 1 && c.Rate <= 5)
+                    .Sum(c => c.Rate) / rateCount;
 
-            article.Comments = comments.Where(
-                x => !string.IsNullOrWhiteSpace(x.Message)).ToList();
-            article.CommentCount = article.Comments.Count;
+            // Only comments that have a message
+            var filteredComments = comments
+                .Where(c => !string.IsNullOrWhiteSpace(c.Message))
+                .ToList();
+
+            // -----------------------------
+            // 5) Assign dynamic results
+            // -----------------------------
+            article.Comments = filteredComments;
+            article.CommentCount = commentCount;
+            article.RateCount = rateCount;
+            article.AvgRate = avgRate;
 
             return article;
         }
 
-        public async Task<List<ArticleQueryModel>> LatestArticles()
+
+        public async Task<List<ArticleQueryModel>> GetTopRatedArticles(int take = 10)
         {
-            return await _blogContext.Articles
+            if (take <= 0)
+                take = 10;
+
+            var publishedArticledIds = await _blogContext.Articles
+                .Where(x => x.PublishDate <= DateTime.Now)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            if (!publishedArticledIds.Any())
+                return new List<ArticleQueryModel>();
+
+            // ---------- Calculate AvgRate from Comments ----------
+            var avgRates = await _commentContext.Comments
+                .Where(x => !x.IsCanceled && x.IsConfirmed)
+                .Where(x => x.Type == (int)CommentType.Article)
+                .Where(x => x.Rate >= 1 && x.Rate <= 5)
+                .GroupBy(x => x.OwnerRecordId)
+                .Select(g => new
+                {
+                    ArticleId = g.Key,
+                    AvgRate = g.Average(c => c.Rate),
+                    RateCount = g.Count()
+                })
+                .ToListAsync();
+
+            var popularIds = avgRates
+                .Where(x => publishedArticledIds.Contains(x.ArticleId))
+                .OrderByDescending(x => x.AvgRate)
+                .ThenByDescending(x => x.RateCount)
+                .Take(take)
+                .Select(x => x.ArticleId)
+                .ToList();
+
+            if (!popularIds.Any())
+                return new List<ArticleQueryModel>();
+
+            // ---------- Load Article Info ----------
+            var articles = await _blogContext.Articles
+                .Include(x => x.Category)
+                .Where(x => x.PublishDate <= DateTime.Now
+                && popularIds.Contains(x.Id))
+                .Select(x => new ArticleQueryModel
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Slug = x.Slug,
+                    Picture = x.Picture,
+                    PictureAlt = x.PictureAlt,
+                    PictureTitle = x.PictureTitle,
+                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                    ShortDescription = x.ShortDescription,
+                    CategoryName = x.Category.Name,
+                    CategorySlug = x.Category.Slug,
+                }).AsNoTracking().ToListAsync();
+
+            foreach (var article in articles)
+            {
+                var rateInfo = avgRates.FirstOrDefault(x => x.ArticleId == article.Id);
+                if (rateInfo != null)
+                {
+                    article.AvgRate = (float)rateInfo.AvgRate;
+                    article.RateCount = rateInfo.RateCount;
+                }
+            }
+
+            return articles
+                .OrderByDescending(x => x.AvgRate)
+                .ThenByDescending(x => x.RateCount)
+                .ToList();
+        }
+
+        public async Task<List<ArticleQueryModel>> GetLatestArticles()
+        {
+            // ---------- Calculate AvgRate from Comments ----------
+            var avgRates = await _commentContext.Comments
+                .Where(x => !x.IsCanceled && x.IsConfirmed)
+                .Where(x => x.Type == (int)CommentType.Article)
+                .Where(x => x.Rate >= 1 && x.Rate <= 5)
+                .GroupBy(x => x.OwnerRecordId)
+                .Select(g => new
+                {
+                    ArticleId = g.Key,  
+                    AvgRate = g.Average(c => c.Rate),
+                    RateCount = g.Count()
+                })
+                .ToListAsync();
+
+            var articles = await _blogContext.Articles
                 .Include(x => x.Category)
                 .Where(x => x.PublishDate <= DateTime.Now)
                 .Select(x => new ArticleQueryModel
@@ -108,20 +230,47 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    PublishDate = x.PublishDate.ToFarsi(),
+                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug,
                 }).ToListAsync();
+
+            foreach (var article in articles)
+            {
+                var rateInfo = avgRates.FirstOrDefault(x => x.ArticleId == article.Id);
+                if (rateInfo != null)
+                {
+                    article.AvgRate = (float)rateInfo.AvgRate;
+                    article.RateCount = rateInfo.RateCount;
+                }
+            }
+
+            return articles;
         }
 
         public async Task<PagedResult<ArticleQueryModel>> Search(string value, int page, int pageSize)
         {
+            // ---------- Calculate AvgRate from Comments ----------
+            var avgRates = await _commentContext.Comments
+                .Where(x => !x.IsCanceled && x.IsConfirmed)
+                .Where(x => x.Type == (int)CommentType.Article)
+                .Where(x => x.Rate >= 1 && x.Rate <= 5)
+                .GroupBy(x => x.OwnerRecordId)
+                .Select(g => new
+                {
+                    ArticleId = g.Key,  
+                    AvgRate = g.Average(c => c.Rate),
+                    RateCount = g.Count()
+                })
+                .ToListAsync();
+
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 10;
 
             var query = _blogContext.Articles
                 .Include(x => x.Category)
+                .Where(x => x.PublishDate <= DateTime.Now)
                 .AsQueryable()
                 .AsNoTracking();
 
@@ -152,12 +301,22 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    PublishDate = x.PublishDate.ToFarsi(),
+                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug
                 })
                 .ToListAsync();
+
+            foreach (var article in items)
+            {
+                var rateInfo = avgRates.FirstOrDefault(x => x.ArticleId == article.Id);
+                if (rateInfo != null)
+                {
+                    article.AvgRate = (float)rateInfo.AvgRate;
+                    article.RateCount = rateInfo.RateCount;
+                }
+            }
 
             return new PagedResult<ArticleQueryModel>
             {
@@ -167,6 +326,88 @@ namespace _01_PharmaPlusQuery.Query
                 TotalCount = totalCount,
                 TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
             };
+        }
+
+        public async Task<List<ArticleQueryModel>> GetMostViewedArticles(int take = 10)
+        {
+            if (take <= 0)
+                take = 10;
+
+            var publishedArticledIds = await _blogContext.Articles
+                .Where(x => x.PublishDate <= DateTime.Now)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            if (!publishedArticledIds.Any())
+                return new List<ArticleQueryModel>();
+
+            // ---------- Calculate AvgRate from Comments ----------
+            var avgRates = await _commentContext.Comments
+                .Where(x => !x.IsCanceled && x.IsConfirmed)
+                .Where(x => x.Type == (int)CommentType.Article)
+                .Where(x => x.Rate >= 1 && x.Rate <= 5)
+                .GroupBy(x => x.OwnerRecordId)
+                .Select(g => new
+                {
+                    ArticleId = g.Key,
+                    AvgRate = g.Average(c => c.Rate),
+                    RateCount = g.Count()
+                })
+            .ToListAsync();
+
+            var popularIds = await _blogContext.Articles
+                .Where(x => publishedArticledIds.Contains(x.Id))
+                .OrderByDescending(x => x.ViewCount)
+                .Take(take)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            if (!popularIds.Any())
+                return new List<ArticleQueryModel>();
+
+            // ---------- Load Article Info ----------
+            var articles = await _blogContext.Articles
+                .Include(x => x.Category)
+                .Where(x => x.PublishDate <= DateTime.Now
+                && popularIds.Contains(x.Id))
+                .Select(x => new ArticleQueryModel
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Slug = x.Slug,
+                    Picture = x.Picture,
+                    PictureAlt = x.PictureAlt,
+                    PictureTitle = x.PictureTitle,
+                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                    ViewCount = x.ViewCount,
+                    ShortDescription = x.ShortDescription,
+                    CategoryName = x.Category.Name,
+                    CategorySlug = x.Category.Slug,
+                }).AsNoTracking().ToListAsync();
+
+            foreach (var article in articles)
+            {
+                var rateInfo = avgRates.FirstOrDefault(x => x.ArticleId == article.Id);
+                if (rateInfo != null)
+                {
+                    article.AvgRate = (float)rateInfo.AvgRate;
+                    article.RateCount = rateInfo.RateCount;
+                }
+            }
+
+            return articles
+                .OrderByDescending(x => x.ViewCount)
+                .ThenByDescending(x => x.AvgRate)
+                .ThenByDescending(x => x.RateCount)
+                .ToList();
+        }
+
+        public async Task<long> GetArticleIdBySlug(string articleSlug)
+        {
+            return await _blogContext.Articles
+                .Where(x => x.Slug == articleSlug)
+                .Select(x => x.Id)
+                .FirstOrDefaultAsync();
         }
     }
 }

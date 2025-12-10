@@ -1,5 +1,6 @@
 ﻿@page
 @using AccountManagement.Configuration.Permissions
+@using _0_Framework.Application
 @model ServiceHost.Areas.Admin.Pages.Accounts.Account.IndexModel
 
 @{
@@ -97,7 +98,7 @@
                                         {
                                             <td>غیرفعال</td>
                                         }
-                                        <td>@item.Mobile</td>
+                                        <td>@item.Mobile.ToPersianNumber()</td>
                                         <td>@item.RoleName</td>
                                         <td>@item.CreationDate</td>
                                         <td>

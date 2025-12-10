@@ -1,4 +1,4 @@
-﻿namespace ShopManagement.Application.Contracts.Cart
+﻿namespace _01_PharmaPlusQuery.Contracts.Cart
 {
     public class CartItemViewModel
     {
@@ -8,6 +8,7 @@
         public int Quantity { get; set; }
         public string? UnitPrice { get; set; }
         public string? PriceWithDiscount { get; set; }
+        public int DiscountedQty { get; set; } = 0;
         public string? Picture { get; set; }
     }
 }

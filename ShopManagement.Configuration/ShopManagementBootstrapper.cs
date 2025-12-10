@@ -23,6 +23,10 @@ using _01_PharmaPlusQuery.Contracts.Slide;
 using _01_PharmaPlusQuery.Contracts.ProductCategory;
 using _01_PharmaPlusQuery.Contracts.Product;
 using ShopManagement.Configuration.Permissions;
+using ShopManagement.Domain.UserProductInteractionAgg;
+using ShopManagement.Domain.CartAgg;
+using ShopManagement.Application.Contracts.Cart;
+using _01_PharmaPlusQuery.Contracts.Cart;
 //using ShopManagement.Infrastructure.InventoryAcl;
 
 namespace ShopManagement.Configuration
@@ -43,21 +47,26 @@ namespace ShopManagement.Configuration
             services.AddTransient<ISlideApplication, SlideApplication>();
             services.AddTransient<ISlideRepository, SlideRepository>();
 
+            services.AddTransient<IProductViewRepository, ProductViewRepository>();
+            services.AddTransient<IUserFavoriteProductRepository, UserFavoriteProductRepository>();
+
             //services.AddTransient<IOrderRepository, OrderRepository>();
             //services.AddTransient<IOrderApplication, OrderApplication>();
 
-            //services.AddSingleton<ICartService, CartService>();
+            services.AddTransient<ICartRepository, CartRepository>();
+            services.AddTransient<ICartApplication, CartApplication>();
 
             //services.AddTransient<IShopInventoryAcl, ShopInventoryAcl>();
             //services.AddTransient<IShopAccountAcl, ShopAccountAcl>();
 
-            
+
             //services.AddTransient<ICartCalculatorService, CartCalculatorService>();
 
             // API
             services.AddTransient<ISlideQuery, SlideQuery>();
             services.AddTransient<IProductCategoryQuery, ProductCategoryQuery>();
             services.AddTransient<IProductQuery, ProductQuery>();
+            services.AddTransient<ICartQuery, CartQuery>();
 
 
             services.AddTransient<IPermissionExposer, ShopPermissionExposer>();

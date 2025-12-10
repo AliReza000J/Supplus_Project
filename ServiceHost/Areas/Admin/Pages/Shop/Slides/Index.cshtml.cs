@@ -1,10 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using ShopManagement.Application.Contracts.Product;
-using ShopManagement.Application.Contracts.ProductPicture;
 using ShopManagement.Application.Contracts.Slide;
-using System.Collections.Generic;
 
 namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
 {
@@ -21,9 +17,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
             _slideApplication = slideApplication;
         }
 
-        public void OnGet()
+        public async Task OnGet()
         {
-            Slides = _slideApplication.GetList();
+            Slides = await _slideApplication.GetList();
         }
 
         public IActionResult OnGetCreate()
@@ -32,33 +28,33 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
             return Partial("./Create", command);
         }
 
-        public JsonResult OnPostCreate(CreateSlide command)
+        public async Task<JsonResult> OnPostCreate(CreateSlide command)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = _slideApplication.Create(command);
+            var result = await _slideApplication.Create(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id)
         {
-            var slide = _slideApplication.GetDetails(id);
+            var slide = await _slideApplication.GetDetails(id);
             return Partial("Edit", slide);
         }
 
-        public JsonResult OnPostEdit(EditSlide command)
+        public async Task<JsonResult> OnPostEdit(EditSlide command)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = _slideApplication.Edit(command);
+            var result = await _slideApplication.Edit(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetRemove(long id)
+        public async Task<IActionResult> OnGetRemove(long id)
         {
-            var result = _slideApplication.Remove(id);
+            var result = await _slideApplication.Remove(id);
             if (result.IsSucceeded)
                 return RedirectToPage("./Index");
 
@@ -66,9 +62,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
             return RedirectToPage("./Index");
         }
 
-        public IActionResult OnGetRestore(long id)
+        public async Task<IActionResult> OnGetRestore(long id)
         {
-            var result = _slideApplication.Restore(id);
+            var result = await _slideApplication.Restore(id);
             if (result.IsSucceeded)
                 return RedirectToPage("./Index");
 

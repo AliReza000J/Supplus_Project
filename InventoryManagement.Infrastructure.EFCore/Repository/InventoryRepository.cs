@@ -1,93 +1,106 @@
 ﻿using _0_Framework.Application;
 using _0_Framework.Infrastructure;
+using AccountManagement.Infrastructure.EFCore;
 using InventoryManagement.Application.Contracts.Inventory;
 using InventoryManagement.Domain.InventoryAgg;
+using Microsoft.EntityFrameworkCore;
 using ShopManagement.Infrastructure.EFCore;
 using System.Collections.Generic;
 using System.Linq;
-//using AccountMangement.Infrastructure.EFCore;
 
 namespace InventoryMangement.Infrastructure.EFCore.Repository
 {
     public class InventoryRepository : BaseRepository<long, Inventory>, IInventoryRepository
     {
-        //private readonly AccountContext _accountContext;
+        private readonly AccountContext _accountContext;
         private readonly ShopContext _shopContext;
         private readonly InventoryContext _inventoryContext;
 
-        public InventoryRepository(InventoryContext inventoryContext, ShopContext shopContext) : base(inventoryContext)
-            //AccountContext accountContext) : base(inventoryContext)
+        public InventoryRepository(InventoryContext inventoryContext, ShopContext shopContext,
+            AccountContext accountContext) : base(inventoryContext)
         {
             _shopContext = shopContext;
-            //_accountContext = accountContext;
+            _accountContext = accountContext;
             _inventoryContext = inventoryContext;
         }
 
-        public Inventory GetBy(long productId)
+        public async Task<Inventory> GetBy(long productId)
         {
-            return _inventoryContext.Inventory.FirstOrDefault(x => x.ProductId == productId);
+            return await _inventoryContext.Inventory
+                .FirstOrDefaultAsync(x => x.ProductId == productId);
         }
 
-        public EditInventory GetDetails(long id)
+        public async Task<EditInventory> GetDetails(long id)
         {
-            return _inventoryContext.Inventory.Select(x => new EditInventory
+            return await _inventoryContext.Inventory.Select(x => new EditInventory
             {
                 Id = x.Id,
                 ProductId = x.ProductId,
                 UnitPrice = x.UnitPrice
-            }).FirstOrDefault(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public List<InventoryOperationViewModel> GetOperationLog(long inventoryId)
+        public async Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId)
         {
-            //var accounts = _accountContext.Accounts.Select(x => new {x.Id, x.Fullname}).ToList();
-            var inventory = _inventoryContext.Inventory.FirstOrDefault(x => x.Id == inventoryId);
-            var operations = inventory.Operations.Select(x => new InventoryOperationViewModel
+            var accounts = await _accountContext.Accounts.Select(x => new {x.Id, x.Fullname}).ToListAsync();
+            var inventory = await _inventoryContext.Inventory
+                .FirstOrDefaultAsync(x => x.Id == inventoryId);
+            var operations = inventory.Operations
+                .Select(x => new InventoryOperationViewModel
             {
                 Id = x.Id,
                 Count = x.Count,
                 CurrentCount = x.CurrentCount,
                 Description = x.Description,
                 Operation = x.Operation,
-                OperationDate = x.OperationDate.ToFarsi(),
+                OperationDate = x.OperationDate.ToFarsi().ToPersianNumber(),
                 OperatorId = x.OperatorId,
                 OrderId = x.OrderId
             }).OrderByDescending(x => x.Id).ToList();
 
             foreach (var operation in operations)
             {
-                operation.Operator = "";
-                //operation.Operator = accounts.FirstOrDefault(x => x.Id == operation.OperatorId)?.Fullname;
+                operation.Operator = accounts.FirstOrDefault(x => x.Id == operation.OperatorId)?.Fullname ?? "نامشخص";
             }
 
             return operations;
         }
 
-        public List<InventoryViewModel> Search(InventorySearchModel searchModel)
+        public async Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel)
         {
-            var products = _shopContext.Products.Select(x => new {x.Id, x.Name}).ToList();
+            var products = await _shopContext.Products
+                .Select(x => new { x.Id, x.Name })
+                .ToListAsync();
+
             var query = _inventoryContext.Inventory.Select(x => new InventoryViewModel
             {
                 Id = x.Id,
                 UnitPrice = x.UnitPrice,
                 InStock = x.InStock,
                 ProductId = x.ProductId,
-                CurrentCount = x.CalculateCurrentCount(),
-                CreationDate = x.CreationDate.ToFarsi()
+                CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
             });
 
             if (searchModel.ProductId > 0)
                 query = query.Where(x => x.ProductId == searchModel.ProductId);
 
-            if (searchModel.InStock)
+            if (searchModel.NotInStock)
                 query = query.Where(x => !x.InStock);
 
-            var inventory = query.OrderByDescending(x => x.Id).ToList();
+            var inventory = await query.OrderByDescending(x => x.Id).ToListAsync();
 
             inventory.ForEach(item =>
-                item.Product = products.FirstOrDefault(x => x.Id == item.ProductId)?.Name);
+                item.CurrentCount = _inventoryContext.Inventory
+                    .First(i => i.Id == item.Id)
+                    .CalculateCurrentCount()
+            );
+
+            inventory.ForEach(item =>
+                item.Product = products.FirstOrDefault(x => x.Id == item.ProductId)?.Name
+            );
 
             return inventory;
         }
+
     }
 }

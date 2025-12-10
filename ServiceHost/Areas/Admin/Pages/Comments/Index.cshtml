@@ -2,6 +2,7 @@
 @model Areas.Admin.Pages.Comments.IndexModel
 @{
 }
+@using _0_Framework.Application
 
 @{
     Layout = "Shared/_AdminLayout";
@@ -69,6 +70,7 @@
                             <th>نام محصول/مقاله</th>
                             <th>خریدار محصول؟</th>
                             <th>پیام</th>
+                            <th>امتیاز</th>
                             <th>تاریخ آخرین ویرایش</th>
                             <th>وضعیت</th>
                             <th>عملیات</th>
@@ -89,6 +91,7 @@
                                     @(item.Message.Length > 50 ? item.Message.Substring(0, 50) + "..." : item.Message)
                                     <span class="full-message">@item.Message</span>
                                 </td>
+                                <td>@item.Rate.ToString().ToPersianNumber()</td>
                                 <td>@item.LastModified</td>
                                 <td class="text-center">
                                     @if (item.IsCanceled)

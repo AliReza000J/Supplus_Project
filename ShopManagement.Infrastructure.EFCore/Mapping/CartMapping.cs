@@ -14,16 +14,4 @@ namespace ShopManagement.Infrastructure.EFCore.Mapping
             builder.HasMany(c => c.Items).WithOne().OnDelete(DeleteBehavior.Cascade);
         }
     }
-
-    public class CartItemMapping : IEntityTypeConfiguration<CartItem>
-    {
-        public void Configure(EntityTypeBuilder<CartItem> builder)
-        {
-            builder.ToTable("CartItems");
-            builder.HasKey(i => i.Id);
-            builder.Property(i => i.ProductId).IsRequired();
-            builder.Property(i => i.Quantity).IsRequired();
-            builder.Property(i => i.UnitPrice).HasColumnType("decimal(18,2)");
-        }
-    }
 }

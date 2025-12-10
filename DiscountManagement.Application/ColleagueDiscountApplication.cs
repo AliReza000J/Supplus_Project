@@ -15,69 +15,70 @@ namespace DiscountManagement.Application
             _colleagueDiscountRepository = colleagueDiscountRepository;
         }
 
-        public OperationResult Define(DefineColleagueDiscount command)
+        public async Task<OperationResult> Define(DefineColleagueDiscount command)
         {
             var operation = new OperationResult();
-            if (_colleagueDiscountRepository.Exists(x => x.ProductId == command.ProductId && x.DiscountRate == command.DiscountRate))
+            if (await _colleagueDiscountRepository.ExistsAsync
+                (x => x.ProductId == command.ProductId && x.DiscountRate == command.DiscountRate))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var colleagueDiscount = new ColleagueDiscount(command.ProductId, command.DiscountRate);
 
             _colleagueDiscountRepository.Create(colleagueDiscount);
-            _colleagueDiscountRepository.SaveChanges();
+            await _colleagueDiscountRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Edit(EditColleagueDiscount command)
+        public async Task<OperationResult> Edit(EditColleagueDiscount command)
         {
             var operation = new OperationResult();
-            var colleagueDiscount = _colleagueDiscountRepository.Get(command.Id);
+            var colleagueDiscount = await _colleagueDiscountRepository.GetAsync(command.Id);
             if (colleagueDiscount == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_colleagueDiscountRepository.Exists(x => x.ProductId == command.ProductId && x.DiscountRate == command.DiscountRate && x.Id != command.Id))
+            if (await _colleagueDiscountRepository.ExistsAsync(x => x.ProductId == command.ProductId && x.DiscountRate == command.DiscountRate && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             colleagueDiscount.Edit(command.ProductId, command.DiscountRate);
 
-            _colleagueDiscountRepository.SaveChanges();
+            await _colleagueDiscountRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public EditColleagueDiscount GetDetails(long id)
+        public async Task<EditColleagueDiscount> GetDetails(long id)
         {
-            return _colleagueDiscountRepository.GetDetails(id);
+            return await _colleagueDiscountRepository.GetDetails(id);
         }
 
-        public OperationResult Remove(long id)
+        public async Task<OperationResult> Remove(long id)
         {
             var operation = new OperationResult();
-            var colleagueDiscount = _colleagueDiscountRepository.Get(id);
+            var colleagueDiscount = await _colleagueDiscountRepository.GetAsync(id);
             if (colleagueDiscount == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             colleagueDiscount.Remove();
 
-            _colleagueDiscountRepository.SaveChanges();
+            await _colleagueDiscountRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Restore(long id)
+        public async Task<OperationResult> Restore(long id)
         {
             var operation = new OperationResult();
-            var colleagueDiscount = _colleagueDiscountRepository.Get(id);
+            var colleagueDiscount = await _colleagueDiscountRepository.GetAsync(id);
             if (colleagueDiscount == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             colleagueDiscount.Restore();
 
-            _colleagueDiscountRepository.SaveChanges();
+            await _colleagueDiscountRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public List<ColleagueDiscountViewModel> Search(ColleagueDiscountSearchModel searchModel)
+        public async Task<List<ColleagueDiscountViewModel>> Search(ColleagueDiscountSearchModel searchModel)
         {
-            return _colleagueDiscountRepository.Search(searchModel);
+            return await _colleagueDiscountRepository.Search(searchModel);
         }
     }
 }

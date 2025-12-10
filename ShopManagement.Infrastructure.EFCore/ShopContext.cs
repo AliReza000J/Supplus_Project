@@ -5,6 +5,7 @@ using ShopManagement.Domain.ProductAgg;
 using ShopManagement.Domain.ProductCategoryAgg;
 using ShopManagement.Domain.ProductPictureAgg;
 using ShopManagement.Domain.SlideAgg;
+using ShopManagement.Domain.UserProductInteractionAgg;
 using ShopManagement.Infrastructure.EFCore.Mapping;
 
 namespace ShopManagement.Infrastructure.EFCore
@@ -19,6 +20,8 @@ namespace ShopManagement.Infrastructure.EFCore
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<ProductView> ProductViews { get; set; }
+        public DbSet<UserFavoriteProduct> UserFavoriteProducts { get; set; }
 
 
         public ShopContext(DbContextOptions<ShopContext> options): base(options)

@@ -22,11 +22,18 @@
                                 <span asp-validation-for="Command.Name" class="error"></span>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label asp-for="Command.Code" class="control-label">کد</label>
                                 <input type="text" class="form-control" asp-for="Command.Code">
                                 <span asp-validation-for="Command.Code" class="error"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.Brand" class="control-label">برند (لاتین - فارسی)</label>
+                                <input type="text" class="form-control" asp-for="Command.Brand">
+                                <span asp-validation-for="Command.Brand" class="error"></span>
                             </div>
                         </div>
                     </div>
@@ -34,9 +41,10 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label asp-for="Command.CategoryId" class="control-label">گروه محصول</label>
-                                <select class="form-control product-select" asp-for="Command.CategoryId"
-                                        asp-items="Model.ProductCategories">
-                                    <option value="0">گروه محصول</option>
+                                <select class="form-control select2-init" asp-for="Command.CategoryId"
+                                        asp-items="Model.ProductCategories"
+                                        data-placeholder="انتخاب و یا جستجوی گروه محصول ...">
+                                    <option value=""></option>
                                 </select>
                                 <span asp-validation-for="Command.CategoryId" class="error"></span>
                             </div>
@@ -105,7 +113,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label asp-for="Command.Keywords" class="control-label">کلمات کلیدی</label>
+                                <label asp-for="Command.Keywords" class="control-label">کلمات کلیدی (با کاما جدا کنید)</label>
                                 <input type="text" class="form-control" asp-for="Command.Keywords">
                                 <span asp-validation-for="Command.Keywords" class="error"></span>
                             </div>

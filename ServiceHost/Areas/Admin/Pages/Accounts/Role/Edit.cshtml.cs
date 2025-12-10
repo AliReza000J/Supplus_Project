@@ -21,13 +21,13 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.EditRole)]
-        public IActionResult OnGet(long id)
+        public async Task<IActionResult> OnGet(long id)
         {
             if (id == 1)
                 return RedirectToPage("/AccessDenied");
 
             var groups = new Dictionary<string, SelectListGroup>();
-            Command = _roleApplication.GetDetails(id);
+            Command = await _roleApplication.GetDetails(id);
             foreach (var exposer in _exposers)
             {
                 var exposedPermissions = exposer.Expose();
@@ -58,9 +58,9 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.EditRole)]
-        public IActionResult OnPost(EditRole command)
+        public async Task<IActionResult> OnPost(EditRole command)
         {
-            var result = _roleApplication.Edit(command);
+            var result = await _roleApplication.Edit(command);
             return RedirectToPage("Index");
         }
     }

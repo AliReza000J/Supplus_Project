@@ -2,7 +2,6 @@
 using ShopManagement.Application.Contracts.ProductPicture;
 using ShopManagement.Domain.ProductAgg;
 using ShopManagement.Domain.ProductPictureAgg;
-using System.Collections.Generic;
 
 namespace ShopManagement.Application
 {
@@ -19,27 +18,25 @@ namespace ShopManagement.Application
             _productPictureRepository = productPictureRepository;
         }
 
-        public OperationResult Create(CreateProductPicture command)
+        public async Task<OperationResult> Create(CreateProductPicture command)
         {
             var operation = new OperationResult();
-            //if (_productPictureRepository.Exists(x => x.Picture == command.Picture && x.ProductId == command.ProductId))
-            //    return operation.Failed(ApplicationMessages.DuplicatedRecord);
-
-            var product = _productRepository.GetProductWithCategory(command.ProductId);
+            
+            var product = await _productRepository.GetProductWithCategory(command.ProductId);
 
             var path = $"ProductCategories/{product.Category.FullSlug}/Products/{product.Slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
             var productPicture = new ProductPicture(command.ProductId, picturePath, command.PictureAlt, command.PictureTitle);
             _productPictureRepository.Create(productPicture);
-            _productPictureRepository.SaveChanges();
+            await _productPictureRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Edit(EditProductPicture command)
+        public async Task<OperationResult> Edit(EditProductPicture command)
         {
             var operation = new OperationResult();
-            var productPicture = _productPictureRepository.GetWithProductAndCategory(command.Id);
+            var productPicture = await _productPictureRepository.GetWithProductAndCategory(command.Id);
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
@@ -47,42 +44,42 @@ namespace ShopManagement.Application
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
             productPicture.Edit(command.ProductId, picturePath, command.PictureAlt, command.PictureTitle);
-            _productPictureRepository.SaveChanges();
+            await _productPictureRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public EditProductPicture GetDetails(long id)
+        public async Task<EditProductPicture?> GetDetails(long id)
         {
-            return _productPictureRepository.GetDetails(id);
+            return await _productPictureRepository.GetDetails(id);
         }
 
-        public OperationResult Remove(long id)
+        public async Task<OperationResult> Remove(long id)
         {
             var operation = new OperationResult();
-            var productPicture = _productPictureRepository.Get(id);
+            var productPicture = await _productPictureRepository.GetAsync(id);
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             productPicture.Remove();
-            _productPictureRepository.SaveChanges();
+            await _productPictureRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Restore(long id)
+        public async Task<OperationResult> Restore(long id)
         {
             var operation = new OperationResult();
-            var productPicture = _productPictureRepository.Get(id);
+            var productPicture = await _productPictureRepository.GetAsync(id);
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             productPicture.Restore();
-            _productPictureRepository.SaveChanges();
+            await _productPictureRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public List<ProductPictureViewModel> Search(ProductPictureSearchModel searchModel)
+        public async Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel)
         {
-            return _productPictureRepository.Search(searchModel);
+            return await _productPictureRepository.Search(searchModel);
         }
     }
 }

@@ -2,6 +2,7 @@
 using ShopManagement.Application.Contracts.Product;
 using ShopManagement.Domain.ProductAgg;
 using ShopManagement.Domain.ProductCategoryAgg;
+using ShopManagement.Domain.UserProductInteractionAgg;
 
 namespace ShopManagement.Application
 {
@@ -10,75 +11,131 @@ namespace ShopManagement.Application
         private readonly IFileUploader _fileUploader;
         private readonly IProductRepository _productRepository;
         private readonly IProductCategoryRepository _productCategoryRepository;
+        private readonly IProductViewRepository _productViewRepository;
+        private readonly IUserFavoriteProductRepository _userFavoriteProductRepository;
 
-        public ProductApplication(IProductRepository productRepository, IFileUploader fileUploader, IProductCategoryRepository productCategoryRepository)
+        public ProductApplication(IProductRepository productRepository, IFileUploader fileUploader, IProductCategoryRepository productCategoryRepository, IProductViewRepository productViewRepositoryl, IUserFavoriteProductRepository userFavoriteProductRepository)
         {
             _fileUploader = fileUploader;
             _productRepository = productRepository;
             _productCategoryRepository = productCategoryRepository;
+            _productViewRepository = productViewRepositoryl;
+            _userFavoriteProductRepository = userFavoriteProductRepository;
         }
 
-        public OperationResult Create(CreateProduct command)
+        public async Task<OperationResult> Create(CreateProduct command)
         {
             var operation = new OperationResult();
-            if (_productRepository.Exists(x => x.Name == command.Name))
+            if (await _productRepository.ExistsAsync(x => x.Name == command.Name && x.Code == command.Code))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var slug = command.Slug.Slugify();
-            var categoryFullSlug = _productCategoryRepository.GetFullSlugById(command.CategoryId);
+            var categoryFullSlug = await _productCategoryRepository.GetFullSlugById(command.CategoryId);
             var path = $"ProductCategories/{categoryFullSlug}/Products/{slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
-            var product = new Product(command.Name, command.Code,
+            var product = new Product(command.Name, command.Code, command.Brand,
                 command.ShortDescription, command.Description, picturePath,
                 command.PictureAlt, command.PictureTitle, command.CategoryId, slug,
                 command.Keywords, command.MetaDescription, command.Specifications);
 
             _productRepository.Create(product);
-            _productRepository.SaveChanges();
+            await _productRepository.SaveChangesAsync();
 
             return operation.Succeeded();
         }
 
-        public OperationResult Edit(EditProduct command)
+        public async Task<OperationResult> Edit(EditProduct command)
         {
             var operation = new OperationResult();
 
-            var product = _productRepository.GetProductWithCategory(command.Id);
+            var product = await _productRepository.GetProductWithCategory(command.Id);
 
             if (product == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_productRepository.Exists(x => x.Name == command.Name && x.Id != command.Id))
+            if (await _productRepository.ExistsAsync(x => x.Name == command.Name && x.Code == command.Code && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var slug = command.Slug.Slugify();
             var path = $"ProductCategories/{product.Category.FullSlug}/Products/{slug}";
             var picturePath = _fileUploader.Upload(command.Picture, path);
 
-            product.Edit(command.Name, command.Code,
+            product.Edit(command.Name, command.Code, command.Brand,
                 command.ShortDescription, command.Description, picturePath,
                 command.PictureAlt, command.PictureTitle, command.CategoryId, slug,
                 command.Keywords, command.MetaDescription, command.Specifications);
 
-            _productRepository.SaveChanges();
+            await _productRepository.SaveChangesAsync();
 
             return operation.Succeeded();
         }
 
-        public EditProduct GetDetails(long id)
+        public async Task<EditProduct?> GetDetails(long id)
         {
-            return _productRepository.GetDetails(id);
+            return await _productRepository.GetDetails(id);
         }
 
-        public List<ProductViewModel> GetProducts()
+        public async Task<List<ProductViewModel>> GetProducts()
         {
-            return _productRepository.GetProducts();
+            return await _productRepository.GetProducts();
         }
 
-        public List<ProductViewModel> Search(ProductSearchModel searchModel)
+        public async Task<OperationResult> IncrementProductViewCountAsync(long productId, string? userId = null)
         {
-            return _productRepository.Search(searchModel);
+            var op = new OperationResult();
+            var product = await _productRepository.GetAsync(productId);
+            if (product == null)
+                return op.Failed(ApplicationMessages.RecordNotFound);
+
+            product.AddView();
+
+            //if (userId != null)
+            //{ }
+
+            _productViewRepository.Create(new ProductView(productId, userId));
+
+            await _productViewRepository.SaveChangesAsync();
+            return op.Succeeded();
+        }
+
+        public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel)
+        {
+            return await _productRepository.Search(searchModel);
+        }
+
+        public async Task<OperationResult> AddFavoriteAsync(string userId, long productId)
+        {
+            var op = new OperationResult();
+
+            var existing = await _userFavoriteProductRepository
+                .GetByUserIdAndProductId(userId, productId);
+
+            if (existing != null)
+                return op.Failed("این محصول قبلاً به لیست علاقه‌مندی شما اضافه شده است.");
+
+            var favorite = new UserFavoriteProduct(userId, productId);
+
+            _userFavoriteProductRepository.Create(favorite);
+            await _userFavoriteProductRepository.SaveChangesAsync();
+
+            return op.Succeeded("محصول با موفقیت به لیست علاقه‌مندی شما اضافه شد.");
+        }
+
+        public async Task<OperationResult> DeleteFavoriteAsync(string userId, long productId)
+        {
+            var op = new OperationResult();
+
+            var existing = await _userFavoriteProductRepository
+                .GetByUserIdAndProductId(userId, productId);
+
+            if (existing == null)
+                return op.Failed("این محصول در لیست علاقه‌مندی شما یافت نشد.");
+
+            _userFavoriteProductRepository.Remove(existing);
+            await _userFavoriteProductRepository.SaveChangesAsync();
+
+            return op.Succeeded("محصول با موفقیت از لیست علاقه‌مندی شما حذف شد.");
         }
     }
 }

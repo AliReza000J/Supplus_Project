@@ -14,23 +14,24 @@ namespace ShopManagement.Application
             _productCategoryRepository = productCategoryRepository;
             _fileUploader = fileUploader;
         }
-        public OperationResult Create(CreateProductCategory command)
+        public async Task<OperationResult> Create(CreateProductCategory command)
         {
             var operation = new OperationResult();
 
-            if (_productCategoryRepository.Exists(x => x.Name == command.Name && x.ParentId == command.ParentId))
+            if (await _productCategoryRepository.ExistsAsync
+                (x => x.Name == command.Name && x.ParentId == command.ParentId))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             if (command.ParentId.HasValue)
             {
-                var parent = _productCategoryRepository.Get(command.ParentId.Value);
+                var parent = await _productCategoryRepository.GetAsync(command.ParentId.Value);
                 if (parent == null)
                     return operation.Failed("گروه والد یافت نشد.");
 
             }
 
             var slug = command.Slug.Slugify();
-            var fullSlug = GetFullSlug(command.ParentId, slug);
+            var fullSlug = await GetFullSlug(command.ParentId, slug);
 
             var picturePath = $"ProductCategories/{fullSlug}";
             var pictureName = _fileUploader.Upload(command.Picture, picturePath);
@@ -41,31 +42,32 @@ namespace ShopManagement.Application
 
             _productCategoryRepository.Create(productCategory);
 
-            _productCategoryRepository.SaveChanges();
+            await _productCategoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        private string GetFullSlug(long? parentId, string slug)
+        private async Task<string> GetFullSlug(long? parentId, string slug)
         {
             if (!parentId.HasValue)
                 return slug;
 
-            var parent = _productCategoryRepository.Get(parentId.Value);
+            var parent = await _productCategoryRepository.GetAsync(parentId.Value);
             if (parent == null)
                 return slug;
 
             return $"{parent.FullSlug}/{slug}";
         }
 
-        public OperationResult Edit(EditProductCategory command)
+        public async Task<OperationResult> Edit(EditProductCategory command)
         {
             var operation = new OperationResult();
-            var productCategory = _productCategoryRepository.GetWithChildren(command.Id);
+            var productCategory = await _productCategoryRepository.GetWithChildren(command.Id);
 
             if (productCategory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_productCategoryRepository.Exists(x => x.Name == command.Name && x.ParentId == command.ParentId && x.Id != command.Id))
+            if (await _productCategoryRepository.ExistsAsync
+                (x => x.Name == command.Name && x.ParentId == command.ParentId && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             // Check for cycle: if command.ParentId is descendant of category.Id -> invalid
@@ -74,7 +76,7 @@ namespace ShopManagement.Application
                 if (command.ParentId.Value == command.Id)
                     return operation.Failed("دسته نمی‌تواند والد خودش باشد.");
 
-                var parent = _productCategoryRepository.Get(command.ParentId.Value);
+                var parent = await _productCategoryRepository.GetAsync(command.ParentId.Value);
                 if (parent == null)
                     return operation.Failed("گروه والد یافت نشد.");
 
@@ -83,7 +85,7 @@ namespace ShopManagement.Application
             }
 
             var slug = command.Slug.Slugify();
-            var fullSlug = GetFullSlug(command.ParentId, slug);
+            var fullSlug = await GetFullSlug(command.ParentId, slug);
 
             var picturePath = $"ProductCategories/{fullSlug}";
             var pictureName = _fileUploader.Upload(command.Picture, picturePath);
@@ -98,11 +100,11 @@ namespace ShopManagement.Application
 
             UpdateChildrenFullSlugs(productCategory); //Update
 
-            _productCategoryRepository.SaveChanges();
+            await _productCategoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        private void UpdateChildrenFullSlugs(ProductCategory parent)
+        private static void UpdateChildrenFullSlugs(ProductCategory parent)
         {
             if (parent.Children == null || !parent.Children.Any())
                 return;
@@ -114,24 +116,24 @@ namespace ShopManagement.Application
             }
         }
 
-        public EditProductCategory GetDetails(long id)
+        public async Task<EditProductCategory?> GetDetails(long id)
         {
-            return _productCategoryRepository.GetDetails(id);
+            return await _productCategoryRepository.GetDetails(id);
         }
 
-        public List<ProductCategoryViewModel> GetProductCategories()
+        public async Task<List<ProductCategoryViewModel>> GetProductCategories()
         {
-            return _productCategoryRepository.GetProductCategories();
+            return await _productCategoryRepository.GetProductCategories();
         }
 
-        public List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel)
+        public async Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel)
         {
-            return _productCategoryRepository.Search(searchModel);
+            return await _productCategoryRepository.Search(searchModel);
         }
 
-        public List<ProductCategoryViewModel> GetLeafCategories()
+        public async Task<List<ProductCategoryViewModel>> GetLeafCategories()
         {
-            return _productCategoryRepository.GetLeafCategories();
+            return await _productCategoryRepository.GetLeafCategories();
         }
     }
 }

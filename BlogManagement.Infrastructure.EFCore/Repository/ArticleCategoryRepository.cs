@@ -15,18 +15,20 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public List<ArticleCategoryViewModel> GetArticleCategories()
+        public async Task<List<ArticleCategoryViewModel>> GetArticleCategories()
         {
-            return _context.ArticleCategories.Select(x => new ArticleCategoryViewModel
+            return await _context.ArticleCategories
+                .Select(x => new ArticleCategoryViewModel
             {
                 Id = x.Id,
                 Name = x.Name
-            }).ToList();
+            }).ToListAsync();
         }
 
-        public EditArticleCategory GetDetails(long id)
+        public async Task<EditArticleCategory> GetDetails(long id)
         {
-            return _context.ArticleCategories.Select(x => new EditArticleCategory
+            return await _context.ArticleCategories
+                .Select(x => new EditArticleCategory
             {
                 Id = x.Id,
                 Name = x.Name,
@@ -38,16 +40,16 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 Slug = x.Slug,
                 PictureAlt = x.PictureAlt,
                 PictureTitle = x.PictureTitle
-            }).FirstOrDefault(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public string GetSlugBy(long id)
+        public async Task<string> GetSlugBy(long id)
         {
-            return _context.ArticleCategories.Select(x => new { x.Id, x.Slug })
-                .FirstOrDefault(x => x.Id == id).Slug;
+            return (await _context.ArticleCategories.Select(x => new { x.Id, x.Slug })
+                .FirstOrDefaultAsync(x => x.Id == id)).Slug;
         }
 
-        public List<ArticleCategoryViewModel> Search(ArticleCategorySearchModel searchModel)
+        public async Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel)
         {
             var query = _context.ArticleCategories
                 .Include(x => x.Articles)
@@ -58,14 +60,14 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                     Name = x.Name,
                     Picture = x.Picture,
                     ShowOrder = x.ShowOrder,
-                    CreationDate = x.CreationDate.ToFarsi(),
+                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber(),
                     ArticlesCount = x.Articles.Count
                 });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Name))
                 query = query.Where(x => x.Name.Contains(searchModel.Name));
 
-            return query.OrderByDescending(x => x.ShowOrder).ToList();
+            return await query.OrderByDescending(x => x.ShowOrder).ToListAsync();
         }
     }
 }

@@ -9,9 +9,9 @@ namespace DiscountManagement.Application.Contracts.CustomerDiscount
 {
     public interface ICustomerDiscountApplication
     {
-        OperationResult Define(DefineCustomerDiscount command);
-        OperationResult Edit(EditCustoemrDiscount command);
-        EditCustoemrDiscount GetDetails(long id);
-        List<CustomerDiscountViewModel> Search(CustomerDiscountSearchModel searchModel);
+        Task<OperationResult> Define(DefineCustomerDiscount command);
+        Task<OperationResult> Edit(EditCustoemrDiscount command);
+        Task<EditCustoemrDiscount> GetDetails(long id);
+        Task<List<CustomerDiscountViewModel>> Search(CustomerDiscountSearchModel searchModel);
     }
 }

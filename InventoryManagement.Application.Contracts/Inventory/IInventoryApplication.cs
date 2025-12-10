@@ -4,13 +4,13 @@ namespace InventoryManagement.Application.Contracts.Inventory
 {
     public interface IInventoryApplication
     {
-        OperationResult Create(CreateInventory command);
-        OperationResult Edit(EditInventory command);
-        OperationResult Increase(IncreaseInventory command);
-        OperationResult Reduce(ReduceInventory command);
-        OperationResult Reduce(List<ReduceInventory> command);
-        EditInventory GetDetails(long id);
-        List<InventoryViewModel> Search(InventorySearchModel searchModel);
-        List<InventoryOperationViewModel> GetOperationLog(long inventoryId);
+        Task<OperationResult> Create(CreateInventory command);
+        Task<OperationResult> Edit(EditInventory command);
+        Task<OperationResult> Increase(IncreaseInventory command);
+        Task<OperationResult> Reduce(ReduceInventory command);
+        Task<OperationResult> Reduce(List<ReduceInventory> command);
+        Task<EditInventory> GetDetails(long id);
+        Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel);
+        Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId);
     }
 }

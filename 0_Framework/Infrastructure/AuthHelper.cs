@@ -1,9 +1,10 @@
 ﻿using System.Security.Claims;
+using _0_Framework.Application;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 
-namespace _0_Framework.Application
+namespace _0_Framework.Infrastructure
 {
     public class AuthHelper : IAuthHelper
     {
@@ -14,7 +15,7 @@ namespace _0_Framework.Application
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
         }
 
-        public void SignIn(AuthViewModel account)
+        public async Task SignIn(AuthViewModel account)
         {
             if (account == null) throw new ArgumentNullException(nameof(account));
             var http = _contextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
@@ -46,16 +47,16 @@ namespace _0_Framework.Application
                 ExpiresUtc = DateTimeOffset.UtcNow.AddDays(2)
             };
 
-            http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+            await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 authProperties);
         }
 
-        public void SignOut()
+        public async Task SignOut()
         {
             var http = _contextAccessor.HttpContext;
             if (http == null) return;
-            http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
 
         public bool IsAuthenticated()

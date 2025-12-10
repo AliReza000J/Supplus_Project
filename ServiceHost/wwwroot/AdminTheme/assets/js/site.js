@@ -245,10 +245,10 @@ jQuery.validator.unobtrusive.adapters.addSingleVal("fileextensionlimit", "extens
 
 
 function initializeSelect2() {
-    $('select[id="productSelect"], select.product-select').each(function () {
+    $('select.select2-init').each(function () {
         if (!$(this).hasClass("select2-hidden-accessible")) {
             $(this).select2({
-                placeholder: "انتخاب یا جستجوی محصول...",
+                placeholder: $(this).attr("data-placeholder") || "انتخاب یا جستجو...",
                 allowClear: true,
                 width: '100%',
                 dir: "rtl"

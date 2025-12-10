@@ -1,8 +1,10 @@
 ﻿@page
 @using InventoryManagement.Infrastructure.Configuration.Permissions
+@using _0_Framework.Application
 @model ServiceHost.Areas.Admin.Pages.Inventory.IndexModel
 @{
 }
+@using _0_Framework.Application
 
 @{
     Layout = "Shared/_AdminLayout";
@@ -28,14 +30,15 @@
                 <form class="form-inline" role="form" method="get">
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.ProductId"></label>
-                        <select class="form-control product-select" asp-for="SearchModel.ProductId" asp-items="Model.Products">
-                            <option value="0">انتخاب محصول ...</option>
+                        <select class="form-control select2-init" asp-for="SearchModel.ProductId" asp-items="Model.Products"
+                                data-placeholder="انتخاب و یا جستجوی محصول ...">
+                            <option value=""></option>
                         </select>
                     </div>
                     <div class="form-group m-r-10">
                         <div class="checkbox checkbox-primary">
-                            <input asp-for="SearchModel.InStock">
-                            <label asp-for="SearchModel.InStock">
+                            <input asp-for="SearchModel.NotInStock">
+                            <label asp-for="SearchModel.NotInStock">
                                 جستجو در ناموجودها
                             </label>
                         </div>
@@ -77,8 +80,8 @@
                                             @(item.Product.Length > 50 ? item.Product.Substring(0, 50) + "..." : item.Product)
                                             <span class="full-message">@item.Product</span>
                                         </td>
-                                        <td>@item.UnitPrice</td>
-                                        <td>@item.CurrentCount</td>
+                                        <td>@item.UnitPrice.ToMoney().ToPersianNumber()</td>
+                                        <td>@item.CurrentCount.ToString().ToPersianNumber()</td>
                                         <td>@item.CreationDate</td>
                                         <td>
                                             <a permission="@InventoryPermissions.EditInventory" class="btn btn-warning waves-effect waves-light m-b-5"
@@ -96,7 +99,7 @@
                                             <a permission="@InventoryPermissions.OperationLog" class="btn btn-primary waves-effect waves-light m-b-5"
                                                href="#showmodal=@Url.Page("./Index", "Log", new {id = item.Id})"
                                                onclick="$('.modal-dialog').css('width', '60%')">
-                                                <i class="fa fa-recycle"></i> مشاهده گردنش انبار
+                                                <i class="fa fa-recycle"></i> گردش انبار
                                             </a>
                                         </td>
                                     </tr>

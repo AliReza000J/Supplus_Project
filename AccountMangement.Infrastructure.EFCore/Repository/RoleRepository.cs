@@ -15,15 +15,15 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             _accountContext = accountContext;
         }
 
-        public EditRole GetDetails(long id)
+        public async Task<EditRole> GetDetails(long id)
         {
-            var role = _accountContext.Roles.Select(x => new EditRole
+            var role = await _accountContext.Roles.Select(x => new EditRole
             {
                 Id = x.Id,
                 Name = x.Name,
                 MappedPermissions = MapPermissions(x.Permissions)
             }).AsNoTracking()
-                .FirstOrDefault(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             role.Permissions = role.MappedPermissions.Select(x => x.Code).ToList();
 
@@ -41,7 +41,7 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             {
                 Id = x.Id,
                 Name = x.Name,
-                CreationDate = x.CreationDate.ToFarsi()
+                CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
             }).ToListAsync();
         }
     }

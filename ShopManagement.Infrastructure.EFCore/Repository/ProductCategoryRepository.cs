@@ -15,9 +15,9 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public EditProductCategory GetDetails(long id)
+        public async Task<EditProductCategory?> GetDetails(long id)
         {
-            return _context.ProductCategories.Select(x => new EditProductCategory()
+            return await _context.ProductCategories.Select(x => new EditProductCategory()
             {
                 Id = x.Id,
                 Description = x.Description,
@@ -29,20 +29,12 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 PictureTitle = x.PictureTitle,
                 Slug = x.Slug,
                 ParentId = x.ParentId,
-            }).FirstOrDefault(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        //public List<ProductCategory> GetAllWithChildren()
-        //{
-        //    return _context.ProductCategories
-        //        .Include(x => x.Children)
-        //        .AsNoTracking()
-        //        .ToList();
-        //}
-
-        public List<ProductCategoryViewModel> GetLeafCategories()
+        public async Task<List<ProductCategoryViewModel>> GetLeafCategories()
         {
-            return _context.ProductCategories
+            return await _context.ProductCategories
                 .Where(x => !x.Children.Any())
                 .Select(x => new ProductCategoryViewModel
                 {
@@ -50,46 +42,51 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     Name = x.Name,
                 })
                 .AsNoTracking()
-                .ToList();
+                .ToListAsync();
         }
 
-        public ProductCategory GetWithChildren(long id)
+        public async Task<ProductCategory?> GetWithChildren(long id)
         {
-            return _context.ProductCategories
+            return await _context.ProductCategories
                 .Include(x => x.Children)
-                .FirstOrDefault(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
-        public List<ProductCategoryViewModel> GetProductCategories()
+        public async Task<List<ProductCategoryViewModel>> GetProductCategories()
         {
-            return _context.ProductCategories
+            return await _context.ProductCategories
                 .Select(x => new ProductCategoryViewModel
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Parent = x.Parent.Name
-            }).ToList();
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Parent = x.Parent.Name
+                }).ToListAsync();
         }
 
-        public string GetFullSlugById(long id)
+        public async Task<string?> GetFullSlugById(long id)
         {
-            return _context.ProductCategories.Select(x => new { x.Id, x.FullSlug }).FirstOrDefault(x => x.Id == id).FullSlug;
+            return await _context.ProductCategories
+                .Where(x => x.Id == id)
+                .Select(x => x.FullSlug)
+                .FirstOrDefaultAsync();
         }
 
-        public List<ProductCategoryViewModel> Search(ProductCategorySearchModel searchModel)
+        public async Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel)
         {
-            var query = _context.ProductCategories.Select(x => new ProductCategoryViewModel
-            {
-                Id = x.Id,
-                Picture = x.Picture,
-                Name = x.Name,
-                CreationDate = x.CreationDate.ToFarsi(),
-                Parent = x.Parent.Name
-            });
+            var query = _context.ProductCategories
+                .Include(x => x.Parent)
+                .Select(x => new ProductCategoryViewModel
+                {
+                    Id = x.Id,
+                    Picture = x.Picture,
+                    Name = x.Name,
+                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber(),
+                    Parent = x.Parent != null ? x.Parent.Name : "—"
+                });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Name))
                 query = query.Where(x => x.Name.Contains(searchModel.Name));
 
-            return query.OrderByDescending(x => x.Id).ToList();
+            return await query.OrderByDescending(x => x.Id).ToListAsync();
         }
     }
 }

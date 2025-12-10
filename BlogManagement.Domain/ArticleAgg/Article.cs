@@ -13,6 +13,7 @@ namespace BlogManagement.Domain.ArticleAgg
         public string PictureAlt { get; private set; }
         public string PictureTitle { get; private set; }
         public DateTime PublishDate { get; private set; }
+        public int ViewCount { get; private set; } = 0;
         public string Slug { get; private set; }
         public string Keywords { get; private set; }
         public string MetaDescription { get; private set; }
@@ -57,6 +58,11 @@ namespace BlogManagement.Domain.ArticleAgg
             MetaDescription = metaDescription;
             CanonicalAddress = canonicalAddress;
             CategoryId = categoryId;
+        }
+
+        public void AddView()
+        {
+            ViewCount++;
         }
     }
 }

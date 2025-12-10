@@ -13,10 +13,10 @@ namespace DiscountManagement.Application
             _customerDiscountRepository = customerDiscountRepository;
         }
 
-        public OperationResult Define(DefineCustomerDiscount command)
+        public async Task<OperationResult> Define(DefineCustomerDiscount command)
         {
             var operation = new OperationResult();
-            if (_customerDiscountRepository.Exists(x => x.ProductId == command.ProductId && x.DiscountRate == command.DiscountRate))
+            if (await _customerDiscountRepository.ExistsAsync(x => x.ProductId == command.ProductId && x.DiscountRate == command.DiscountRate))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var startDate = command.StartDate.ToGeorgianDateTime();
@@ -24,37 +24,37 @@ namespace DiscountManagement.Application
             var customerDiscount = new CustomerDiscount(command.ProductId, command.DiscountRate,
                 startDate, endDate, command.Reason, command.ProductCount);
             _customerDiscountRepository.Create(customerDiscount);
-            _customerDiscountRepository.SaveChanges();
+            await _customerDiscountRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Edit(EditCustoemrDiscount command)
+        public async Task<OperationResult> Edit(EditCustoemrDiscount command)
         {
             var operation = new OperationResult();
-            var customerDiscount = _customerDiscountRepository.Get(command.Id);
+            var customerDiscount = await _customerDiscountRepository.GetAsync(command.Id);
 
             if (customerDiscount == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_customerDiscountRepository.Exists(x => x.ProductId == command.ProductId
+            if (await _customerDiscountRepository.ExistsAsync(x => x.ProductId == command.ProductId
             && x.DiscountRate == command.DiscountRate && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var startDate = command.StartDate.ToGeorgianDateTime();
             var endDate = command.EndDate.ToGeorgianDateTime();
             customerDiscount.Edit(command.ProductId, command.DiscountRate, startDate, endDate, command.Reason, command.ProductCount);
-            _customerDiscountRepository.SaveChanges();
+            await _customerDiscountRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public EditCustoemrDiscount GetDetails(long id)
+        public async Task<EditCustoemrDiscount> GetDetails(long id)
         {
-            return _customerDiscountRepository.GetDetails(id);
+            return await _customerDiscountRepository.GetDetails(id);
         }
 
-        public List<CustomerDiscountViewModel> Search(CustomerDiscountSearchModel searchModel)
+        public async Task<List<CustomerDiscountViewModel>> Search(CustomerDiscountSearchModel searchModel)
         {
-            return _customerDiscountRepository.Search(searchModel);
+            return await _customerDiscountRepository.Search(searchModel);
         }
     }
 }

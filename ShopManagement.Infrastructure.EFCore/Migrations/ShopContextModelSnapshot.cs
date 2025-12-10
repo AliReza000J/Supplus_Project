@@ -22,7 +22,7 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
-            modelBuilder.Entity("ShopManagement.Domain.OrderAgg.Cart", b =>
+            modelBuilder.Entity("ShopManagement.Domain.CartAgg.Cart", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,10 +30,18 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
-                    b.Property<long>("AccountId")
+                    b.Property<long?>("AccountId")
+                        .IsRequired()
                         .HasColumnType("bigint");
 
+                    b.Property<string>("CartKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
@@ -41,7 +49,7 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.ToTable("Carts", (string)null);
                 });
 
-            modelBuilder.Entity("ShopManagement.Domain.OrderAgg.CartItem", b =>
+            modelBuilder.Entity("ShopManagement.Domain.CartAgg.CartItem", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -52,6 +60,10 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<long?>("CartId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("CartKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
@@ -60,9 +72,6 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -96,9 +105,6 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("IssueTrackingNo")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Mobile")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -109,14 +115,17 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("int");
 
-                    b.Property<long>("RefId")
-                        .HasColumnType("bigint");
+                    b.Property<string>("PaymentRefId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TrackingNo")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -134,14 +143,18 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("DiscountApplied")
+                        .HasColumnType("int");
+
                     b.Property<int>("DiscountRate")
                         .HasColumnType("int");
 
-                    b.Property<long?>("InventoryId")
-                        .HasColumnType("bigint");
-
                     b.Property<long>("OrderId")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("Picture")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("ProductId")
                         .HasColumnType("bigint");
@@ -171,13 +184,18 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
                     b.Property<long>("CategoryId")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
+                        .HasMaxLength(65)
+                        .HasColumnType("nvarchar(65)");
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
@@ -229,6 +247,9 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<string>("Specifications")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -401,9 +422,59 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.ToTable("Slides", (string)null);
                 });
 
-            modelBuilder.Entity("ShopManagement.Domain.OrderAgg.CartItem", b =>
+            modelBuilder.Entity("ShopManagement.Domain.UserProductInteractionAgg.ProductView", b =>
                 {
-                    b.HasOne("ShopManagement.Domain.OrderAgg.Cart", null)
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProductViews", (string)null);
+                });
+
+            modelBuilder.Entity("ShopManagement.Domain.UserProductInteractionAgg.UserFavoriteProduct", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("UserFavoriteProducts", (string)null);
+                });
+
+            modelBuilder.Entity("ShopManagement.Domain.CartAgg.CartItem", b =>
+                {
+                    b.HasOne("ShopManagement.Domain.CartAgg.Cart", null)
                         .WithMany("Items")
                         .HasForeignKey("CartId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -452,7 +523,7 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("ShopManagement.Domain.OrderAgg.Cart", b =>
+            modelBuilder.Entity("ShopManagement.Domain.CartAgg.Cart", b =>
                 {
                     b.Navigation("Items");
                 });

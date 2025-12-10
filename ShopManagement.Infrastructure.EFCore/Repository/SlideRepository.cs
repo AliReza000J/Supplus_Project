@@ -1,5 +1,6 @@
 ﻿using _0_Framework.Application;
 using _0_Framework.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using ShopManagement.Application.Contracts.Slide;
 using ShopManagement.Domain.SlideAgg;
 using System;
@@ -17,9 +18,9 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public EditSlide GetDetails(long id)
+        public async Task<EditSlide?> GetDetails(long id)
         {
-            return _context.Slides.Select(x => new EditSlide
+            return await _context.Slides.Select(x => new EditSlide
             {
                 Id = x.Id,
                 BtnText = x.BtnText,
@@ -29,20 +30,20 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 Text = x.Text,
                 Link = x.Link,
                 Title = x.Title
-            }).FirstOrDefault(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public List<SlideViewModel> GetList()
+        public async Task<List<SlideViewModel>> GetList()
         {
-            return _context.Slides.Select(x => new SlideViewModel
+            return await _context.Slides.Select(x => new SlideViewModel
             {
                 Id = x.Id,
                 Heading = x.Heading,
                 Picture = x.Picture,
                 Title = x.Title,
                 IsRemoved = x.IsRemoved,
-                CreationDate = x.CreationDate.ToFarsi()
-            }).OrderByDescending(x => x.Id).ToList();
+                CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
+            }).OrderByDescending(x => x.Id).ToListAsync();
         }
     }
 }

@@ -24,49 +24,49 @@ namespace ServiceHost.Areas.Admin.Pages.Discounts.ColleagueDiscounts
             _colleagueDiscountApplication = colleagueDiscountApplication;
         }
 
-        public void OnGet(ColleagueDiscountSearchModel searchModel)
+        public async Task OnGet(ColleagueDiscountSearchModel searchModel)
         {
-            Products = new SelectList(_productApplication.GetProducts(), "Id", "Name");
-            ColleagueDiscounts = _colleagueDiscountApplication.Search(searchModel);
+            Products = new SelectList(await _productApplication.GetProducts(), "Id", "Name");
+            ColleagueDiscounts = await _colleagueDiscountApplication.Search(searchModel);
         }
 
-        public IActionResult OnGetCreate()
+        public async Task<IActionResult> OnGetCreate()
         {
             var command = new DefineColleagueDiscount
             {
-                Products = _productApplication.GetProducts()
+                Products = await _productApplication.GetProducts()
             };
             return Partial("./Create", command);
         }
 
-        public JsonResult OnPostCreate(DefineColleagueDiscount command)
+        public async Task<JsonResult> OnPostCreate(DefineColleagueDiscount command)
         {
-            var result = _colleagueDiscountApplication.Define(command);
+            var result = await _colleagueDiscountApplication.Define(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id)
         {
-            var colleagueDiscount = _colleagueDiscountApplication.GetDetails(id);
-            colleagueDiscount.Products = _productApplication.GetProducts();
+            var colleagueDiscount = await _colleagueDiscountApplication.GetDetails(id);
+            colleagueDiscount.Products = await _productApplication.GetProducts();
             return Partial("Edit", colleagueDiscount);
         }
 
-        public JsonResult OnPostEdit(EditColleagueDiscount command)
+        public async Task<JsonResult> OnPostEdit(EditColleagueDiscount command)
         {
-            var result = _colleagueDiscountApplication.Edit(command);
+            var result = await _colleagueDiscountApplication.Edit(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetRemove(long id)
+        public async Task<IActionResult> OnGetRemove(long id)
         {
-            _colleagueDiscountApplication.Remove(id);
+            await _colleagueDiscountApplication.Remove(id);
             return RedirectToPage("./Index");
         }
 
-        public IActionResult OnGetRestore(long id)
+        public async Task<IActionResult> OnGetRestore(long id)
         {
-            _colleagueDiscountApplication.Restore(id);
+            await _colleagueDiscountApplication.Restore(id);
             return RedirectToPage("./Index");
         }
     }

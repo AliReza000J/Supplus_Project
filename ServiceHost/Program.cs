@@ -1,4 +1,5 @@
 ﻿using _0_Framework.Application;
+using _0_Framework.Infrastructure;
 using AccountManagement.Configuration;
 using AccountManagement.Domain.RoleAgg;
 using BlogManagement.Configuration;
@@ -12,9 +13,9 @@ using Microsoft.OpenApi.Models;
 using ServiceHost;
 using ServiceHost.Filters;
 using ServiceHost.Middleware;
+using ServiceHost.Services;
 using ShopManagement.Configuration;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -33,12 +34,23 @@ BlogManagementBootstrapper.Configure(builder.Services, connectionString);
 CommentManagementBootstrapper.Configure(builder.Services, connectionString);
 AccountManagementBootstrapper.Configure(builder.Services, connectionString);
 
+//builder.Services.AddMemoryCache(options =>
+//{
+//    //options.SizeLimit = 512;
+//});
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
+
+
 // Add services to the container.
 builder.Services.AddTransient<IFileUploader, FileUploader>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthHelper, AuthHelper>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Arabic));
+
+builder.Services.AddScoped<ITokenCleanupService, TokenCleanupService>();
+builder.Services.AddHostedService<TokenCleanupBackgroundService>();
 
 builder.Services.AddRazorPages();
 //builder.Services.AddControllers();

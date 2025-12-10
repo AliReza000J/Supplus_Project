@@ -4,19 +4,17 @@ namespace ShopManagement.Domain.CartAgg
 {
     public class CartItem : BaseEntity
     {
+        public string CartKey { get; private set; }
         public long ProductId { get; private set; }
-        public string Picture { get; private set; } = "";
         public int Quantity { get; private set; }
-        public double UnitPrice { get; private set; } // snapshot price
 
         protected CartItem() { } // EF Core
 
-        public CartItem(long productId, int qty, double unitPrice, string picture = "")
+        public CartItem(long productId, int qty, string cartKey)
         {
             ProductId = productId;
             Quantity = qty;
-            UnitPrice = unitPrice;
-            Picture = picture ?? string.Empty;
+            CartKey = cartKey;
         }
 
         public void Increase(int qty) => Quantity += qty;

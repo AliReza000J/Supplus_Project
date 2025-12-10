@@ -3,6 +3,7 @@ using AccountManagement.Application.Contracts.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ShopManagement.Application.Contracts.Cart;
 using System.Security.Claims;
 
 namespace ServiceHost.Controllers.Auth
@@ -16,15 +17,13 @@ namespace ServiceHost.Controllers.Auth
     public class AuthController : ControllerBase
     {
         private readonly IAccountApplication _accountApp;
-        private readonly ILogger<AuthController> _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthController"/>.
         /// </summary>
-        public AuthController(IAccountApplication accountApp, ILogger<AuthController> logger)
+        public AuthController(IAccountApplication accountApp)
         {
             _accountApp = accountApp;
-            _logger = logger;
         }
 
         // ============================================================
@@ -162,32 +161,5 @@ namespace ServiceHost.Controllers.Auth
             return res.Success ? Ok(res) : BadRequest(res);
         }
 
-        // ============================================================
-        // ME (Current user profile)
-        // ============================================================
-
-        /// <summary>
-        /// Retrieves the authenticated user's profile information
-        /// based on the <c>NameIdentifier</c> claim inside the JWT token.
-        /// </summary>
-        /// <returns>User profile information.</returns>
-        /// <response code="200">User details retrieved successfully.</response>
-        /// <response code="401">Token missing or invalid.</response>
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpGet("me")]
-        public async Task<ActionResult<ApiResponse<AccountViewModel>>> Me()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrWhiteSpace(idClaim))
-                return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربر یافت نشد."));
-
-            if (!long.TryParse(idClaim, out var accountId))
-                return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربری نامعتبر است."));
-
-            var model = await _accountApp.GetAccountBy(accountId);
-
-            return Ok(ApiResponse<AccountViewModel>.Ok(model, "اطلاعات با موفقیت بازیابی شد."));
-        }
     }
 }

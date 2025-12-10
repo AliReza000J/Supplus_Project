@@ -1,0 +1,77 @@
+﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Product;
+using AccountManagement.Application.Contracts.Account;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceHost.Controllers.Auth;
+using System.Security.Claims;
+
+namespace ServiceHost.Controllers.Account
+{
+    [Route("account")]
+    [ApiController]
+    public class AccountController : ControllerBase
+    {
+        private readonly IAccountApplication _accountApp;
+        private readonly IProductQuery _productQuery;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthController"/>.
+        /// </summary>
+        public AccountController(IAccountApplication accountApp, IProductQuery productQuery)
+        {
+            _accountApp = accountApp;
+            _productQuery = productQuery;
+        }
+        // ============================================================
+        // ME (Current user profile)
+        // ============================================================
+
+        /// <summary>
+        /// Retrieves the authenticated user's profile information
+        /// based on the <c>NameIdentifier</c> claim inside the JWT token.
+        /// </summary>
+        /// <returns>User profile information.</returns>
+        /// <response code="200">User details retrieved successfully.</response>
+        /// <response code="401">Token missing or invalid.</response>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("me")]
+        public async Task<ActionResult<ApiResponse<AccountViewModel>>> Me()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var accountId))
+                return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
+
+            var model = await _accountApp.GetAccountBy(accountId);
+
+            return Ok(ApiResponse<AccountViewModel>.Ok(model, "اطلاعات با موفقیت بازیابی شد."));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("favorites")]
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> UserFavoritedProdcts()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<ProductQueryModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var accountId))
+                return Unauthorized(ApiResponse<ProductQueryModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
+
+            var favs = await _productQuery.GetUserFavoriteList(idClaim);
+
+            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(
+                favs,
+                favs.Any()
+                    ? "عملیات با موفقیت انجام شد."
+                    : $"هیچ محصولی در لیست علاقه‌مندی شما یافت نشد!."
+            ));
+        }
+    }
+}

@@ -4,7 +4,7 @@ namespace ShopManagement.Domain.CartAgg
 {
     public class Cart : BaseEntity
     {
-        public long? AccountId { get; private set; } // user id
+        public long? AccountId { get; private set; } = 0; // user id
         public string CartKey { get; private set; } // e.g. "user:123" or "anon:GUID"
         public List<CartItem> Items { get; private set; } = new();
         public DateTime LastUpdatedAt { get; private set; }
@@ -19,14 +19,14 @@ namespace ShopManagement.Domain.CartAgg
             LastUpdatedAt = DateTime.Now;
         }
 
-        public void AddItem(long productId, int qty, double unitPrice)
+        public void AddItem(long productId, int qty)
         {
             if (qty <= 0) throw new ArgumentException("qty must be > 0", nameof(qty));
 
             var item = Items.FirstOrDefault(i => i.ProductId == productId);
             if (item == null)
             {
-                Items.Add(new CartItem(productId, qty, unitPrice));
+                Items.Add(new CartItem(productId, qty, CartKey));
             }
             else
             {
@@ -60,6 +60,7 @@ namespace ShopManagement.Domain.CartAgg
             Items.Clear();
             Touch();
         }
+
         public void Merge(Cart other)
         {
             if (other == null) return;
@@ -67,7 +68,7 @@ namespace ShopManagement.Domain.CartAgg
             {
                 var existing = Items.FirstOrDefault(i => i.ProductId == o.ProductId);
                 if (existing == null)
-                    Items.Add(new CartItem(o.ProductId, o.Quantity, o.UnitPrice));
+                    Items.Add(new CartItem(o.ProductId, o.Quantity, CartKey));
                 else
                     existing.Increase(o.Quantity);
             }

@@ -20,15 +20,15 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
             _articleCategoryApplication = articleCategoryApplication;
         }
 
-        public void OnGet(long id)
+        public async Task OnGet(long id)
         {
-            Command = _articleApplication.GetDetails(id);
-            ArticleCategories = new SelectList(_articleCategoryApplication.GetArticleCategories(), "Id", "Name");
+            Command = await _articleApplication.GetDetails(id);
+            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(), "Id", "Name");
         }
 
-        public IActionResult OnPost(EditArticle command)
+        public async Task<IActionResult> OnPost(EditArticle command)
         {
-            var result = _articleApplication.Edit(command);
+            var result = await _articleApplication.Edit(command);
             return RedirectToPage("./Index");
         }
     }

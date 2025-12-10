@@ -22,19 +22,19 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         }
 
         [NeedsPermission(ShopPermissions.CreateProduct)]
-        public void OnGet()
+        public async Task OnGet()
         {
-            ProductCategories = new SelectList(_productCategoryApplication.GetLeafCategories(), "Id", "Name");
+            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(), "Id", "Name");
         }
 
         [NeedsPermission(ShopPermissions.CreateProduct)]
-        public IActionResult OnPost(CreateProduct command)
+        public async Task<IActionResult> OnPost(CreateProduct command)
         {
-            command.Categories = _productCategoryApplication.GetLeafCategories();
+            command.Categories = await _productCategoryApplication.GetLeafCategories();
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = _productApplication.Create(command);
+            var result = await _productApplication.Create(command);
             return RedirectToPage("./Index", result);
         }
     }

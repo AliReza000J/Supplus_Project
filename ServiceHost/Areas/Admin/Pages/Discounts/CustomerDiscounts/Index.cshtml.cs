@@ -24,37 +24,37 @@ namespace ServiceHost.Areas.Administration.Pages.Discounts.CustomerDiscounts
             _customerDiscountApplication = customerDiscountApplication;
         }
 
-        public void OnGet(CustomerDiscountSearchModel searchModel)
+        public async Task OnGet(CustomerDiscountSearchModel searchModel)
         {
-            Products = new SelectList(_productApplication.GetProducts(), "Id", "Name");
-            CustomerDiscounts = _customerDiscountApplication.Search(searchModel);
+            Products = new SelectList(await _productApplication.GetProducts(), "Id", "Name");
+            CustomerDiscounts = await _customerDiscountApplication.Search(searchModel);
         }
 
-        public IActionResult OnGetCreate()
+        public async Task<IActionResult> OnGetCreate()
         {
             var command = new DefineCustomerDiscount
             {
-                Products = _productApplication.GetProducts()
+                Products = await _productApplication.GetProducts()
             };
             return Partial("./Create", command);
         }
 
-        public JsonResult OnPostCreate(DefineCustomerDiscount command)
+        public async Task<JsonResult> OnPostCreate(DefineCustomerDiscount command)
         {
-            var result = _customerDiscountApplication.Define(command);
+            var result = await _customerDiscountApplication.Define(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id)
         {
-            var customerDiscount = _customerDiscountApplication.GetDetails(id);
-            customerDiscount.Products = _productApplication.GetProducts();
+            var customerDiscount = await _customerDiscountApplication.GetDetails(id);
+            customerDiscount.Products = await _productApplication.GetProducts();
             return Partial("Edit", customerDiscount);
         }
 
-        public JsonResult OnPostEdit(EditCustoemrDiscount command)
+        public async Task<JsonResult> OnPostEdit(EditCustoemrDiscount command)
         {
-            var result = _customerDiscountApplication.Edit(command);
+            var result = await _customerDiscountApplication.Edit(command);
             return new JsonResult(result);
         }
     }

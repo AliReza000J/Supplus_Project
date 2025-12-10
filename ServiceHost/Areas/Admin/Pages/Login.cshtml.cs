@@ -46,9 +46,9 @@ namespace ServiceHost.Areas.Admin.Pages
             return RedirectToPage("AccessDenied");
         }
 
-        public IActionResult OnGetLogout()
+        public async Task<IActionResult> OnGetLogout()
         {
-            _accountApplication.Logout();
+            await _accountApplication.Logout();
             return RedirectToPage("/Login");
         }
 

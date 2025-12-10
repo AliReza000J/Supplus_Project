@@ -1,13 +1,10 @@
 using _0_Framework.Infrastructure;
-using AccountManagement.Domain.RoleAgg;
 using InventoryManagement.Application.Contracts.Inventory;
 using InventoryManagement.Infrastructure.Configuration.Permissions;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
-using System.Collections.Generic;
 
 namespace ServiceHost.Areas.Admin.Pages.Inventory
 {
@@ -29,40 +26,40 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         }
 
         [NeedsPermission(InventoryPermissions.ListInventory)]
-        public void OnGet(InventorySearchModel searchModel)
+        public async Task OnGet(InventorySearchModel searchModel)
         {
-            Products = new SelectList(_productApplication.GetProducts(), "Id", "Name");
-            Inventory = _inventoryApplication.Search(searchModel);
+            Products = new SelectList(await _productApplication.GetProducts(), "Id", "Name");
+            Inventory = await _inventoryApplication.Search(searchModel);
         }
 
         [NeedsPermission(InventoryPermissions.CreateInventory)]
-        public IActionResult OnGetCreate()
+        public async Task<IActionResult> OnGetCreate()
         {
             var command = new CreateInventory
             {
-                Products = _productApplication.GetProducts()
+                Products = await _productApplication.GetProducts()
             };
             return Partial("./Create", command);
         }
 
         [NeedsPermission(InventoryPermissions.CreateInventory)]
-        public JsonResult OnPostCreate(CreateInventory command)
+        public async Task<JsonResult> OnPostCreate(CreateInventory command)
         {
-            var result = _inventoryApplication.Create(command);
+            var result = await _inventoryApplication.Create(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id)
         {
-            var inventory = _inventoryApplication.GetDetails(id);
-            inventory.Products = _productApplication.GetProducts();
+            var inventory = await _inventoryApplication.GetDetails(id);
+            inventory.Products = await _productApplication.GetProducts();
             return Partial("Edit", inventory);
         }
 
         [NeedsPermission(InventoryPermissions.EditInventory)]
-        public JsonResult OnPostEdit(EditInventory command)
+        public async Task<JsonResult> OnPostEdit(EditInventory command)
         {
-            var result = _inventoryApplication.Edit(command);
+            var result = await _inventoryApplication.Edit(command);
             return new JsonResult(result);
         }
 
@@ -76,9 +73,9 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         }
 
         [NeedsPermission(InventoryPermissions.Increase)]
-        public JsonResult OnPostIncrease(IncreaseInventory command)
+        public async Task<JsonResult> OnPostIncrease(IncreaseInventory command)
         {
-            var result = _inventoryApplication.Increase(command);
+            var result = await _inventoryApplication.Increase(command);
             return new JsonResult(result);
         }
 
@@ -92,16 +89,16 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         }
 
         [NeedsPermission(InventoryPermissions.Reduce)]
-        public JsonResult OnPostReduce(ReduceInventory command)
+        public async Task<JsonResult> OnPostReduce(ReduceInventory command)
         {
-            var result = _inventoryApplication.Reduce(command);
+            var result = await _inventoryApplication.Reduce(command);
             return new JsonResult(result);
         }
 
         [NeedsPermission(InventoryPermissions.OperationLog)]
-        public IActionResult OnGetLog(long id)
+        public async Task<IActionResult> OnGetLog(long id)
         {
-            var log = _inventoryApplication.GetOperationLog(id);
+            var log = await _inventoryApplication.GetOperationLog(id);
             return Partial("OperationLog", log);
         }
     }

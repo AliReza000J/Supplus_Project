@@ -17,9 +17,10 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label asp-for="ProductId" class="control-label">انتخاب محصول</label>
-                    <select class="form-control product-select" asp-for="ProductId"
-                            asp-items='new SelectList(Model.Products, "Id", "Name")'>
-                        <option value="0">انتخاب محصول</option>
+                    <select class="form-control select2-init" asp-for="ProductId"
+                            asp-items='new SelectList(Model.Products, "Id", "Name")'
+                            data-placeholder="انتخاب و یا جستجوی محصول ...">
+                        <option value=""></option>
                     </select>
                     <span asp-validation-for="ProductId" class="error"></span>
                 </div>

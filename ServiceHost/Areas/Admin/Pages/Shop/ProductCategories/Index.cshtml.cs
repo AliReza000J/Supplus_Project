@@ -19,34 +19,34 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         }
 
         //[NeedsPermission(ShopPermissions.ListProductCategories)]
-        public void OnGet(ProductCategorySearchModel searchModel)
+        public async Task OnGet(ProductCategorySearchModel searchModel)
         {
-            ProductCategories = _productCategoryApplication.Search(searchModel);
+            ProductCategories = await _productCategoryApplication.Search(searchModel);
         }
 
-        public IActionResult OnGetCreate()
+        public async Task<IActionResult> OnGetCreate()
         {
             var command = new CreateProductCategory
             {
-                Categories = _productCategoryApplication.GetProductCategories()
+                Categories = await _productCategoryApplication.GetProductCategories()
             };
             return Partial("./Create", command);
         }
 
         //[NeedsPermission(ShopPermissions.CreateProductCategory)]
-        public JsonResult OnPostCreate(CreateProductCategory command)
+        public async Task<JsonResult> OnPostCreate(CreateProductCategory command)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = _productCategoryApplication.Create(command);
+            var result = await _productCategoryApplication.Create(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id)
         {
-            var productCategory = _productCategoryApplication.GetDetails(id);
-            productCategory.Categories = _productCategoryApplication.GetProductCategories()
+            var productCategory = await _productCategoryApplication.GetDetails(id);
+            productCategory.Categories = (await _productCategoryApplication.GetProductCategories())
                 .Where(x => x.Id != id)
                 .ToList();
 
@@ -54,13 +54,13 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         }
 
         //[NeedsPermission(ShopPermissions.EditProductCategory)]
-        public JsonResult OnPostEdit(EditProductCategory command)
+        public async Task<JsonResult> OnPostEdit(EditProductCategory command)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
 
-            var result = _productCategoryApplication.Edit(command);
+            var result = await _productCategoryApplication.Edit(command);
             return new JsonResult(result);
         }
     }

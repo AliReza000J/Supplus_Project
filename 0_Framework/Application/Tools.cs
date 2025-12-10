@@ -53,17 +53,17 @@ namespace _0_Framework.Application
         private static readonly string[] Pn = {"۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"};
         private static readonly string[] En = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
-        public static string ToEnglishNumber(this string strNum)
+        public static string ToEnglishNumber(this string cash)
         {
-            var cash = strNum;
+            //var cash = strNum;
             for (var i = 0; i < 10; i++)
                 cash = cash.Replace(Pn[i], En[i]);
             return cash;
         }
 
-        public static string ToPersianNumber(this int intNum)
+        public static string ToPersianNumber(this string chash)
         {
-            var chash = intNum.ToString();
+            //var chash = intNum.ToString();
             for (var i = 0; i < 10; i++)
                 chash = chash.Replace(En[i], Pn[i]);
             return chash;

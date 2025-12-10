@@ -1,5 +1,7 @@
 ﻿@page
 @using ShopManagement.Configuration.Permissions
+@using _0_Framework.Application
+
 @model ServiceHost.Areas.Admin.Pages.Shop.Products.IndexModel
 @{
     Layout = "Shared/_AdminLayout";
@@ -33,9 +35,14 @@
                         <input class="form-control" asp-for="SearchModel.Code" placeholder="کد">
                     </div>
                     <div class="form-group">
+                        <label class="sr-only" asp-for="SearchModel.Brand"></label>
+                        <input class="form-control" asp-for="SearchModel.Brand" placeholder="برند (لاتین - فارسی)">
+                    </div>
+                    <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.CategoryId"></label>
-                        <select class="form-control product-select" asp-for="SearchModel.CategoryId" asp-items="Model.ProductCategories">
-                            <option value="0">گروه محصولی ...</option>
+                        <select class="form-control select2-init" asp-for="SearchModel.CategoryId" asp-items="Model.ProductCategories"
+                                data-placeholder="انتخاب و یا جستجوی گروه محصول ...">
+                            <option value=""></option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-success waves-effect waves-light m-l-10">جستجو</button>
@@ -62,8 +69,10 @@
                                     <th>عکس</th>
                                     <th>نام</th>
                                     <th>کد</th>
+                                    <th>برند (لاتین - فارسی)</th>
                                     <th>گروه</th>
                                     <th>تاریخ تولید</th>
+                                    <th>تعداد کل بازدیدها</th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -80,8 +89,10 @@
                                             <span class="full-message">@item.Name</span>
                                         </td>
                                         <td>@item.Code</td>
+                                        <td>@item.Brand</td>
                                         <td>@item.Category</td>
                                         <td>@item.CreationDate</td>
+                                        <td>@item.ViewCount.ToString().ToPersianNumber()</td>
                                         <td>
                                             <a Permission="@ShopPermissions.EditProduct"
                                                 class="btn btn-warning pull-right m-rl-5" asp-page="./Edit" asp-route-id="@item.Id">

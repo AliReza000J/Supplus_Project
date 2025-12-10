@@ -53,14 +53,15 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
                 RoleId = x.RoleId,
                 Username = x.Username,
                 IsActive = x.IsActive,
-                CreationDate = x.CreationDate.ToFarsi()
+                CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
             });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Username))
                 query = query.Where(x => x.Username.Contains(searchModel.Username));
 
             if (!string.IsNullOrWhiteSpace(searchModel.Mobile))
-                query = query.Where(x => x.Mobile.Contains(searchModel.Mobile));
+                query = query.Where(x => x.Mobile.Contains(searchModel.Mobile)
+                || x.Mobile.Contains(searchModel.Mobile.ToEnglishNumber()));
 
             if (searchModel.RoleId > 0)
                 query = query.Where(x => x.RoleId == searchModel.RoleId);

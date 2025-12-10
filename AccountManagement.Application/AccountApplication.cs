@@ -4,6 +4,7 @@ using AccountManagement.Domain.AccountAgg;
 using AccountManagement.Domain.RoleAgg;
 using AccountManagement.Domain.TokenAgg;
 using Microsoft.Extensions.Configuration;
+using ShopManagement.Application.Contracts.Cart;
 
 namespace AccountManagement.Application
 {
@@ -17,9 +18,11 @@ namespace AccountManagement.Application
         private readonly IConfiguration _config;
         private readonly ITokenRepository _tokenRepository;
         private readonly IJwtService _jwtService;
+        private readonly ICartApplication _cartApplication;
+
 
         public AccountApplication(IAccountRepository accountRepository, IPasswordHasher passwordHasher,
-            IFileUploader fileUploader, IAuthHelper authHelper, IRoleRepository roleRepository, IConfiguration config, ITokenRepository tokenRepository, IJwtService jwtService)
+            IFileUploader fileUploader, IAuthHelper authHelper, IRoleRepository roleRepository, IConfiguration config, ITokenRepository tokenRepository, IJwtService jwtService, ICartApplication cartApplication)
         {
             _authHelper = authHelper;
             _roleRepository = roleRepository;
@@ -29,6 +32,7 @@ namespace AccountManagement.Application
             _config = config;
             _tokenRepository = tokenRepository;
             _jwtService = jwtService;
+            _cartApplication = cartApplication;
         }
 
         public async Task<OperationResult> Activate(long id)
@@ -116,12 +120,12 @@ namespace AccountManagement.Application
             {
                 Id = id,
                 Fullname = account.Fullname,
-                Mobile = account.Mobile,
+                Mobile = account.Mobile.ToPersianNumber(),
                 Username = account.Username.ToLower(),
                 RoleName = Roles.GetRoleBy(account.RoleId),
                 IsActive = account.IsActive,
                 ProfilePhoto = account.ProfilePhoto,
-                CreationDate = account.CreationDate.ToFarsi(),
+                CreationDate = account.CreationDate.ToFarsi().ToPersianNumber(),
             };
         }
 
@@ -166,7 +170,7 @@ namespace AccountManagement.Application
             var authViewModel = new AuthViewModel(account.Id, account.RoleId, account.Fullname, account.Username.ToLower(), permissions);
             authViewModel.Role = Roles.GetRoleBy(account.RoleId);
 
-            _authHelper.SignIn(authViewModel);
+            await _authHelper.SignIn(authViewModel);
             return operation.Succeeded();
         }
 
@@ -189,8 +193,8 @@ namespace AccountManagement.Application
             var permissions = role?.Permissions?.Select(p => p.Code).ToList()
                               ?? new List<int>();
 
-            var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 15;
-            var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 7;
+            var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 45;
+            var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 3;
 
             var accessToken = _jwtService.GenerateAccessToken(account.Id, account.Username.ToLower(), account.RoleId, permissions, accessMinutes);
             var refreshToken = _jwtService.GenerateRefreshToken();
@@ -212,10 +216,9 @@ namespace AccountManagement.Application
             return (op.Succeeded("ورود موفق."), dto);
         }
 
-
-        public void Logout()
+        public async Task Logout()
         {
-            _authHelper.SignOut();
+            await _authHelper.SignOut();
         }
 
         public async Task<OperationResult> LogoutWithJwt(string accessToken)
@@ -256,8 +259,8 @@ namespace AccountManagement.Application
 
             var permissions = role?.Permissions?.Select(p => p.Code).ToList() ?? new List<int>();
 
-            var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 15;
-            var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 7;
+            var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 45;
+            var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 3;
 
             // revoke old token
             tokenRecord.Revoke();
@@ -319,6 +322,9 @@ namespace AccountManagement.Application
 
             _accountRepository.Create(account);
             await _accountRepository.SaveChangesAsync();
+
+            await _cartApplication.CreateCartAsync(account.Id.ToString());
+
             return operation.Succeeded("ثبت‌نام با موفقیت انجام شد.");
         }
 

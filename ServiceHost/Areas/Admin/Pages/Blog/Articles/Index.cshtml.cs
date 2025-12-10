@@ -21,10 +21,10 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
             _articleCategoryApplication = articleCategoryApplication;
         }
 
-        public void OnGet(ArticleSearchModel searchModel)
+        public async Task OnGet(ArticleSearchModel searchModel)
         {
-            ArticleCategories = new SelectList(_articleCategoryApplication.GetArticleCategories(), "Id", "Name");
-            Articles = _articleApplication.Search(searchModel);
+            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(), "Id", "Name");
+            Articles = await _articleApplication.Search(searchModel);
         }
     }
 }

@@ -22,9 +22,9 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.CreateRole)]
-        public IActionResult OnPost(CreateRole command)
+        public async Task<IActionResult> OnPost(CreateRole command)
         {
-            var result = _roleApplication.Create(command);
+            var result = await _roleApplication.Create(command);
             return RedirectToPage("Index");
         }
     }

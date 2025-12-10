@@ -1,105 +1,101 @@
 ﻿using _0_Framework.Application;
 using InventoryManagement.Application.Contracts.Inventory;
 using InventoryManagement.Domain.InventoryAgg;
-using System;
-using System.Collections.Generic;
 
 namespace InventoryManagement.Application
 {
     public class InventoryApplication : IInventoryApplication
     {
-        //private readonly IAuthHelper _authHelper;
+        private readonly IAuthHelper _authHelper;
         private readonly IInventoryRepository _inventoryRepository;
 
-        public InventoryApplication(IInventoryRepository inventoryRepository)
-        //public InventoryApplication(IInventoryRepository inventoryRepository, IAuthHelper authHelper)
+        public InventoryApplication(IInventoryRepository inventoryRepository, IAuthHelper authHelper)
         {
             _inventoryRepository = inventoryRepository;
-            //_authHelper = authHelper;
+            _authHelper = authHelper;
         }
 
-        public OperationResult Create(CreateInventory command)
+        public async Task<OperationResult> Create(CreateInventory command)
         {
             var operation = new OperationResult();
-            if (_inventoryRepository.Exists(x => x.ProductId == command.ProductId))
+            if (await _inventoryRepository
+                .ExistsAsync(x => x.ProductId == command.ProductId))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var inventory = new Inventory(command.ProductId, command.UnitPrice);
             _inventoryRepository.Create(inventory);
-            _inventoryRepository.SaveChanges();
+            await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Edit(EditInventory command)
+        public async Task<OperationResult> Edit(EditInventory command)
         {
             var operation = new OperationResult();
-            var inventory = _inventoryRepository.Get(command.Id);
+            var inventory = await _inventoryRepository.GetAsync(command.Id);
             if (inventory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (_inventoryRepository.Exists(x => x.ProductId == command.ProductId && x.Id != command.Id))
+            if (await _inventoryRepository.ExistsAsync(x => x.ProductId == command.ProductId && x.Id != command.Id))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             inventory.Edit(command.ProductId, command.UnitPrice);
-            _inventoryRepository.SaveChanges();
+            await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public EditInventory GetDetails(long id)
+        public async Task<EditInventory> GetDetails(long id)
         {
-            return _inventoryRepository.GetDetails(id);
+            return await _inventoryRepository.GetDetails(id);
         }
 
-        public List<InventoryOperationViewModel> GetOperationLog(long inventoryId)
+        public async Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId)
         {
-            return _inventoryRepository.GetOperationLog(inventoryId);
+            return await _inventoryRepository.GetOperationLog(inventoryId);
         }
 
-        public OperationResult Increase(IncreaseInventory command)
+        public async Task<OperationResult> Increase(IncreaseInventory command)
         {
             var operation = new OperationResult();
-            var inventory = _inventoryRepository.Get(command.InventoryId);
+            var inventory = await _inventoryRepository.GetAsync(command.InventoryId);
             if (inventory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            const long operatorId = 1;
+            var operatorId = _authHelper.CurrentAccountId();
             inventory.Increase(command.Count, operatorId, command.Description);
-            _inventoryRepository.SaveChanges();
+            await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Reduce(ReduceInventory command)
+        public async Task<OperationResult> Reduce(ReduceInventory command)
         {
             var operation = new OperationResult();
-            var inventory = _inventoryRepository.Get(command.InventoryId);
+            var inventory = await _inventoryRepository.GetAsync(command.InventoryId);
             if (inventory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            var operatorId = 0;
-            //var operatorId = _authHelper.CurrentAccountId();
+            var operatorId = _authHelper.CurrentAccountId();
             inventory.Reduce(command.Count, operatorId, command.Description, 0);
-            _inventoryRepository.SaveChanges();
+            await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Reduce(List<ReduceInventory> command)
+        public async Task<OperationResult> Reduce(List<ReduceInventory> command)
         {
             var operation = new OperationResult();
-            var operatorId = 0;
-            //var operatorId = _authHelper.CurrentAccountId();
+            var operatorId = _authHelper.CurrentAccountId();
             foreach (var item in command)
             {
-                var inventory = _inventoryRepository.GetBy(item.ProductId);
+                var inventory = await _inventoryRepository.GetBy(item.ProductId);
                 inventory.Reduce(item.Count, operatorId, item.Description, item.OrderId);
             }
 
-            _inventoryRepository.SaveChanges();
+            await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public List<InventoryViewModel> Search(InventorySearchModel searchModel)
+        public async Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel)
         {
-            return _inventoryRepository.Search(searchModel);
+            return await _inventoryRepository.Search(searchModel);
         }
     }
 }

@@ -45,20 +45,20 @@ namespace _0_Framework.Infrastructure
         {
             return _context.Set<T>().Any(expression);
         }
+        //////////////////////
+        //public T Get(TKey id)
+        //{
+        //    return _context.Find<T>(id);
+        //}
 
-        public T Get(TKey id)
-        {
-            return _context.Find<T>(id);
-        }
+        //public List<T> Get()
+        //{
+        //    return _context.Set<T>().ToList();
+        //}
 
-        public List<T> Get()
-        {
-            return _context.Set<T>().ToList();
-        }
-
-        public void SaveChanges()
-        {
-            _context.SaveChanges();
-        }
+        //public void SaveChanges()
+        //{
+        //    _context.SaveChanges();
+        //}
     }
 }

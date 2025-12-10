@@ -2,6 +2,7 @@
 @model ServiceHost.Areas.Admin.Pages.Discounts.ColleagueDiscounts.IndexModel
 @{
 }
+@using _0_Framework.Application
 
 @{
     Layout = "Shared/_AdminLayout";
@@ -27,8 +28,9 @@
                 <form class="form-inline" role="form" method="get">
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.ProductId"></label>
-                        <select class="form-control product-select" asp-for="SearchModel.ProductId" asp-items="Model.Products">
-                            <option value="0">انتخاب محصول ...</option>
+                        <select class="form-control select2-init" asp-for="SearchModel.ProductId" asp-items="Model.Products"
+                                data-placeholder="انتخاب و یا جستجوی محصول ...">
+                            <option value=""></option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-success waves-effect waves-light m-l-10">جستجو</button>
@@ -67,7 +69,7 @@
                                             @(item.Product.Length > 50 ? item.Product.Substring(0, 50) + "..." : item.Product)
                                             <span class="full-message">@item.Product</span>
                                         </td>
-                                        <td>@item.DiscountRate%</td>
+                                        <td>@item.DiscountRate.ToString().ToPersianNumber()%</td>
                                         <td>@item.CreationDate</td>
                                         <td>
                                             <a class="btn btn-warning btn-custom waves-effect waves-light m-b-5"

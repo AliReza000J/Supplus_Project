@@ -5,9 +5,9 @@ namespace ShopManagement.Domain.ProductAgg
 {
     public interface IProductRepository: IRepository<long, Product>
     {
-        EditProduct GetDetails(long id);
-        Product GetProductWithCategory(long id);
-        List<ProductViewModel> GetProducts();
-        List<ProductViewModel> Search(ProductSearchModel searchModel);
+        Task<EditProduct?> GetDetails(long id);
+        Task<Product?> GetProductWithCategory(long id);
+        Task<List<ProductViewModel>> GetProducts();
+        Task<List<ProductViewModel>> Search(ProductSearchModel searchModel);
     }
 }

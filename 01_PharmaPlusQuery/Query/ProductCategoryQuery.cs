@@ -323,7 +323,7 @@ namespace _01_PharmaPlusQuery.Query
             if (inv != null)
             {
                 var price = inv.UnitPrice;
-                product.Price = price.ToMoney();
+                product.Price = price.ToMoney().ToPersianNumber();
 
                 var discount = discounts.FirstOrDefault(x => x.ProductId == p.Id);
                 if (discount != null && discount.DiscountRate > 0)
@@ -332,8 +332,8 @@ namespace _01_PharmaPlusQuery.Query
                     var discountAmount = Math.Round(price * rate / 100);
                     product.HasDiscount = true;
                     product.DiscountRate = rate;
-                    product.DiscountExpireDate = discount.EndDate.ToDiscountFormat();
-                    product.PriceWithDiscount = (price - discountAmount).ToMoney();
+                    product.DiscountExpireDate = discount.EndDate.ToFarsi().ToPersianNumber();
+                    product.PriceWithDiscount = (price - discountAmount).ToMoney().ToPersianNumber();
                 }
             }
 

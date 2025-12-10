@@ -5,7 +5,7 @@
         public long InventoryId { get; set; }
         public long ProductId { get; set; }
         public long Count { get; set; }
-        public string Description { get; set; }
+        public string Description { get; set; } = "بدون توضیحات";
         public long OrderId { get; set; }
 
         public ReduceInventory()

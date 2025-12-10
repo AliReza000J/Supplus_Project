@@ -88,6 +88,9 @@ namespace BlogManagement.Infrastructure.EFCore.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -157,6 +160,29 @@ namespace BlogManagement.Infrastructure.EFCore.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ArticleCategories", (string)null);
+                });
+
+            modelBuilder.Entity("BlogManagement.Domain.UserArticleInteractionAgg.ArticleView", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<long>("ArticleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ArticleViews", (string)null);
                 });
 
             modelBuilder.Entity("BlogManagement.Domain.ArticleAgg.Article", b =>

@@ -1,11 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using _0_Framework.Application;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace _0_Framework.Application
+namespace _0_Framework.Infrastructure
 {
     public class JwtService : IJwtService
     {
@@ -66,7 +67,7 @@ namespace _0_Framework.Application
 
             try
             {
-                var principal = handler.ValidateToken(token, new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                var principal = handler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,

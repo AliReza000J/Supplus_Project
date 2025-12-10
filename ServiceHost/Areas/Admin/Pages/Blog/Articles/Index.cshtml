@@ -4,6 +4,7 @@
     Layout = "Shared/_AdminLayout";
     ViewData["title"] = "مدیریت مقالات";
 }
+@using _0_Framework.Application
 
 <div class="row">
     <div class="col-sm-12">
@@ -58,6 +59,7 @@
                                     <th>گروه</th>
                                     <th>توضیحات کوتاه</th>
                                     <th>تاریخ انتشار</th>
+                                    <th>تعداد کل بازدیدها</th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -71,8 +73,12 @@
                                         </td>
                                         <td>@item.Title</td>
                                         <td>@item.Category</td>
-                                        <td>@item.ShortDescription</td>
+                                        <td class="message-cell">
+                                            @(item.ShortDescription.Length > 50 ? item.ShortDescription.Substring(0, 50) + "..." : item.ShortDescription)
+                                            <span class="full-message">@item.ShortDescription</span>
+                                        </td>
                                         <td>@item.PublishDate</td>
+                                        <td>@item.ViewCount.ToString().ToPersianNumber()</td>
                                         <td>
                                             <a class="btn btn-warning pull-right m-rl-5" asp-page="./Edit" asp-route-id="@item.Id">
                                                 <i class="fa fa-edit"></i> ویرایش

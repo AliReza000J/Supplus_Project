@@ -35,9 +35,10 @@
             <div class="col-md-12">
                 <div class="form-group">
                     <label asp-for="ParentId" class="control-label">دسته والد</label>
-                    <select class="form-control product-select" asp-for="ParentId"
-                            asp-items="@(new SelectList(Model.Categories, "Id", "Name"))">
-                        <option value="">بدون والد (سطح اول)</option>
+                    <select class="form-control select2-init" asp-for="ParentId"
+                            asp-items="@(new SelectList(Model.Categories, "Id", "Name"))"
+                            data-placeholder="بدون والد (سطح اول)">
+                        <option value=""></option>
                     </select>
                     <span asp-validation-for="ParentId" class="error"></span>
                 </div>

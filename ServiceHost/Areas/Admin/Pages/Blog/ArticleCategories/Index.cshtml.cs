@@ -16,9 +16,9 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.ArticleCategories
             _articleCategoryApplication = articleCategoryApplication;
         }
 
-        public void OnGet(ArticleCategorySearchModel searchModel)
+        public async Task OnGet(ArticleCategorySearchModel searchModel)
         {
-            ArticleCategories = _articleCategoryApplication.Search(searchModel);
+            ArticleCategories = await _articleCategoryApplication.Search(searchModel);
         }
 
         public IActionResult OnGetCreate()
@@ -26,21 +26,21 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.ArticleCategories
             return Partial("./Create", new CreateArticleCategory());
         }
 
-        public JsonResult OnPostCreate(CreateArticleCategory command)
+        public async Task<JsonResult> OnPostCreate(CreateArticleCategory command)
         {
-            var result = _articleCategoryApplication.Create(command);
+            var result = await _articleCategoryApplication.Create(command);
             return new JsonResult(result);
         }
 
-        public IActionResult OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id)
         {
-            var productCategory = _articleCategoryApplication.GetDetails(id);
+            var productCategory = await _articleCategoryApplication.GetDetails(id);
             return Partial("Edit", productCategory);
         }
 
-        public JsonResult OnPostEdit(EditArticleCategory command)
+        public async Task<JsonResult> OnPostEdit(EditArticleCategory command)
         {
-            var result = _articleCategoryApplication.Edit(command);
+            var result = await _articleCategoryApplication.Edit(command);
             return new JsonResult(result);
         }
     }

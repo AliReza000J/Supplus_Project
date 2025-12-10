@@ -71,7 +71,7 @@ namespace _01_PharmaPlusQuery.Query
                         Picture = a.Picture,
                         PictureAlt = a.PictureAlt,
                         PictureTitle = a.PictureTitle,
-                        PublishDate = a.PublishDate.ToFarsi(),
+                        PublishDate = a.PublishDate.ToFarsi().ToPersianNumber(),
                         ShortDescription = a.ShortDescription,
                         CategoryName = a.Category.Name,
                         CategorySlug = a.Category.Slug

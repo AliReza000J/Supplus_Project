@@ -15,7 +15,7 @@ namespace ShopManagement.Application
             _slideRepository = slideRepository;
         }
 
-        public OperationResult Create(CreateSlide command)
+        public async Task<OperationResult> Create(CreateSlide command)
         {
             var operation = new OperationResult();
 
@@ -25,14 +25,14 @@ namespace ShopManagement.Application
                 command.Heading, command.Title, command.Text, command.Link, command.BtnText);
 
             _slideRepository.Create(slide);
-            _slideRepository.SaveChanges();
+            await _slideRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Edit(EditSlide command)
+        public async Task<OperationResult> Edit(EditSlide command)
         {
             var operation = new OperationResult();
-            var slide = _slideRepository.Get(command.Id);
+            var slide = await _slideRepository.GetAsync(command.Id);
             if (slide == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
@@ -40,41 +40,41 @@ namespace ShopManagement.Application
 
             slide.Edit(pictureName, command.PictureAlt, command.PictureTitle,
                 command.Heading, command.Title, command.Text, command.Link, command.BtnText);
-            _slideRepository.SaveChanges();
+            await _slideRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public EditSlide GetDetails(long id)
+        public async Task<EditSlide?> GetDetails(long id)
         {
-            return _slideRepository.GetDetails(id);
+            return await _slideRepository.GetDetails(id);
         }
 
-        public List<SlideViewModel> GetList()
+        public async Task<List<SlideViewModel>> GetList()
         {
-            return _slideRepository.GetList();
+            return await _slideRepository.GetList();
         }
 
-        public OperationResult Remove(long id)
+        public async Task<OperationResult> Remove(long id)
         {
             var operation = new OperationResult();
-            var slide = _slideRepository.Get(id);
+            var slide = await _slideRepository.GetAsync(id);
             if (slide == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             slide.Remove();
-            _slideRepository.SaveChanges();
+            await _slideRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public OperationResult Restore(long id)
+        public async Task<OperationResult> Restore(long id)
         {
             var operation = new OperationResult();
-            var slide = _slideRepository.Get(id);
+            var slide = await _slideRepository.GetAsync(id);
             if (slide == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             slide.Restore();
-            _slideRepository.SaveChanges();
+            await _slideRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
     }
