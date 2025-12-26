@@ -45,6 +45,7 @@ namespace _01_PharmaPlusQuery.Contracts.Product
 
         public DateTime? UserFavedDate { get; set; } = null;
         public string? UserFavedDateStr { get; set; } = null;
+        public bool CurrentUserFaved { get; set; }
 
         public List<CommentQueryModel> Comments { get; set; }
         public List<ProductPictureQueryModel> Pictures { get; set; }

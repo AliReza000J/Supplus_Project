@@ -90,9 +90,6 @@ namespace ShopManagement.Application
 
             product.AddView();
 
-            //if (userId != null)
-            //{ }
-
             _productViewRepository.Create(new ProductView(productId, userId));
 
             await _productViewRepository.SaveChangesAsync();

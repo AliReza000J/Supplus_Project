@@ -28,6 +28,8 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
         public async Task<IActionResult> OnPost(CreateArticle command)
         {
             var result = await _articleApplication.Create(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
         }
     }

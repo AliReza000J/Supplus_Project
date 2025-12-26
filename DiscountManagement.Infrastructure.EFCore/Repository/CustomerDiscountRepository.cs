@@ -19,6 +19,15 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
             _shopContext = shopContext;
         }
 
+        public async Task<CustomerDiscount?> GetByProductId(long productId)
+        {
+            return await _discountContext.CustomerDiscounts
+                .FirstOrDefaultAsync(x =>
+                    x.ProductId == productId &&
+                    x.StartDate <= DateTime.Now &&
+                    x.EndDate >= DateTime.Now);
+        }
+
         public async Task<EditCustoemrDiscount> GetDetails(long id)
         {
             return await _discountContext.CustomerDiscounts.Select(x => new EditCustoemrDiscount

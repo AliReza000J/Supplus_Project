@@ -5,7 +5,7 @@ namespace _01_PharmaPlusQuery.Contracts.Product
 {
     public interface IProductQuery
     {
-        Task<ProductQueryModel> GetProductDetails(string productSlug);
+        Task<ProductQueryModel> GetProductDetails(string productSlug, string accountId);
         Task<List<ProductQueryModel>> GetLatestArrivals();
         Task<List<ProductQueryModel>> GetTopRatedProducts(int take = 10);
         Task<List<ProductQueryModel>> GetMostViewedProducts(int take = 10);

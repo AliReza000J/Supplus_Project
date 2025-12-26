@@ -5,11 +5,17 @@ using AccountManagement.Domain.RoleAgg;
 using BlogManagement.Configuration;
 using CommentManagement.Infrastructure.Configuration;
 using DiscountManagement.Configuration;
+using Hangfire;
 using InventoryManagement.Configuration;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Polly;
+using QuestPDF.Drawing;
+using QuestPDF.Infrastructure;
+using Serilog;
+using Serilog.Events;
 using ServiceHost;
 using ServiceHost.Filters;
 using ServiceHost.Middleware;
@@ -23,9 +29,56 @@ using System.Text.Unicode;
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
-var connectionString = config.GetConnectionString("PharmaPlusDB");
+var connectionString = config.GetConnectionString("PharmaPlusDB") ?? "";
+
+builder.Services.AddHttpClient("SmsIr", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+})
+.AddTransientHttpErrorPolicy(policy =>
+    policy.WaitAndRetryAsync(3, retry => TimeSpan.FromSeconds(2)))
+.AddTransientHttpErrorPolicy(policy =>
+    policy.CircuitBreakerAsync(
+        handledEventsAllowedBeforeBreaking: 5,
+        durationOfBreak: TimeSpan.FromMinutes(2)));
+
 
 builder.Services.AddHttpContextAccessor();
+
+Log.Logger = new LoggerConfiguration()
+
+    .MinimumLevel.Information()
+
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
+
+    .Enrich.FromLogContext()
+
+    .Filter.ByExcluding(le =>
+    le.MessageTemplate.Text.Contains("Authorization"))
+
+    .WriteTo.Console()
+
+    .WriteTo.File(
+        path: "Logs/app/app-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 90,
+        restrictedToMinimumLevel: LogEventLevel.Information,
+        shared: true
+    )
+
+    .WriteTo.File(
+        path: "Logs/errors/error-.log",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 90,
+        restrictedToMinimumLevel: LogEventLevel.Error,
+        shared: true
+    )
+
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 
 ShopManagementBootstrapper.Configure(builder.Services, connectionString);
 DiscountManagementBootstrapper.Configure(builder.Services, connectionString);
@@ -41,6 +94,30 @@ AccountManagementBootstrapper.Configure(builder.Services, connectionString);
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
+builder.Services.AddHangfire(config =>
+{
+    config.UseSqlServerStorage(
+        builder.Configuration.GetConnectionString("Hangfire"));
+});
+
+builder.Services.AddHangfireServer();
+
+
+QuestPDF.Settings.License = LicenseType.Community;
+
+var fontPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "AdminTheme", "fonts", "IranianSans.ttf"); if (File.Exists(fontPath))
+    
+    if (File.Exists(fontPath))
+    {
+        using var fontStream = File.OpenRead(fontPath);
+        FontManager.RegisterFont(fontStream);
+        // برای اطمینان در کنسول چاپ میکنیم
+        Console.WriteLine("--- IranianSans Font Registered Successfully ---");
+    }
+    else
+    {
+        Console.WriteLine($"--- FONT NOT FOUND AT: {fontPath} ---");
+    }
 
 // Add services to the container.
 builder.Services.AddTransient<IFileUploader, FileUploader>();
@@ -49,8 +126,17 @@ builder.Services.AddScoped<IAuthHelper, AuthHelper>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Arabic));
 
+builder.Services.AddSingleton<IOtpRateLimiter, OtpRateLimiter>();
+builder.Services.AddScoped<IAdminSmsRateLimiter, AdminSmsRateLimiter>();
+
+builder.Services.AddHttpClient<IZibalService, ZibalService>();
+
+builder.Services.AddScoped<ISmsService, SmsService>();
+
 builder.Services.AddScoped<ITokenCleanupService, TokenCleanupService>();
 builder.Services.AddHostedService<TokenCleanupBackgroundService>();
+
+builder.Services.AddScoped<PostTrackingSmsJob>();
 
 builder.Services.AddRazorPages();
 //builder.Services.AddControllers();
@@ -206,6 +292,7 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseCookiePolicy();
 app.UseCors("AllowAll");
+app.UseHangfireDashboard("/hangfire");
 
 app.MapControllers();
 app.MapRazorPages();

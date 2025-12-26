@@ -61,6 +61,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         public async Task<IActionResult> OnPost(EditRole command)
         {
             var result = await _roleApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("Index");
         }
     }

@@ -59,6 +59,7 @@ namespace _01_PharmaPlusQuery.Query
                 var disc = discountList.FirstOrDefault(x => x.ProductId == item.ProductId);
                 var prod = productInfo.FirstOrDefault(x => x.Id == item.ProductId);
 
+                var invQty = (inv != null) ? inv.CalculateCurrentCount() : 0;
                 var unitPrice = inv?.UnitPrice ?? 0;
                 double totalItemAmount = 0;
                 double finalUnitPrice = 0;
@@ -83,17 +84,20 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     totalItemAmount = unitPrice * item.Quantity;
                 }
-
+                var hasDisc = disc != null && disc.DiscountRate > 0;
                 vm.Items.Add(new CartItemViewModel
                 {
                     CartKey = cartKey,
                     ProductId = prod.Id,
                     ProductName = prod.Name,
                     Picture = prod.Picture,
-                    Quantity = item.Quantity,
+                    Qty = item.Quantity,
                     UnitPrice = unitPrice.ToMoney().ToPersianNumber(),
                     PriceWithDiscount = discountedQty > 0 ? finalUnitPrice.ToMoney().ToPersianNumber() : string.Empty,
-                    DiscountedQty = discountedQty
+                    DiscountedQty = discountedQty,
+                    InvQty = (int)invQty,
+                    DiscountRate = hasDisc ? disc.DiscountRate : 0,
+                    HasDiscount = hasDisc
                 });
 
                 TotalAmount += totalItemAmount;

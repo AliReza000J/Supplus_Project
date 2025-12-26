@@ -42,6 +42,8 @@ namespace ServiceHost.Areas.Administration.Pages.Discounts.CustomerDiscounts
         public async Task<JsonResult> OnPostCreate(DefineCustomerDiscount command)
         {
             var result = await _customerDiscountApplication.Define(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -55,6 +57,8 @@ namespace ServiceHost.Areas.Administration.Pages.Discounts.CustomerDiscounts
         public async Task<JsonResult> OnPostEdit(EditCustoemrDiscount command)
         {
             var result = await _customerDiscountApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
     }

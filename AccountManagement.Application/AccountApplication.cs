@@ -5,6 +5,9 @@ using AccountManagement.Domain.RoleAgg;
 using AccountManagement.Domain.TokenAgg;
 using Microsoft.Extensions.Configuration;
 using ShopManagement.Application.Contracts.Cart;
+using System.IO;
+using System.Security.Principal;
+using static SkiaSharp.HarfBuzz.SKShaper;
 
 namespace AccountManagement.Application
 {
@@ -129,6 +132,14 @@ namespace AccountManagement.Application
             };
         }
 
+        public async Task<bool> ExistsAccountByMobile(string mobile)
+        {
+            var acc =  await _accountRepository.GetAccountByMobile(mobile);
+            if (acc == null)
+                return false;
+            return true;
+        }
+
         public async Task<List<AccountViewModel>> GetAccounts()
         {
             return await _accountRepository.GetAccountsAsync();
@@ -142,6 +153,8 @@ namespace AccountManagement.Application
         public async Task<long> GetRoleIdByUsername(string username)
         {
             var acc = await _accountRepository.GetByUsernameAsync(username.ToLower());
+            if (acc == null)
+                return 0;
             return acc.RoleId;
         }
 
@@ -188,6 +201,39 @@ namespace AccountManagement.Application
             var check = _passwordHasher.Check(account.Password, command.Password);
             if (!check.Verified)
                 return (op.Failed(ApplicationMessages.WrongUserPass), null);
+
+            var role = await _roleRepository.GetAsync(account.RoleId);
+            var permissions = role?.Permissions?.Select(p => p.Code).ToList()
+                              ?? new List<int>();
+
+            var accessMinutes = int.TryParse(_config["Jwt:AccessTokenMinutes"], out var am) ? am : 45;
+            var refreshDays = int.TryParse(_config["Jwt:RefreshTokenDays"], out var rd) ? rd : 3;
+
+            var accessToken = _jwtService.GenerateAccessToken(account.Id, account.Username.ToLower(), account.RoleId, permissions, accessMinutes);
+            var refreshToken = _jwtService.GenerateRefreshToken();
+
+            var accessExpiry = _jwtService.GetExpiration(accessToken);
+            var refreshExpiry = DateTime.UtcNow.AddDays(refreshDays);
+
+            var tokenEntity = new Token(account.Id, accessToken, accessExpiry, refreshToken, refreshExpiry);
+            await _tokenRepository.AddAsync(tokenEntity);
+
+            var dto = new JwtResponseDto
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                AccessTokenExpiry = accessExpiry,
+                RefreshTokenExpiry = refreshExpiry
+            };
+
+            return (op.Succeeded("ورود موفق."), dto);
+        }
+
+        public async Task<(OperationResult, JwtResponseDto? Data)> LoginByMobileWithJwt(string mobile)
+        {
+            var op = new OperationResult();
+
+            var account = await _accountRepository.GetAccountByMobile(mobile);
 
             var role = await _roleRepository.GetAsync(account.RoleId);
             var permissions = role?.Permissions?.Select(p => p.Code).ToList()
@@ -331,6 +377,57 @@ namespace AccountManagement.Application
         public async Task<List<AccountViewModel>> Search(AccountSearchModel searchModel)
         {
             return await _accountRepository.SearchAsync(searchModel);
+        }
+
+        public async Task<OperationResult> RegisterByMobile(RegisterByMobile command)
+        {
+            var result = new OperationResult();
+
+            if (await _accountRepository.ExistsAsync(x => x.Mobile == command.Mobile))
+                return result.Failed("این شماره قبلاً ثبت شده است.");
+
+            var roleName = Roles.GetRoleBy(Roles.Customer);
+
+            var account = new Account(
+                mobile: command.Mobile
+            );
+
+            var path = $"ProfilePhotos/{roleName}";
+
+            var seed = Guid.NewGuid().ToString("N");
+            var photo = _fileUploader.GenerateIdenticonAsFormFile(seed);
+            var picturePath = _fileUploader.Upload(photo, path);
+            account.SetProfilePhoto(picturePath);
+
+            _accountRepository.Create(account);
+            await _accountRepository.SaveChangesAsync();
+
+            return result.Succeeded("ثبت‌نام با موفقیت انجام شد.");
+        }
+
+        public async Task<OperationResult> CompleteProfile(CompleteProfile command)
+        {
+            var op = new OperationResult();
+
+            var acc = await _accountRepository.GetAsync(command.Id);
+
+            if (await _accountRepository.ExistsAsync(x => x.Username.ToLower() == command.Username.ToLower()))
+                return op.Failed
+                    ($"کاربری با نام {command.Username} وجود دارد.");
+
+            var roleName = Roles.GetRoleBy(Roles.Customer);
+            var path = $"ProfilePhotos/{roleName}";
+            var picturePath = "";
+            if (command.ProfilePhoto != null)
+                picturePath = _fileUploader.Upload(command.ProfilePhoto, path);
+
+            acc?.CompleteProfile(command.Fullname, command.Username, command.Email, command.Password, picturePath);
+
+            await _cartApplication.CreateCartAsync(command.Id.ToString());
+
+            await _accountRepository.SaveChangesAsync();
+
+            return op.Succeeded("تکمیل پروفایل با موفقیت انجام شد.");
         }
     }
 }

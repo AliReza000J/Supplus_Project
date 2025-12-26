@@ -3,7 +3,7 @@ using AccountManagement.Application.Contracts.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShopManagement.Application.Contracts.Cart;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace ServiceHost.Controllers.Auth
@@ -16,14 +16,146 @@ namespace ServiceHost.Controllers.Auth
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private readonly IOtpRateLimiter _otpRateLimiter;
+        private readonly ISmsService _smsService;
+        private readonly IMemoryCache _cache;
         private readonly IAccountApplication _accountApp;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthController"/>.
         /// </summary>
-        public AuthController(IAccountApplication accountApp)
+        public AuthController(IAccountApplication accountApp, IMemoryCache cache, ISmsService smsService, IOtpRateLimiter otpRateLimiter)
         {
             _accountApp = accountApp;
+            _cache = cache;
+            _smsService = smsService;
+            _otpRateLimiter = otpRateLimiter;
+        }
+
+        /// <summary>
+        /// Sends a one-time password (OTP) to the specified mobile number
+        /// for authentication purposes.
+        /// </summary>
+        /// <param name="mobile">
+        /// The user's mobile number to which the OTP code will be sent.
+        /// </param>
+        /// <returns>
+        /// An HTTP response indicating whether the OTP message was sent successfully
+        /// or if an error occurred during SMS delivery.
+        /// </returns>
+        /// <response code="200">
+        /// OTP code sent successfully to the provided mobile number.
+        /// </response>
+        /// <response code="400">
+        /// Failed to send OTP due to SMS service error or invalid mobile number.
+        /// </response>
+        [HttpPost("send-otp")]
+        public async Task<IActionResult> SendOtp([FromBody] string mobile)
+        {
+            var otpCode = new Random().Next(10000, 99999).ToString();
+
+            _cache.Set(mobile, otpCode, TimeSpan.FromMinutes(2));
+
+            if (!_otpRateLimiter.CanSend(mobile))
+            {
+                return BadRequest("تعداد درخواست‌های کد ورود بیش از حد مجاز است");
+            }
+
+            var sent = await _smsService.SendLoginOtpAsync(mobile, otpCode);
+
+            if (sent)
+                return Ok(new { message = "کد تایید برای شما ارسال شد." });
+            else
+                return BadRequest("خطا در ارسال پیامک. لطفا بعدا تلاش کنید.");
+        }
+
+        /// <summary>
+        /// Verifies the one-time password (OTP) sent to the user's mobile number.
+        /// If the account does not exist, a new account will be created automatically,
+        /// and the user will be logged in by issuing JWT access and refresh tokens.
+        /// </summary>
+        /// <param name="model">
+        /// OTP verification details including the mobile number and the verification code.
+        /// </param>
+        /// <returns>
+        /// A JWT authentication response containing access and refresh tokens
+        /// if verification and login succeed, or an error message otherwise.
+        /// </returns>
+        /// <response code="200">
+        /// OTP verified successfully and JWT tokens issued.
+        /// </response>
+        /// <response code="400">
+        /// OTP is invalid or expired, or registration failed.
+        /// </response>
+        /// <response code="401">
+        /// Authentication failed during login.
+        /// </response>
+        [HttpPost("verify-otp")]
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> VerifyOtp([FromBody] VerifyOtpDto model)
+        {
+            if (!_cache.TryGetValue(model.Mobile, out string cachedCode))
+            {
+                return BadRequest(ApiResponse<JwtResponseDto>
+                    .Fail("کد منقضی شده یا اشتباه است."));
+            }
+
+            if (cachedCode != model.Code)
+            {
+                return BadRequest(ApiResponse<JwtResponseDto>
+                    .Fail("کد وارد شده صحیح نیست."));
+            }
+
+            _cache.Remove(model.Mobile);
+
+            if (!await _accountApp.ExistsAccountByMobile(model.Mobile))
+            {
+                var command = new RegisterByMobile { Mobile = model.Mobile };
+                var registerOp = await _accountApp.RegisterByMobile(command);
+
+                if (!registerOp.IsSucceeded)
+                    return BadRequest(ApiResponse<JwtResponseDto>
+                        .Fail(registerOp.Message));
+            }
+
+            var (loginOp, data) = await _accountApp
+                .LoginByMobileWithJwt(model.Mobile);
+
+            if (!loginOp.IsSucceeded)
+                return Unauthorized(
+                    ApiResponse<JwtResponseDto>
+                    .Fail(loginOp.Message));
+
+            return Ok(ApiResponse<JwtResponseDto>
+                .Ok(data, loginOp.Message));
+        }
+
+        /// <summary>
+        /// Completes the authenticated user's profile information.
+        /// This endpoint requires a valid JWT access token.
+        /// </summary>
+        /// <param name="command">
+        /// Profile completion details provided by the user.
+        /// The user identifier is automatically extracted from the JWT token.
+        /// </param>
+        /// <returns>
+        /// A standard API response indicating whether the profile completion
+        /// operation was successful or not.
+        /// </returns>
+        /// <response code="200">Profile completed successfully.</response>
+        /// <response code="400">Profile completion failed due to validation or business rules.</response>
+        /// <response code="401">User is not authenticated or JWT token is invalid.</response>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("complete-profile")]
+        public async Task<ActionResult<ApiResponse<object>>> CompleteProfile(
+            [FromBody] CompleteProfile command)
+        {
+            command.Id = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+            var op = await _accountApp.CompleteProfile(command);
+            
+            return op.IsSucceeded
+                ? Ok(ApiResponse<object>.Ok(null, message: op.Message))
+                : BadRequest(ApiResponse<object>.Fail(op.Message));
         }
 
         // ============================================================
@@ -161,5 +293,10 @@ namespace ServiceHost.Controllers.Auth
             return res.Success ? Ok(res) : BadRequest(res);
         }
 
+        public class VerifyOtpDto
+        {
+            public string Mobile { get; set; }
+            public string Code { get; set; }
+        }
     }
 }

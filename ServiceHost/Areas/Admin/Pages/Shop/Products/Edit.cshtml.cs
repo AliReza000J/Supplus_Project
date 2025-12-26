@@ -38,6 +38,8 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
             var result = await _productApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index", result);
         }
     }

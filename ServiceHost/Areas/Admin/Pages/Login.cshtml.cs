@@ -1,4 +1,4 @@
-using _0_Framework.Application;
+﻿using _0_Framework.Application;
 using AccountManagement.Application.Contracts.Account;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -33,11 +33,16 @@ namespace ServiceHost.Areas.Admin.Pages
 
         public async Task<IActionResult> OnPostLoginAsync(Login command)
         {
-            if (await _accountApplication.GetRoleIdByUsername(command.Username) != 5)
+            var roleId = await _accountApplication.GetRoleIdByUsername(command.Username);
+            if (roleId != 5)
             {
                 var result = await _accountApplication.Login(command);
                 if (result.IsSucceeded)
+                {
+                    TempData["Toast.Success"] = result.IsSucceeded;
+                    TempData["Toast.Message"] = $"{command.Username} عزیز خوش آمدید!";
                     return RedirectToPage("/Index");
+                }
 
                 LoginMessage = result.Message;
                 return RedirectToPage("/Login");

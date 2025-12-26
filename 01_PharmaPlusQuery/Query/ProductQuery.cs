@@ -29,7 +29,7 @@ namespace _01_PharmaPlusQuery.Query
             //_cacheService = cache;
         }
 
-        public async Task<ProductQueryModel> GetProductDetails(string productSlug)
+        public async Task<ProductQueryModel> GetProductDetails(string productSlug, string accountId)
         {
             // -----------------------------
             // 1) Get Product Base Data
@@ -85,6 +85,11 @@ namespace _01_PharmaPlusQuery.Query
                 .CountAsync(v => v.ProductId == productId && v.CreationDate >= cutoffTime);
             var recentViews = await recentViewsTask;
 
+            // Current User favorited
+            var currentUserfaved = await _shopContext.UserFavoriteProducts
+                .AnyAsync(x => x.ProductId == productId
+                && x.UserId == accountId);
+
             // -----------------------------
             // 2) Parallel Data Fetching
             // -----------------------------
@@ -120,8 +125,11 @@ namespace _01_PharmaPlusQuery.Query
                     Rate = x.Rate,
                     ReplyDate = x.AdminReplyDate.ToFarsi().ToPersianNumber(),
                     IsBuyer = x.IsBuyer,
+                    HasEdited = x.CreationDate != x.LastModified,
                     UserId = long.Parse(x.UserIdentifier),
-                    LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber()
+                    LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber(),
+                    LikedByUserIds = new List<long>(),
+                    DislikedByUserIds = new List<long>()
                 })
                 .OrderByDescending(x => x.Id)
                 .ToListAsync();
@@ -133,11 +141,51 @@ namespace _01_PharmaPlusQuery.Query
             var commentsRaw = commentsRawTask.Result;
 
             // -----------------------------
-            // 3) Calculate Price and Stats
+            // 3) Reactions List
+            // -----------------------------
+            var commentIds = commentsRaw.Select(c => c.Id).ToList();
+
+            var reactions = await _commentContext.CommentReactions
+                .Where(r => commentIds.Contains(r.CommentId))
+                .AsNoTracking()
+                .Select(r => new
+                {
+                    r.CommentId,
+                    r.Reaction,
+                    r.UserIdentifier
+                })
+                .ToListAsync();
+
+            var reactionsLookup = reactions
+                .GroupBy(r => r.CommentId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var comment in commentsRaw)
+            {
+                if (!reactionsLookup.TryGetValue(comment.Id, out var relatedReactions))
+                    continue;
+
+                comment.LikedByUserIds = relatedReactions
+                    .Where(r => r.Reaction == ReactionType.Like)
+                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .ToList();
+
+                comment.DislikedByUserIds = relatedReactions
+                    .Where(r => r.Reaction == ReactionType.Dislike)
+                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .ToList();
+            }
+
+            // -----------------------------
+            // 4) Calculate Price and Stats
             // -----------------------------
             double unitPrice = inventory?.UnitPrice ?? 0;
             bool hasDiscount = discount != null && discount.DiscountRate > 0;
-            int discountedQty = discount.ProductCount;
+            int discountedQty = discount != null ? discount.ProductCount : 0;
             double priceWithDiscount = hasDiscount
                 ? Math.Round(unitPrice * (100 - discount.DiscountRate) / 100)
                 : unitPrice;
@@ -151,7 +199,7 @@ namespace _01_PharmaPlusQuery.Query
             var comments = commentsRaw.Where(c => !string.IsNullOrWhiteSpace(c.Message)).ToList();
 
             // -----------------------------
-            // 4) Build Final Model
+            // 5) Build Final Model
             // -----------------------------
 
             return new ProductQueryModel
@@ -167,6 +215,7 @@ namespace _01_PharmaPlusQuery.Query
                 Keywords = productBase.Keywords,
                 Slug = productBase.Slug,
                 ViewCount = productBase.ViewCount,
+                CurrentUserFaved = currentUserfaved,
 
                 CategoryName = productBase.CategoryName,
                 CategorySlug = productBase.CategorySlug,

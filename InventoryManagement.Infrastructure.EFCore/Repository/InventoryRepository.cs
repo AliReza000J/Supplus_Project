@@ -24,7 +24,7 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
             _inventoryContext = inventoryContext;
         }
 
-        public async Task<Inventory> GetBy(long productId)
+        public async Task<Inventory?> GetBy(long productId)
         {
             return await _inventoryContext.Inventory
                 .FirstOrDefaultAsync(x => x.ProductId == productId);

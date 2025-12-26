@@ -215,6 +215,31 @@ jQuery.validator.addMethod("maxfilesize", function (value, element, param) {
 // Adapter reads the "size" parameter from data-val-maxfilesize-size
 jQuery.validator.unobtrusive.adapters.addSingleVal("maxfilesize", "size");
 
+function handleJsonResponse(result) {
+    if (!result)
+        return;
+
+    showToast(result.message, result.isSucceeded);
+}
+
+function showToast(message, isSuccess) {
+    const toastEl = document.getElementById('toast');
+    const body = toastEl.querySelector('.toast-body');
+
+    body.innerText = message;
+
+    toastEl.classList.remove('bg-success', 'bg-danger');
+    toastEl.classList.add(isSuccess ? 'bg-success' : 'bg-danger');
+    toastEl.classList.add('text-white');
+
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+
+fetch(url, options)
+    .then(r => r.json())
+    .then(handleJsonResponse)
+    .catch(() => showToast("خطای غیرمنتظره‌ای رخ داد", false));
 
 
 //jQuery.validator.addMethod("fileextensionlimit", function (value, element) {

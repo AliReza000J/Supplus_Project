@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
+using static SkiaSharp.HarfBuzz.SKShaper;
 
 namespace ServiceHost.Areas.Admin.Pages.Discounts.ColleagueDiscounts
 {
@@ -42,6 +43,8 @@ namespace ServiceHost.Areas.Admin.Pages.Discounts.ColleagueDiscounts
         public async Task<JsonResult> OnPostCreate(DefineColleagueDiscount command)
         {
             var result = await _colleagueDiscountApplication.Define(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -55,18 +58,24 @@ namespace ServiceHost.Areas.Admin.Pages.Discounts.ColleagueDiscounts
         public async Task<JsonResult> OnPostEdit(EditColleagueDiscount command)
         {
             var result = await _colleagueDiscountApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
         public async Task<IActionResult> OnGetRemove(long id)
         {
-            await _colleagueDiscountApplication.Remove(id);
+            var result = await _colleagueDiscountApplication.Remove(id);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
         }
 
         public async Task<IActionResult> OnGetRestore(long id)
         {
-            await _colleagueDiscountApplication.Restore(id);
+            var result = await _colleagueDiscountApplication.Restore(id);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
         }
     }

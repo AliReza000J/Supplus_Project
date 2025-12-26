@@ -1,8 +1,6 @@
 ﻿using _0_Framework.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Domain.CartAgg;
-using ShopManagement.Domain.ProductAgg;
-using System.Globalization;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {

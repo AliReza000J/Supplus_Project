@@ -40,6 +40,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
             var result = await _productCategoryApplication.Create(command);
+
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -61,6 +64,8 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
 
 
             var result = await _productCategoryApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
     }

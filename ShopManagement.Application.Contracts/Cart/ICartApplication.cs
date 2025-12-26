@@ -7,6 +7,8 @@ namespace ShopManagement.Application.Contracts.Cart
         Task<OperationResult> CreateCartAsync(string userId);
         Task<OperationResult> ClearCartItemsAsync(string cartKey);
         Task<OperationResult> AddOrIncreaseCartItem(AddToCart command);
+        Task<OperationResult> IncreaseCartItem(IncOrDecItem command);
+        Task<OperationResult> DecreaseCartItem(IncOrDecItem command);
         Task<OperationResult> UpdateCartItemAsync(UpdateCartItem command);
         Task<OperationResult> RemoveFromCartAsync(RemoveFromCart command);
         Task<OperationResult> SyncAnonymousCartToUserAsync(string anonCartKey, long userId);

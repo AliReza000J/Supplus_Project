@@ -27,6 +27,9 @@ using ShopManagement.Domain.UserProductInteractionAgg;
 using ShopManagement.Domain.CartAgg;
 using ShopManagement.Application.Contracts.Cart;
 using _01_PharmaPlusQuery.Contracts.Cart;
+using ShopManagement.Domain.OrderAgg;
+using ShopManagement.Application.Contracts.Order;
+using _01_PharmaPlusQuery.Contracts.Order;
 //using ShopManagement.Infrastructure.InventoryAcl;
 
 namespace ShopManagement.Configuration
@@ -50,8 +53,8 @@ namespace ShopManagement.Configuration
             services.AddTransient<IProductViewRepository, ProductViewRepository>();
             services.AddTransient<IUserFavoriteProductRepository, UserFavoriteProductRepository>();
 
-            //services.AddTransient<IOrderRepository, OrderRepository>();
-            //services.AddTransient<IOrderApplication, OrderApplication>();
+            services.AddTransient<IOrderRepository, OrderRepository>();
+            services.AddTransient<IOrderApplication, OrderApplication>();
 
             services.AddTransient<ICartRepository, CartRepository>();
             services.AddTransient<ICartApplication, CartApplication>();
@@ -67,7 +70,7 @@ namespace ShopManagement.Configuration
             services.AddTransient<IProductCategoryQuery, ProductCategoryQuery>();
             services.AddTransient<IProductQuery, ProductQuery>();
             services.AddTransient<ICartQuery, CartQuery>();
-
+            services.AddTransient<IOrderQuery, OrderQuery>();
 
             services.AddTransient<IPermissionExposer, ShopPermissionExposer>();
             services.AddDbContext<ShopContext>(x => x.UseSqlServer(connectionString));

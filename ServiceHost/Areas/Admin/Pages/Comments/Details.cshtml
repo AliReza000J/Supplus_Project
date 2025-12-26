@@ -1,4 +1,5 @@
 ﻿@page "{id:long}"
+@using _0_Framework.Application
 @model ServiceHost.Areas.Admin.Pages.Comments.DetailsModel
 @{
     Layout = "Shared/_AdminLayout";
@@ -10,19 +11,22 @@
 }
 <div class="row">
     <div class="col-md-12">
-        <h3>مشاهده کامنت @Model.Comment.Username برای @Model.Comment.OwnerName</h3>
+        <h3>مشاهده کامنت @Model.Comment.Username برای <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول") @Model.Comment?.OwnerName</strong></h3>
         <hr />
         <dl class="row">
             <dt class="col-md-2">کاربر</dt>
             <dt class="col-md-10">@Model.Comment?.Username</dt>
-            <dt class="col-md-2">خریدار بوده است؟</dt>
-            <dt class="col-md-10">
-                @(Model.Comment?.IsBuyer == true ? "بله" : "خیر")
-            </dt>
-            <dt class="col-md-2">مربوط به</dt>
-            <dt class="col-md-10">@Model.Comment?.OwnerName (@(Model.Comment?.Type))</dt>
+            @if (Model.Comment?.Type == 1)
+            {
+                <dt class="col-md-2">خریدار بوده است؟</dt>
+                <dt class="col-md-10">
+                    @(Model.Comment.IsBuyer ? "بله" : "خیر")
+                </dt>
+            }
+            <dt class="col-md-2">نام <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول")</strong></dt>
+            <dt class="col-md-10"> @Model.Comment?.OwnerName</dt>
             <dt class="col-md-2">امتیاز</dt>
-            <dt class="col-md-10">@Model.Comment?.Rate</dt>
+            <dt class="col-md-10">@Model.Comment?.Rate.ToString().ToPersianNumber()</dt>
             <dt class="col-md-2">تاریخ</dt>
             <dt class="col-md-10">@Model.Comment?.CommentDate</dt>
             <dt class="col-md-2">وضعیت</dt>
@@ -50,10 +54,16 @@
         @* نمایش پاسخ ادمین در صورت وجود *@
         @if (!string.IsNullOrWhiteSpace(Model.Comment?.Reply))
         {
-            <div class="alert alert-info">
-                <strong>پاسخ ادمین:</strong>
-                <p>@Model.Comment.Reply</p>
-                <small class="text-muted">(@Model.Comment.ReplyDate)</small>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group no-margin">
+                        <div class="alert alert-info">
+                            <strong>پاسخ ادمین:</strong>
+                            <p>@Model.Comment.Reply</p>
+                            <small class="text-muted">(@Model.Comment.ReplyDate)</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
 
@@ -62,13 +72,18 @@
             <hr />
             <form method="post" asp-page-handler="Reply" class="form-inline" id="replyForm">
                 <input type="hidden" asp-for="Comment.Id" />
-                <div class="form-group w-100">
-                    <label class="sr-only" for="Reply">پاسخ ادمین</label>
-                    <textarea class="form-control w-100" asp-for="Comment.Reply" id="Reply" rows="3"
-                              placeholder="پاسخ ادمین..."></textarea>
-                </div>
-                <div class="mt-2 text-left">
-                    <button type="submit" class="btn btn-primary">@(string.IsNullOrWhiteSpace(Model.Comment.Reply) ? "ارسال پاسخ" : "ویرایش پاسخ")</button>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group no-margin">
+                            <textarea class="form-control autogrow" asp-for="Comment.Reply" id="Reply"
+                                      style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 140px; width: 780px"
+                                      placeholder="پاسخ ادمین..."></textarea>
+                            <span asp-validation-for="Comment.Reply" class="error"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-left">
+                        <button type="submit" class="btn btn-primary">@(string.IsNullOrWhiteSpace(Model.Comment.Reply) ? "ارسال پاسخ" : "ویرایش پاسخ")</button>
+                    </div>
                 </div>
             </form>
         }

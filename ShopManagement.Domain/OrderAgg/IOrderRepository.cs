@@ -5,9 +5,11 @@ namespace ShopManagement.Domain.OrderAgg
 {
     public interface IOrderRepository: IRepository<long, Order>
     {
-        Task<Order?> GetByIdAsync(long orderId);
-        Task CreateAsync(Order order);
-        List<OrderItemViewModel> GetItems(long orderId);
-        List<OrderViewModel> Search(OrderSearchModel searchModel);
+        Task<bool> HasThisUserBoughtProduct(long userId, long productId);
+        Task<Order?> GetWithItemsAsync(long orderId);
+        Task<List<OrderItemViewModel>> GetItems(long orderId);
+        Task<List<OrderViewModel>> Search(OrderSearchModel searchModel);
+        Task<OrderViewModel?> GetDetails(long orderId);
+        Task<bool> UserOwnsOrder(string userId, long orderId);
     }
 }

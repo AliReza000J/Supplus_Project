@@ -17,7 +17,9 @@ namespace ShopManagement.Domain.CartAgg
             CartKey = cartKey;
         }
 
-        public void Increase(int qty) => Quantity += qty;
+        public void IncreaseByQty(int qty) => Quantity += qty;
+        public void Increase() => Quantity ++;
+        public void Decrease() => Quantity--;
         public void ChangeQuantity(int qty) => Quantity = qty;
     }
 

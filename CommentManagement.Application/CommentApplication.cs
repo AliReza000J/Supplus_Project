@@ -3,6 +3,7 @@ using AccountManagement.Domain.AccountAgg;
 using BlogManagement.Domain.ArticleAgg;
 using CommentManagement.Application.Contracts.Comment;
 using CommentManagement.Domain.CommentAgg;
+using ShopManagement.Domain.OrderAgg;
 using ShopManagement.Domain.ProductAgg;
 
 namespace CommentManagement.Application
@@ -13,14 +14,16 @@ namespace CommentManagement.Application
         private readonly IAccountRepository _accountRepository;
         private readonly IProductRepository _productRepository;
         private readonly IArticleRepository _blogRepository;
+        private readonly IOrderRepository _orderRepository;
 
         public CommentApplication(ICommentRepository commentRepository, IAccountRepository accountRepository,
-            IProductRepository productRepository, IArticleRepository blogRepository)
+            IProductRepository productRepository, IArticleRepository blogRepository, IOrderRepository orderRepository)
         {
             _commentRepository = commentRepository;
             _accountRepository = accountRepository;
             _productRepository = productRepository;
             _blogRepository = blogRepository;
+            _orderRepository = orderRepository;
         }
 
         public async Task<OperationResult> AddAsync(AddComment command, string userIdentifier, string username)
@@ -64,6 +67,13 @@ namespace CommentManagement.Application
                 command.Type,
                 command.Rate);
 
+            if (command.Type == (int)CommentType.Product &&
+                await _orderRepository
+                .HasThisUserBoughtProduct(long.Parse(userIdentifier), command.OwnerRecordId))
+            {
+                comment.BuyerComment();
+            }
+
             _commentRepository.Create(comment);
             await _commentRepository.SaveChangesAsync();
 
@@ -86,14 +96,17 @@ namespace CommentManagement.Application
             var comment = await _commentRepository.GetAsync(command.Id);
             if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
 
-            if(await _commentRepository.OwnsComment(comment.Id, userIdentifier))
+            if (command.Message == comment.Message &&
+                command.Rate == comment.Rate)
+                return op.Failed(ApplicationMessages.DuplicatedRecord);
+
+            if (await _commentRepository.OwnsComment(comment.Id, userIdentifier))
             {
-                if(!string.IsNullOrWhiteSpace(command.Message))
-                    comment.EditMessage(command.Message);
-                
-                if(command.Rate.HasValue && command.Rate.Value is >=1 and <=5)
+                if (command.Rate.HasValue && command.Rate.Value is >= 1 and <= 5)
                     comment.EditRate(command.Rate.Value);
 
+                if (!string.IsNullOrWhiteSpace(command.Message))
+                    comment.EditMessage(command.Message);
 
                 if (string.IsNullOrWhiteSpace(command.Message))
                 {
@@ -108,7 +121,7 @@ namespace CommentManagement.Application
                 await _commentRepository.SaveChangesAsync();
                 return op.Succeeded("ویرایش انجام شد. پس از بررسی و تایید در سایت نمایش داده می‌شود.");
             }
-            
+
             return op.Failed("شما مجاز به انجام این کار نیستید.");
         }
 

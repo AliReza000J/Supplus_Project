@@ -1,4 +1,5 @@
 ﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Order;
 using _01_PharmaPlusQuery.Contracts.Product;
 using AccountManagement.Application.Contracts.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,14 +16,18 @@ namespace ServiceHost.Controllers.Account
     {
         private readonly IAccountApplication _accountApp;
         private readonly IProductQuery _productQuery;
+        private readonly IOrderQuery _orderQuery;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthController"/>.
         /// </summary>
-        public AccountController(IAccountApplication accountApp, IProductQuery productQuery)
+        public AccountController(IAccountApplication accountApp,
+            IProductQuery productQuery,
+            IOrderQuery orderQuery)
         {
             _accountApp = accountApp;
             _productQuery = productQuery;
+            _orderQuery = orderQuery;
         }
         // ============================================================
         // ME (Current user profile)
@@ -71,6 +76,28 @@ namespace ServiceHost.Controllers.Account
                 favs.Any()
                     ? "عملیات با موفقیت انجام شد."
                     : $"هیچ محصولی در لیست علاقه‌مندی شما یافت نشد!."
+            ));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("orders")]
+        public async Task<ActionResult<ApiResponse<List<OrderQueryModel>>>> GetUserOrders()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<OrderQueryModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var accountId))
+                return Unauthorized(ApiResponse<OrderQueryModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
+
+            var orders = await _orderQuery.GetOrdersByUser(accountId);
+
+            return Ok(ApiResponse<List<OrderQueryModel>>.Ok(
+                orders,
+                orders.Any()
+                    ? "عملیات با موفقیت انجام شد."
+                    : $"هیچ محصولی در لیست سفارشات پیشین شما یافت نشد!."
             ));
         }
     }

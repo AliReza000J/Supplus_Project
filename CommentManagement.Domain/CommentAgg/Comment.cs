@@ -14,7 +14,7 @@ namespace CommentManagement.Domain.CommentAgg
         public int DislikeCount { get; private set; }
         public bool IsConfirmed { get; private set; }
         public bool IsCanceled { get; private set; }
-        public bool? IsBuyer { get; private set; }
+        public bool? IsBuyer { get; private set; } = false;
 
         public string? AdminReply { get; private set; }
         public DateTime? AdminReplyDate { get; private set; }
@@ -56,6 +56,7 @@ namespace CommentManagement.Domain.CommentAgg
         public void ClearMessage()
         {
             Message = null;
+            LastModified = DateTime.Now;
         }
 
         public void EditRate(int rate)
@@ -63,7 +64,7 @@ namespace CommentManagement.Domain.CommentAgg
             if (rate >= 1 && rate <= 5)
                 Rate = rate;
 
-            IsConfirmed = false;
+            IsConfirmed = true;
             IsCanceled = false;
             LastModified = DateTime.Now;
         }
@@ -72,40 +73,34 @@ namespace CommentManagement.Domain.CommentAgg
         {
             IsConfirmed = true;
             IsCanceled = false;
-            LastModified = DateTime.Now;
         }
 
         public void Cancel()
         {
             IsCanceled = true;
             IsConfirmed = false;
-            LastModified = DateTime.Now;
         }
 
         public void AddLike()
         {
             LikeCount++;
-            //LastModified = DateTime.Now;
         }
 
         public void AddDislike()
         {
             DislikeCount++;
-            //LastModified = DateTime.Now;
         }
 
         public void AddReply(string reply)
         {
             AdminReply = reply;
             AdminReplyDate = DateTime.Now;
-            //LastModified = DateTime.Now;
         }
 
         public void EditReply(string reply)
         {
             AdminReply = reply;
             AdminReplyDate = DateTime.Now;
-            //LastModified = DateTime.Now;
         }
 
         public void RateComment(int rate)
@@ -135,5 +130,7 @@ namespace CommentManagement.Domain.CommentAgg
         {
             DislikeCount = Math.Max(0, DislikeCount - 1);
         }
+
+        public void BuyerComment() => IsBuyer = true;
     }
 }

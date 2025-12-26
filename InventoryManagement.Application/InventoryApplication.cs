@@ -60,35 +60,42 @@ namespace InventoryManagement.Application
             if (inventory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
+            if (command.Count <= 0)
+                return operation.Failed("مقدار برای فیلد تعداد افزایش مجاز نیست.");
+
             var operatorId = _authHelper.CurrentAccountId();
             inventory.Increase(command.Count, operatorId, command.Description);
             await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public async Task<OperationResult> Reduce(ReduceInventory command)
+        public async Task<OperationResult> ReduceByAdmin(ReduceInventory command)
         {
             var operation = new OperationResult();
             var inventory = await _inventoryRepository.GetAsync(command.InventoryId);
             if (inventory == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
+            if (command.Count <= 0)
+                return operation.Failed("مقدار برای فیلد تعداد کاهش مجاز نیست.");
+
+            if (inventory.CalculateCurrentCount() < command.Count)
+                return operation.Failed("تعداد کاهش از تعداد موجودی بیشتر است!");
+
             var operatorId = _authHelper.CurrentAccountId();
-            inventory.Reduce(command.Count, operatorId, command.Description, 0);
+            inventory.Reduce(command.Count, operatorId, command.Description, command.OrderId);
             await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }
 
-        public async Task<OperationResult> Reduce(List<ReduceInventory> command)
+        public async Task<OperationResult> ReduceByOrder(ReduceInventoryByOrder command)
         {
             var operation = new OperationResult();
-            var operatorId = _authHelper.CurrentAccountId();
-            foreach (var item in command)
-            {
-                var inventory = await _inventoryRepository.GetBy(item.ProductId);
-                inventory.Reduce(item.Count, operatorId, item.Description, item.OrderId);
-            }
+            var inventory = await _inventoryRepository.GetAsync(command.InventoryId);
+            if (inventory == null)
+                return operation.Failed(ApplicationMessages.RecordNotFound);
 
+            inventory.Reduce(command.Count, command.AccountId, command.Description, command.OrderId);
             await _inventoryRepository.SaveChangesAsync();
             return operation.Succeeded();
         }

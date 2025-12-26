@@ -2,13 +2,13 @@
 {
     public class OrderSearchModel
     {
+        public long? AccountId { get; set; }
         public long? OrderId { get; set; }
-        public string Mobile { get; set; }
-        public int? Status { get; set; }
-        public string PaymentMethod { get; set; }
-        public bool? IsPaid { get; set; }
+        public string? Mobile { get; set; }
+        public int? Status { get; set; } = null;
+        public int? PaymentMethod { get; set; }
 
-        public DateTime? FromDate { get; set; }
-        public DateTime? ToDate { get; set; }
+        public string? FromDate { get; set; }
+        public string? ToDate { get; set; }
     }
 }

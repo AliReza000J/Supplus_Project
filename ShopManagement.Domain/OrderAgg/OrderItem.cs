@@ -10,17 +10,17 @@ namespace ShopManagement.Domain.OrderAgg
         public int Quantity { get; private set; }
         public double UnitPrice { get; private set; }
         public int DiscountRate { get; private set; }
-        public int DiscountApplied { get; private set; }
-        public double TotalDiscountAmount => DiscountApplied * (UnitPrice * DiscountRate);
+        public int DiscountedQty { get; private set; }
+        public double TotalDiscountAmount => Math.Min(DiscountedQty, Quantity) * (UnitPrice * DiscountRate / 100);
         public double TotalPriceWithDiscount => (UnitPrice * Quantity) - TotalDiscountAmount;
 
         public long OrderId { get; private set; }
-        public Order Order { get; private set; }
+        public Order? Order { get; private set; }
         //public long? InventoryId { get; private set; }
 
         protected OrderItem() { }
         public OrderItem(long productId, int qty, double unitPrice, int discountRate,
-            string productName, int discountApplied, string picture = "")
+            string productName, int discountedQty, string picture = "")
         {
             ProductId = productId;
             Quantity = qty;
@@ -28,9 +28,11 @@ namespace ShopManagement.Domain.OrderAgg
             DiscountRate = discountRate;
             ProductName = productName;
             //InventoryId = inventoryId;
-            DiscountApplied = discountApplied;
+            DiscountedQty = discountedQty;
             Picture = picture ?? string.Empty;
         }
-        public double Total() => TotalPriceWithDiscount;
+        public double TotalPayAmount() => TotalPriceWithDiscount;
+        public double TotalDiscAmount() => TotalDiscountAmount;
+        public double Total() => UnitPrice * Quantity;
     }
 }

@@ -7,8 +7,8 @@ namespace InventoryManagement.Application.Contracts.Inventory
         Task<OperationResult> Create(CreateInventory command);
         Task<OperationResult> Edit(EditInventory command);
         Task<OperationResult> Increase(IncreaseInventory command);
-        Task<OperationResult> Reduce(ReduceInventory command);
-        Task<OperationResult> Reduce(List<ReduceInventory> command);
+        Task<OperationResult> ReduceByAdmin(ReduceInventory command);
+        Task<OperationResult> ReduceByOrder(ReduceInventoryByOrder command);
         Task<EditInventory> GetDetails(long id);
         Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel);
         Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId);

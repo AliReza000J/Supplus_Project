@@ -1,5 +1,4 @@
 ﻿using _0_Framework.Domain;
-using ShopManagement.Application.Contracts.Cart;
 
 namespace ShopManagement.Domain.CartAgg
 {

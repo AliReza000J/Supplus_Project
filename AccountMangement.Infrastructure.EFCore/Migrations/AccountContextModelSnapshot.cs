@@ -38,11 +38,13 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
                         .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("Fullname")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsProfileCompleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("Mobile")
@@ -51,7 +53,6 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Password")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 

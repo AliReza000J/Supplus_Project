@@ -91,8 +91,13 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<long>("AccountId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CardOwnerFullname")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CardOwnerNationalCode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreationDate")
@@ -101,21 +106,38 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<double>("DiscountAmount")
                         .HasColumnType("float");
 
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Mobile")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("LastModifiedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<double>("PayAmount")
                         .HasColumnType("float");
 
-                    b.Property<int>("PaymentMethod")
+                    b.Property<int>("PayMethod")
                         .HasColumnType("int");
 
+                    b.Property<string>("PaymentReceiptPic")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PaymentRefId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecieverAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecieverFullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecieverMobile")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RecieverZipCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShipTrackingNo")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Status")
@@ -123,9 +145,6 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("TrackingNo")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -143,10 +162,10 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DiscountApplied")
+                    b.Property<int>("DiscountRate")
                         .HasColumnType("int");
 
-                    b.Property<int>("DiscountRate")
+                    b.Property<int>("DiscountedQty")
                         .HasColumnType("int");
 
                     b.Property<long>("OrderId")

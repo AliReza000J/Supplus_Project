@@ -52,6 +52,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
         public async Task<JsonResult> OnPostCreateAsync(RegisterAccount command)
         {
             var result = await _accountApplication.Register(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -69,6 +71,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
         {
             var userId = _authHelper.CurrentAccountId();
             var result = await _accountApplication.Edit(command, userId.ToString());
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -82,6 +86,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
         {
             var userId = _authHelper.CurrentAccountId();
             var result = await _accountApplication.ChangePassword(command, userId.ToString());
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -92,10 +98,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
                 return RedirectToPage();
 
             var result = await _accountApplication.Delete(id);
-            if (result.IsSucceeded)
-                return RedirectToPage();
-
-            Message = result.Message;
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage();
         }
 
@@ -106,10 +110,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
                 return RedirectToPage();
 
             var result = await _accountApplication.Activate(id);
-            if (result.IsSucceeded)
-                return RedirectToPage();
-
-            Message = result.Message;
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage();
         }
     }

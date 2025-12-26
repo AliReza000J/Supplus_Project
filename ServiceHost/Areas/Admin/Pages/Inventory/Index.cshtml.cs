@@ -46,6 +46,8 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         public async Task<JsonResult> OnPostCreate(CreateInventory command)
         {
             var result = await _inventoryApplication.Create(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -60,6 +62,8 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         public async Task<JsonResult> OnPostEdit(EditInventory command)
         {
             var result = await _inventoryApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -76,6 +80,8 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         public async Task<JsonResult> OnPostIncrease(IncreaseInventory command)
         {
             var result = await _inventoryApplication.Increase(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -91,7 +97,9 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         [NeedsPermission(InventoryPermissions.Reduce)]
         public async Task<JsonResult> OnPostReduce(ReduceInventory command)
         {
-            var result = await _inventoryApplication.Reduce(command);
+            var result = await _inventoryApplication.ReduceByAdmin(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 

@@ -5,7 +5,8 @@ namespace AccountManagement.Domain.AccountAgg
 {
     public interface IAccountRepository : IRepository<long, Account>
     {
-        Task<Account> GetByUsernameAsync(string username);
+        Task<Account?> GetByUsernameAsync(string username);
+        Task<Account?> GetAccountByMobile(string mobile);
         Task<bool> ExistsAsync(string username, string mobile);
         Task<EditAccount> GetDetailsAsync(long id);
         Task<List<AccountViewModel>> GetAccountsAsync();

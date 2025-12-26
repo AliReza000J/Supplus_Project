@@ -5,6 +5,8 @@ namespace ShopManagement.Domain.ProductAgg
 {
     public interface IProductRepository: IRepository<long, Product>
     {
+        Task<string?> GetProductName(long prodcutId);
+        Task<string?> GetProductPic(long prodcutId);
         Task<EditProduct?> GetDetails(long id);
         Task<Product?> GetProductWithCategory(long id);
         Task<List<ProductViewModel>> GetProducts();

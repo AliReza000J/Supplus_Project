@@ -14,8 +14,11 @@
         public int LikeCount { get; set; }
         public int DislikeCount { get; set; }
         public bool? IsBuyer { get; set; }
+        public bool? HasEdited { get; set; }
         public string? Reply { get; set; }
         public string? ReplyDate { get; set; }
         public string? LastModifedDate { get; set; }
+        public List<long>? LikedByUserIds { get; set; }
+        public List<long>? DislikedByUserIds { get; set; }
     }
 }

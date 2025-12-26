@@ -55,6 +55,11 @@ namespace ServiceHost.Controllers.Shop
                 return BadRequest(ApiResponse<ProductQueryModel>
                     .Fail(message: "آدرس محصول ناقص است."));
 
+            long? userId = null;
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            if (long.TryParse(idClaim, out var parsedId))
+                userId = parsedId;
+
             // Extract product slug (last part of the URL)
             var productSlug = segments.Last();
 
@@ -62,7 +67,7 @@ namespace ServiceHost.Controllers.Shop
             var categoryPath = string.Join('/', segments.Take(segments.Length - 1));
 
             // Fetch product by slug
-            var product = await _productQuery.GetProductDetails(productSlug);
+            var product = await _productQuery.GetProductDetails(productSlug, idClaim);
             if (product == null)
                 return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "محصول یافت نشد."));
 
@@ -77,11 +82,6 @@ namespace ServiceHost.Controllers.Shop
                 return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "شناسه محصول معتبر نیست."));
 
             string cookieName = $"pv_{productId}";
-
-            long? userId = null;
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (long.TryParse(idClaim, out var parsedId))
-                userId = parsedId;
 
             var usernname = User.FindFirst(ClaimTypes.Name)?.Value ?? "ANON";
 

@@ -29,6 +29,8 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.ArticleCategories
         public async Task<JsonResult> OnPostCreate(CreateArticleCategory command)
         {
             var result = await _articleCategoryApplication.Create(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -41,6 +43,8 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.ArticleCategories
         public async Task<JsonResult> OnPostEdit(EditArticleCategory command)
         {
             var result = await _articleCategoryApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
     }

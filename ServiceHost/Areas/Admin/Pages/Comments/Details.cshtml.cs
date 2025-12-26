@@ -25,37 +25,15 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
             return Page();
         }
 
-        //// Confirm
-        //public IActionResult OnPostConfirm(long id)
-        //{
-        //    var result = _commentApplication.Confirm(id);
-        //    if (result.IsSucceeded)
-        //        return RedirectToPage();
-
-        //    TempData["Error"] = result.Message;
-        //    return RedirectToPage();
-        //}
-
-        //// Cancel / Reject
-        //public IActionResult OnPostCancel(long id)
-        //{
-        //    var result = _commentApplication.Cancel(id);
-        //    if (result.IsSucceeded)
-        //        return RedirectToPage();
-
-        //    TempData["Error"] = result.Message;
-        //    return RedirectToPage();
-        //}
-
         // Reply (admin)
         public async Task<IActionResult> OnPostReply(CommentViewModel comment, bool reset)
         {
             if (comment == null) return RedirectToPage();
 
             var result = await _commentApplication.Reply(comment.Id, comment.Reply ?? string.Empty);
-            TempData["Message"] = result.Message;
-
-            return RedirectToPage("./Index");
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
+            return result.IsSucceeded ? RedirectToPage("./Index") : RedirectToPage();
         }
     }
 }

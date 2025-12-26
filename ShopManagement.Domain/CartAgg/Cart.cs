@@ -30,7 +30,7 @@ namespace ShopManagement.Domain.CartAgg
             }
             else
             {
-                item.Increase(qty);
+                item.IncreaseByQty(qty);
             }
             Touch();
         }
@@ -43,6 +43,26 @@ namespace ShopManagement.Domain.CartAgg
             if (item == null) throw new InvalidOperationException("Item not found in cart");
             item.ChangeQuantity(qty);
             Touch();
+        }
+
+        public void IncreaseItem(long productId)
+        {
+            var item = Items.FirstOrDefault(i => i.ProductId == productId);
+            if (item != null)
+            {
+                item.Increase();
+                Touch();
+            }
+        }
+
+        public void DecreaseItem(long productId)
+        {
+            var item = Items.FirstOrDefault(i => i.ProductId == productId);
+            if (item != null)
+            {
+                item.Decrease();
+                Touch();
+            }
         }
 
         public void RemoveItem(long productId)
@@ -70,7 +90,7 @@ namespace ShopManagement.Domain.CartAgg
                 if (existing == null)
                     Items.Add(new CartItem(o.ProductId, o.Quantity, CartKey));
                 else
-                    existing.Increase(o.Quantity);
+                    existing.IncreaseByQty(o.Quantity);
             }
             Touch();
         }

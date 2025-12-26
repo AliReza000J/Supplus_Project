@@ -34,5 +34,11 @@ namespace DiscountManagement.Domain.CustomerDiscountAgg
             Reason = reason;
             ProductCount = productCount;
         }
+
+        public void ReduceQty(int qty)
+        {
+            if (ProductCount >= qty)
+                ProductCount -= qty;
+        }
     }
 }

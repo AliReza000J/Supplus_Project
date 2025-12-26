@@ -92,11 +92,50 @@ namespace _01_PharmaPlusQuery.Query
                     LikeCount = x.LikeCount,
                     Rate = x.Rate,
                     ReplyDate = x.AdminReplyDate.ToFarsi().ToPersianNumber(),
-                    IsBuyer = x.IsBuyer,
+                    HasEdited = x.CreationDate == x.LastModified,
                     UserId = long.Parse(x.UserIdentifier),
-                    LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber()
+                    LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber(),
+                    LikedByUserIds = new List<long>(),
+                    DislikedByUserIds = new List<long>()
                 })
                 .ToListAsync();
+
+            var commentIds = comments.Select(c => c.Id).ToList();
+
+            var reactions = await _commentContext.CommentReactions
+                .Where(r => commentIds.Contains(r.CommentId))
+                .AsNoTracking()
+                .Select(r => new
+                {
+                    r.CommentId,
+                    r.Reaction,
+                    r.UserIdentifier
+                })
+                .ToListAsync();
+
+            var reactionsLookup = reactions
+                .GroupBy(r => r.CommentId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            foreach (var comment in comments)
+            {
+                if (!reactionsLookup.TryGetValue(comment.Id, out var relatedReactions))
+                    continue;
+
+                comment.LikedByUserIds = relatedReactions
+                    .Where(r => r.Reaction == ReactionType.Like)
+                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .ToList();
+
+                comment.DislikedByUserIds = relatedReactions
+                    .Where(r => r.Reaction == ReactionType.Dislike)
+                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .ToList();
+            }
 
             // -----------------------------
             // 4) Calculate RateCount / AvgRate / CommentCount
@@ -128,7 +167,6 @@ namespace _01_PharmaPlusQuery.Query
 
             return article;
         }
-
 
         public async Task<List<ArticleQueryModel>> GetTopRatedArticles(int take = 10)
         {

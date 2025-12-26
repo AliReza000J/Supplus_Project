@@ -35,6 +35,22 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             }).FirstOrDefaultAsync(x => x.Id == id);
         }
 
+        public async Task<string?> GetProductName(long prodcutId)
+        {
+            return await _context.Products
+                .Where(x => x.Id == prodcutId)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<string?> GetProductPic(long prodcutId)
+        {
+            return await _context.Products
+                .Where(x => x.Id == prodcutId)
+                .Select(x => x.Picture)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<List<ProductViewModel>> GetProducts()
         {
             return await _context.Products.Select(x => new ProductViewModel

@@ -39,10 +39,8 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
         {
             var result = await _commentApplication.Cancel(id);
 
-            if (result.IsSucceeded)
-                return RedirectToPage();
-
-            Message = result.Message;
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage();
         }
 
@@ -50,10 +48,8 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
         {
             var result = await _commentApplication.Confirm(id);
 
-            if (result.IsSucceeded)
-                return RedirectToPage();
-
-            Message = result.Message;
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage();
         }
     }

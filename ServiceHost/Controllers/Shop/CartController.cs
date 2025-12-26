@@ -34,33 +34,58 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("items")]
-        public async Task<IActionResult> AddOrIncreaseItem(long ProductId, int qty)
+        public async Task<IActionResult> AddOrIncreaseItem([FromBody] AddToCart command)
         {
             var cartKey = GetCartKey(User);
 
-            var command = new AddToCart
-            {
-                CartKey = cartKey,
-                ProductId = ProductId,
-                Quantity = qty
-            };
+            command.CartKey = cartKey;
 
             var result = await _cartApplication.AddOrIncreaseCartItem(command);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
 
-            return Ok(ApiResponse<object>.Ok(result));
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("items/increase/{productId}")]
+        public async Task<IActionResult> IncreaseItem(long productId)
+        {
+            var cartKey = GetCartKey(User);
+            var command = new IncOrDecItem { CartKey = cartKey, ProductId = productId };
+
+            var result = await _cartApplication.IncreaseCartItem(command);
+
+            if (!result.IsSucceeded)
+                return BadRequest(ApiResponse<object>.Fail(result.Message));
+
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("items/decrease/{productId}")]
+        public async Task<IActionResult> DecreaseItem(long productId)
+        {
+            var cartKey = GetCartKey(User);
+            var command = new IncOrDecItem { CartKey = cartKey, ProductId = productId };
+
+            var result = await _cartApplication.DecreaseCartItem(command);
+
+            if (!result.IsSucceeded)
+                return BadRequest(ApiResponse<object>.Fail(result.Message));
+
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("items/{productId}")]
-        public async Task<IActionResult> UpdateItem(long productId, int qty)
+        public async Task<IActionResult> UpdateItem(long productId, [FromBody] QtyDto qty)
         {
             var cartKey = GetCartKey(User);
             var command = new UpdateCartItem
             {
-                Quantity = qty,
+                Qty = qty.Qty,
                 CartKey = cartKey,
                 ProductId = productId
             };
@@ -70,7 +95,7 @@ namespace ServiceHost.Controllers.Shop
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
 
-            return Ok(ApiResponse<object>.Ok(result));
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -83,9 +108,9 @@ namespace ServiceHost.Controllers.Shop
             var result = await _cartApplication.RemoveFromCartAsync(command);
 
             if (!result.IsSucceeded)
-                return BadRequest(ApiResponse<string>.Fail(result.Message));
+                return BadRequest(ApiResponse<object>.Fail(result.Message));
 
-            return Ok(ApiResponse<string>.Ok(result.Message));
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -96,9 +121,9 @@ namespace ServiceHost.Controllers.Shop
             var result = await _cartApplication.ClearCartItemsAsync(cartKey);
 
             if (!result.IsSucceeded)
-                return BadRequest(ApiResponse<string>.Fail(result.Message));
+                return BadRequest(ApiResponse<object>.Fail(result.Message));
 
-            return Ok(ApiResponse<string>.Ok(result.Message));
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
         }
 
         protected string GetCartKey(ClaimsPrincipal user)

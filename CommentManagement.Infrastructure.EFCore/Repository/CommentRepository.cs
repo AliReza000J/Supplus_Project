@@ -39,7 +39,7 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                     LikeCount = c.LikeCount,
                     DislikeCount = c.DislikeCount,
                     Reply = c.AdminReply,
-                    //IsBuyer = c.IsBuyer,
+                    IsBuyer = c.IsBuyer ?? false,
                     LastModified = c.LastModified.ToFarsi().ToPersianNumber(),
                     ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi().ToPersianNumber() : null
                 });
@@ -130,6 +130,7 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                 LikeCount = c.LikeCount,
                 DislikeCount = c.DislikeCount,
                 Reply = c.AdminReply,
+                IsBuyer = c.IsBuyer ?? false,
                 LastModified = c.LastModified.ToFarsi().ToPersianNumber(),
                 ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi().ToPersianNumber() : null
             };

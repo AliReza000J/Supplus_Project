@@ -25,6 +25,8 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         public async Task<IActionResult> OnPost(CreateRole command)
         {
             var result = await _roleApplication.Create(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("Index");
         }
     }

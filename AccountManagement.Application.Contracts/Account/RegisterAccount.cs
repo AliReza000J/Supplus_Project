@@ -32,4 +32,5 @@ namespace AccountManagement.Application.Contracts.Account
 
         public List<RoleViewModel>? Roles { get; set; }
     }
+
 }

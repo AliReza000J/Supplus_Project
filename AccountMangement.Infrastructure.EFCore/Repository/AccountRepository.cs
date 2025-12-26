@@ -74,12 +74,20 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
 
         public async Task<bool> ExistsAsync(string username, string mobile)
         {
-            return await _context.Accounts.AnyAsync(x => x.Username == username || x.Mobile == mobile);
+            return await _context.Accounts
+                .Where(x => x.IsActive)
+                .AnyAsync(x => x.Username == username || x.Mobile == mobile);
         }
 
-        public async Task<Account> GetByUsernameAsync(string username)
+        public async Task<Account?> GetByUsernameAsync(string username)
         {
             return await _context.Accounts.FirstOrDefaultAsync(x => x.Username == username);
+        }
+
+        public async Task<Account?> GetAccountByMobile(string mobile)
+        {
+            return await _context.Accounts
+                .FirstOrDefaultAsync(x => x.Mobile == mobile);
         }
     }
 }

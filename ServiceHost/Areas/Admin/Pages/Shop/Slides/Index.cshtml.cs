@@ -34,6 +34,8 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
             var result = await _slideApplication.Create(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
@@ -49,26 +51,24 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
             var result = await _slideApplication.Edit(command);
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
         public async Task<IActionResult> OnGetRemove(long id)
         {
             var result = await _slideApplication.Remove(id);
-            if (result.IsSucceeded)
-                return RedirectToPage("./Index");
-
-            Message = result.Message;
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
         }
 
         public async Task<IActionResult> OnGetRestore(long id)
         {
             var result = await _slideApplication.Restore(id);
-            if (result.IsSucceeded)
-                return RedirectToPage("./Index");
-
-            Message = result.Message;
+            TempData["Toast.Success"] = result.IsSucceeded;
+            TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
         }
     }
