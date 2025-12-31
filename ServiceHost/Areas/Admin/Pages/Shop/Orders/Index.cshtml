@@ -1,4 +1,5 @@
 ﻿@page
+@using ShopManagement.Configuration.Permissions
 @using ShopManagement.Domain.OrderAgg
 @using _0_Framework.Application
 @model ServiceHost.Areas.Admin.Pages.Shop.Orders.IndexModel
@@ -16,7 +17,7 @@
     </div>
 </div>
 
-<div class="row">
+<div class="row" Permission="@ShopPermissions.SearchOrders">
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -44,7 +45,7 @@
     </div>
 </div>
 
-<div class="row" id="ProductCategoriesDiv">
+<div class="row" Permission="@ShopPermissions.ListOrders" id="ProductCategoriesDiv">
     <div class="col-md-12">
         <div class="panel panel-default">
             <div class="panel-heading">
@@ -90,14 +91,16 @@
                                             <span> @OrderStatus.GetStatusTitleByCode(item.Status)</span>
                                         </td>
                                         <td>
-                                            <a class="btn btn-warning pull-right m-rl-5"
+                                            <a Permission="@ShopPermissions.ActionOrders"
+                                               class="btn btn-warning pull-right m-rl-5"
                                                asp-page="./Details"
                                                asp-route-id="@item.Id">
                                                 جزئیات
                                             </a>
-                                            <a class="btn btn-primary pull-right m-rl-5"
+                                            <a Permission="@ShopPermissions.ActionOrders"
+                                               class="btn btn-primary pull-right m-rl-5"
                                                href="#showmodal=@Url.Page("./Index", "Items", new {id = item.Id})"
-                                                onclick="$('.modal-dialog').css('width', '60%')">
+                                               onclick="$('.modal-dialog').css('width', '60%')">
                                                 <i class="fa fa-id-card"></i> آیتم ها
                                             </a>
                                         </td>

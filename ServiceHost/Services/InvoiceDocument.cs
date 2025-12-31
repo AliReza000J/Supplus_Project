@@ -4,198 +4,212 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ShopManagement.Application.Contracts.Order;
 
-public class InvoiceDocument : IDocument
+namespace ServiceHost.Services
 {
-    public OrderViewModel Model { get; }
-    private readonly string _webRootPath;
-
-    public InvoiceDocument(OrderViewModel model, string webRootPath)
+    public class InvoiceDocument : IDocument
     {
-        Model = model;
-        _webRootPath = webRootPath;
-    }
+        public OrderViewModel Model { get; }
+        private readonly string _webRootPath;
 
-    public void Compose(IDocumentContainer container)
-    {
-        container.Page(page =>
+        public InvoiceDocument(OrderViewModel model, string webRootPath)
         {
-            page.DefaultTextStyle(x => x.FontFamily("Tahoma").FontSize(10));
-            page.Margin(1.5f, Unit.Centimetre);
-            page.ContentFromRightToLeft();
-            page.PageColor(Colors.White);
+            Model = model;
+            _webRootPath = webRootPath;
+        }
 
-            // --- هدر فاکتور ---
-            page.Header().PaddingBottom(20).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Row(row =>
+        public void Compose(IDocumentContainer container)
+        {
+            container.Page(page =>
             {
-                // بخش راست: لوگو و نام
-                row.RelativeItem().Column(col =>
+                page.DefaultTextStyle(x => x.FontFamily("Tahoma").FontSize(10));
+                page.Margin(1.5f, Unit.Centimetre);
+                page.ContentFromRightToLeft();
+                page.PageColor(Colors.White);
+
+                // --- هدر فاکتور ---
+                page.Header().PaddingBottom(20).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Row(row =>
                 {
-                    var logoPath = Path.Combine(_webRootPath, "favicon.png");
-                    if (File.Exists(logoPath))
+                    // بخش راست: لوگو و نام
+                    row.RelativeItem().Column(col =>
                     {
-                        // تغییر سایز: عرض روی 50 تنظیم شد (قبلا 80 بود)
-                        col.Item().Width(50).Image(logoPath);
-                    }
-
-                    col.Item().PaddingTop(5).Text("داروخانه آنلاین فارماپلاس").FontSize(16).Bold().FontColor(Colors.Blue.Darken2);
-                });
-
-                // بخش چپ: اطلاعات فاکتور
-                row.RelativeItem().AlignLeft().Column(col =>
-                {
-                    col.Item().Text("فاکتور فروش کالا/خدمات").FontSize(14).SemiBold();
-
-                    col.Item().PaddingTop(10).Text(txt => {
-                        txt.Span("شماره سفارش: ").SemiBold();
-                        txt.Span(Model.Id.ToString().ToPersianNumber()).DirectionFromLeftToRight();
-                    });
-
-                    col.Item().Text(txt => {
-                        txt.Span("تاریخ ثبت: ").SemiBold();
-                        txt.Span(Model.CreationDate?.ToPersianNumber()).DirectionFromLeftToRight();
-                    });
-
-                    if (!string.IsNullOrEmpty(Model.RefNumber))
-                    {
-                        col.Item().PaddingTop(5).Text(txt => {
-                            txt.Span("کد پیگیری پرداخت: ").FontSize(9);
-                            txt.Span(Model.RefNumber.ToPersianNumber()).FontSize(9).DirectionFromLeftToRight();
-                        });
-                    }
-                });
-            });
-
-            // --- محتوای اصلی ---
-            page.Content().PaddingVertical(10).Column(col =>
-            {
-                // --- بخش مشخصات خریدار (اصلاح شده) ---
-                col.Item().Background(Colors.Grey.Lighten4).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c =>
-                {
-                    c.Item().PaddingBottom(10).Text("مشخصات خریدار").FontSize(12).Bold();
-
-                    // ردیف اول: نام، موبایل و کد پستی
-                    c.Item().Row(row =>
-                    {
-                        // ستون راست: نام
-                        row.RelativeItem().Text(txt => {
-                            txt.Span("نام و نام خانوادگی: ").Bold();
-                            txt.Span(Model.RecieverFullName);
-                        });
-
-                        // ستون وسط: موبایل
-                        row.RelativeItem().Text(txt => {
-                            txt.Span("شماره موبایل: ").Bold();
-                            txt.Span(Model.RecieverMobile?.ToPersianNumber()).DirectionFromLeftToRight();
-                        });
-
-                        // ستون چپ: کد پستی
-                        row.RelativeItem().Text(txt => {
-                            txt.Span("کد پستی: ").Bold();
-                            txt.Span(Model.RecieverZipCode?.ToPersianNumber()).DirectionFromLeftToRight();
-                        });
-                    });
-
-                    // خط جداکننده نازک
-                    c.Item().PaddingVertical(8).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten2);
-
-                    // ردیف دوم: آدرس (تمام عرض) - انتقال به انتها طبق درخواست
-                    c.Item().Text(txt => {
-                        txt.Span("آدرس پستی: ").Bold();
-                        txt.Span(Model.RecieverAddress?.ToPersianNumber());
-                    });
-                });
-
-                // --- جدول اقلام سفارش ---
-                col.Item().PaddingTop(20).Table(table =>
-                {
-                    table.ColumnsDefinition(columns =>
-                    {
-                        columns.ConstantColumn(30); // ردیف
-                        columns.RelativeColumn(4);  // شرح کالا
-                        columns.RelativeColumn(1);  // تعداد
-                        columns.RelativeColumn(2);  // قیمت واحد
-                        columns.RelativeColumn(2);  // تخفیف
-                        columns.RelativeColumn(2);  // مبلغ کل
-                    });
-
-                    table.Header(header =>
-                    {
-                        header.Cell().Element(HeaderStyle).Text("#");
-                        header.Cell().Element(HeaderStyle).Text("شرح کالا / خدمات");
-                        header.Cell().Element(HeaderStyle).Text("تعداد");
-                        header.Cell().Element(HeaderStyle).Text("قیمت واحد (تومان)");
-                        header.Cell().Element(HeaderStyle).Text("تخفیف (تومان)");
-                        header.Cell().Element(HeaderStyle).Text("مبلغ کل (تومان)");
-
-                        static IContainer HeaderStyle(IContainer c)
+                        var logoPath = Path.Combine(_webRootPath, "favicon.png");
+                        if (File.Exists(logoPath))
                         {
-                            return c.Background(Colors.Blue.Lighten4)
-                                    .BorderBottom(1)
-                                    .BorderColor(Colors.Blue.Lighten2)
-                                    .Padding(8)
-                                    .AlignCenter()
-                                    .DefaultTextStyle(x => x.Bold());
+                            // تغییر سایز: عرض روی 50 تنظیم شد (قبلا 80 بود)
+                            col.Item().Width(50).Image(logoPath);
+                        }
+
+                        col.Item().PaddingTop(5).Text("داروخانه آنلاین فارماپلاس").FontSize(16).Bold().FontColor(Colors.Blue.Darken2);
+                    });
+
+                    // بخش چپ: اطلاعات فاکتور
+                    row.RelativeItem().AlignLeft().Column(col =>
+                    {
+                        col.Item().Text("فاکتور فروش کالا/خدمات").FontSize(14).SemiBold();
+
+                        col.Item().PaddingTop(10).Text(txt =>
+                        {
+                            txt.Span("شماره سفارش: ").SemiBold();
+                            txt.Span(Model.Id.ToString().ToPersianNumber()).DirectionFromLeftToRight();
+                        });
+
+                        col.Item().Text(txt =>
+                        {
+                            txt.Span("تاریخ ثبت: ").SemiBold();
+                            txt.Span(Model.CreationDate?.ToPersianNumber()).DirectionFromLeftToRight();
+                        });
+
+                        if (!string.IsNullOrEmpty(Model.RefNumber))
+                        {
+                            col.Item().PaddingTop(5).Text(txt =>
+                            {
+                                txt.Span("کد پیگیری پرداخت: ").FontSize(9);
+                                txt.Span(Model.RefNumber.ToPersianNumber()).FontSize(9).DirectionFromLeftToRight();
+                            });
+                        }
+                    });
+                });
+
+                // --- محتوای اصلی ---
+                page.Content().PaddingVertical(10).Column(col =>
+                {
+                    // --- بخش مشخصات خریدار (اصلاح شده) ---
+                    col.Item().Background(Colors.Grey.Lighten4).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c =>
+                    {
+                        c.Item().PaddingBottom(10).Text("مشخصات خریدار").FontSize(12).Bold();
+
+                        // ردیف اول: نام، موبایل و کد پستی
+                        c.Item().Row(row =>
+                        {
+                            // ستون راست: نام
+                            row.RelativeItem().Text(txt =>
+                            {
+                                txt.Span("نام و نام خانوادگی: ").Bold();
+                                txt.Span(Model.RecieverFullName);
+                            });
+
+                            // ستون وسط: موبایل
+                            row.RelativeItem().Text(txt =>
+                            {
+                                txt.Span("شماره موبایل: ").Bold();
+                                txt.Span(Model.RecieverMobile?.ToPersianNumber()).DirectionFromLeftToRight();
+                            });
+
+                            // ستون چپ: کد پستی
+                            row.RelativeItem().Text(txt =>
+                            {
+                                txt.Span("کد پستی: ").Bold();
+                                txt.Span(Model.RecieverZipCode?.ToPersianNumber()).DirectionFromLeftToRight();
+                            });
+                        });
+
+                        // خط جداکننده نازک
+                        c.Item().PaddingVertical(8).LineHorizontal(0.5f).LineColor(Colors.Grey.Lighten2);
+
+                        // ردیف دوم: آدرس (تمام عرض) - انتقال به انتها طبق درخواست
+                        c.Item().Text(txt =>
+                        {
+                            txt.Span("آدرس پستی: ").Bold();
+                            txt.Span(Model.RecieverAddress?.ToPersianNumber());
+                        });
+                    });
+
+                    // --- جدول اقلام سفارش ---
+                    col.Item().PaddingTop(20).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(30); // ردیف
+                            columns.RelativeColumn(4);  // شرح کالا
+                            columns.RelativeColumn(1);  // تعداد
+                            columns.RelativeColumn(2);  // قیمت واحد
+                            columns.RelativeColumn(2);  // تخفیف
+                            columns.RelativeColumn(2);  // مبلغ کل
+                        });
+
+                        table.Header(header =>
+                        {
+                            header.Cell().Element(HeaderStyle).Text("#");
+                            header.Cell().Element(HeaderStyle).Text("شرح کالا / خدمات");
+                            header.Cell().Element(HeaderStyle).Text("تعداد");
+                            header.Cell().Element(HeaderStyle).Text("قیمت واحد (تومان)");
+                            header.Cell().Element(HeaderStyle).Text("تخفیف (تومان)");
+                            header.Cell().Element(HeaderStyle).Text("مبلغ کل (تومان)");
+
+                            static IContainer HeaderStyle(IContainer c)
+                            {
+                                return c.Background(Colors.Blue.Lighten4)
+                                        .BorderBottom(1)
+                                        .BorderColor(Colors.Blue.Lighten2)
+                                        .Padding(8)
+                                        .AlignCenter()
+                                        .DefaultTextStyle(x => x.Bold());
+                            }
+                        });
+
+                        for (int i = 0; i < Model.Items.Count; i++)
+                        {
+                            var item = Model.Items[i];
+                            var bgColor = i % 2 == 0 ? Colors.White : Colors.Grey.Lighten5;
+
+                            table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text((i + 1).ToString().ToPersianNumber()).DirectionFromLeftToRight();
+                            table.Cell().Element(c => CellStyle(c, bgColor)).Text(item.ProductName);
+                            table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.Qty.ToString().ToPersianNumber()).DirectionFromLeftToRight());
+                            table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.UnitPrice.ToMoney().ToPersianNumber()).DirectionFromLeftToRight());
+                            table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.TotalDiscountAmount.ToMoney().ToPersianNumber()).DirectionFromLeftToRight());
+                            table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.TotalPriceWithDiscount.ToMoney().ToPersianNumber()).DirectionFromLeftToRight().Bold());
+
+                            static IContainer CellStyle(IContainer c, string color) => c.Background(color).BorderBottom(1).BorderColor(Colors.Grey.Lighten4).PaddingVertical(8).PaddingHorizontal(5);
                         }
                     });
 
-                    for (int i = 0; i < Model.Items.Count; i++)
+                    // --- فوتر محاسبات (اصلاح شده) ---
+                    col.Item().PaddingTop(25).Row(row =>
                     {
-                        var item = Model.Items[i];
-                        var bgColor = i % 2 == 0 ? Colors.White : Colors.Grey.Lighten5;
+                        row.RelativeItem(1); // فضای خالی سمت راست
 
-                        table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text((i + 1).ToString().ToPersianNumber()).DirectionFromLeftToRight();
-                        table.Cell().Element(c => CellStyle(c, bgColor)).Text(item.ProductName);
-                        table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.Qty.ToString().ToPersianNumber()).DirectionFromLeftToRight());
-                        table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.UnitPrice.ToMoney().ToPersianNumber()).DirectionFromLeftToRight());
-                        table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.TotalDiscountAmount.ToMoney().ToPersianNumber()).DirectionFromLeftToRight());
-                        table.Cell().Element(c => CellStyle(c, bgColor)).AlignCenter().Text(t => t.Span(item.TotalPriceWithDiscount.ToMoney().ToPersianNumber()).DirectionFromLeftToRight().Bold());
+                        // افزایش عرض باکس محاسبات به 320 برای جلوگیری از شکستن خطوط
+                        row.ConstantItem(320).Background(Colors.Grey.Lighten5).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c =>
+                        {
+                            c.Item().Table(table =>
+                            {
+                                table.ColumnsDefinition(cols => { cols.RelativeColumn(1.5f); cols.RelativeColumn(2.5f); });
 
-                        static IContainer CellStyle(IContainer c, string color) => c.Background(color).BorderBottom(1).BorderColor(Colors.Grey.Lighten4).PaddingVertical(8).PaddingHorizontal(5);
-                    }
-                });
+                                table.Cell().PaddingBottom(5).Text("جمع کل اقلام:");
+                                table.Cell().PaddingBottom(5).AlignLeft().Text(t => t.Span($"{Model.TotalAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight());
 
-                // --- فوتر محاسبات (اصلاح شده) ---
-                col.Item().PaddingTop(25).Row(row =>
-                {
-                    row.RelativeItem(1); // فضای خالی سمت راست
+                                table.Cell().PaddingBottom(5).Text("سود شما از این خرید:");
+                                table.Cell().PaddingBottom(5).AlignLeft().Text(t => t.Span($"{Model.DiscountAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight().FontColor(Colors.Red.Medium));
+                            });
 
-                    // افزایش عرض باکس محاسبات به 320 برای جلوگیری از شکستن خطوط
-                    row.ConstantItem(320).Background(Colors.Grey.Lighten5).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c => {
-                        c.Item().Table(table => {
-                            table.ColumnsDefinition(cols => { cols.RelativeColumn(1.5f); cols.RelativeColumn(2.5f); });
-
-                            table.Cell().PaddingBottom(5).Text("جمع کل اقلام:");
-                            table.Cell().PaddingBottom(5).AlignLeft().Text(t => t.Span($"{Model.TotalAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight());
-
-                            table.Cell().PaddingBottom(5).Text("سود شما از این خرید:");
-                            table.Cell().PaddingBottom(5).AlignLeft().Text(t => t.Span($"{Model.DiscountAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight().FontColor(Colors.Red.Medium));
-                        });
-
-                        c.Item().PaddingTop(10).BorderTop(1).BorderColor(Colors.Grey.Lighten3).PaddingTop(10).Row(r => {
-                            r.RelativeItem().Text("مبلغ قابل پرداخت: (تومان)").Bold().FontSize(12);
-                            r.RelativeItem().AlignLeft().Text(t => t.Span($"{Model.PayAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight().Bold().FontSize(13).FontColor(Colors.Blue.Darken2));
+                            c.Item().PaddingTop(10).BorderTop(1).BorderColor(Colors.Grey.Lighten3).PaddingTop(10).Row(r =>
+                            {
+                                r.RelativeItem().Text("مبلغ قابل پرداخت: (تومان)").Bold().FontSize(12);
+                                r.RelativeItem().AlignLeft().Text(t => t.Span($"{Model.PayAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight().Bold().FontSize(13).FontColor(Colors.Blue.Darken2));
+                            });
                         });
                     });
                 });
-            });
 
-            // --- فوتر صفحه ---
-            page.Footer().PaddingTop(30).Column(col => {
-                col.Item().BorderTop(1).BorderColor(Colors.Grey.Lighten2).PaddingTop(10).AlignCenter().Text(x =>
+                // --- فوتر صفحه ---
+                page.Footer().PaddingTop(30).Column(col =>
                 {
-                    x.Span("از اعتماد شما به داروخانه آنلاین فارماپلاس سپاسگزاریم | ").FontSize(9).FontColor(Colors.Grey.Medium);
+                    col.Item().BorderTop(1).BorderColor(Colors.Grey.Lighten2).PaddingTop(10).AlignCenter().Text(x =>
+                    {
+                        x.Span("از اعتماد شما به داروخانه آنلاین فارماپلاس سپاسگزاریم | ").FontSize(9).FontColor(Colors.Grey.Medium);
 
-                    x.Span("صفحه ").FontSize(9);
+                        x.Span("صفحه ").FontSize(9);
 
-                    // اصلاح شماره صفحه فعلی
-                    x.CurrentPageNumber().Format(num => num.ToString().ToPersianNumber());
+                        // اصلاح شماره صفحه فعلی
+                        x.CurrentPageNumber().Format(num => num.ToString().ToPersianNumber());
 
-                    x.Span(" از ").FontSize(9);
+                        x.Span(" از ").FontSize(9);
 
-                    // اصلاح تعداد کل صفحات
-                    x.TotalPages().Format(num => num.ToString().ToPersianNumber());
+                        // اصلاح تعداد کل صفحات
+                        x.TotalPages().Format(num => num.ToString().ToPersianNumber());
+                    });
                 });
             });
-        });
+        }
     }
 }

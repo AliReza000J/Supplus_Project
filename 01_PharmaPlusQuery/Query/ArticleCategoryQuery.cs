@@ -15,7 +15,7 @@ namespace _01_PharmaPlusQuery.Query
             _blogContext = context;
         }
 
-        public async Task<List<ArticleCategoryQueryModel>> GetArticleCategories()
+        public async Task<List<ArticleCategoryQueryModel>> GetArticleCategories(CancellationToken cancellation)
         {
             return await _blogContext.ArticleCategories
                 .Include(x => x.Articles)
@@ -27,10 +27,10 @@ namespace _01_PharmaPlusQuery.Query
                     PictureTitle = x.PictureTitle,
                     Slug = x.Slug,
                     ArticlesCount = x.Articles.Count
-                }).ToListAsync();
+                }).ToListAsync(cancellation);
         }
 
-        public async Task<ArticleCategoryQueryModel> GetArticleCategory(string slug)
+        public async Task<ArticleCategoryQueryModel> GetArticleCategory(string slug, CancellationToken cancellation = default)
         {
             var category = await _blogContext.ArticleCategories
                 .Where(x => x.Slug == slug)
@@ -50,7 +50,7 @@ namespace _01_PharmaPlusQuery.Query
 
                     ArticleIds = x.Articles.Select(a => a.Id).ToList()
                 })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
 
             if (category == null)
                 return null;
@@ -77,7 +77,7 @@ namespace _01_PharmaPlusQuery.Query
                         CategorySlug = a.Category.Slug
                     })
                     .OrderByDescending(a => a.Id)
-                    .ToListAsync();
+                    .ToListAsync(cancellation);
             }
             else
             {

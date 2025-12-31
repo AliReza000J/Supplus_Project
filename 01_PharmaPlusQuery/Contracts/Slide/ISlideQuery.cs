@@ -2,6 +2,6 @@
 {
     public interface ISlideQuery
     {
-        Task<List<SlideQueryModel>> GetSlides();
+        Task<List<SlideQueryModel>> GetSlides(CancellationToken cancellation);
     }
 }

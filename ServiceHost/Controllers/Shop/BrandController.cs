@@ -20,12 +20,12 @@ namespace ServiceHost.Controllers.Shop
         [AllowAnonymous]
         [HttpGet("{brandName}")]
         public async Task<ActionResult<ApiResponse<SearchByBrandResult>>> SearchByBrand(
-    string brandName, int page = 1, int pageSize = 10)
+    string brandName, int page = 1, int pageSize = 10, CancellationToken cancellation = default)
         {
             if (string.IsNullOrWhiteSpace(brandName))
                 return BadRequest(ApiResponse<PagedResult<ProductQueryModel>>.Fail("عبارت برند نمی‌تواند خالی باشد."));
 
-            var result = await _productQuery.GetProductsByBrand(brandName, page, pageSize);
+            var result = await _productQuery.GetProductsByBrand(brandName, page, pageSize, cancellation);
 
             if (result == null || result.Products.Items.Count == 0)
                 return Ok(ApiResponse<SearchByBrandResult>.Ok(

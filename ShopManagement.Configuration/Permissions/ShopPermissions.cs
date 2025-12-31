@@ -14,5 +14,11 @@
         public const int SearchProductCategories = 21;
         public const int CreateProductCategory = 22;
         public const int EditProductCategory = 23;
+
+
+        //Order
+        public const int ListOrders = 100;
+        public const int SearchOrders = 101;
+        public const int ActionOrders = 102;
     }
 }

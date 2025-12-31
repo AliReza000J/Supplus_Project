@@ -31,6 +31,7 @@ namespace ServiceHost.Controllers.Blog
         /// <param name="articleQuery">Query service for retrieving article data.</param>
         /// <param name="articleCategoryQuery">Query service for article categories.</param>
         /// <param name="logger">Logger used for diagnostic and error tracking.</param>
+        /// <param name="articleApplication"></param>
         public ArticleController(IArticleQuery articleQuery, IArticleCategoryQuery articleCategoryQuery, ILogger<ArticleController> logger, IArticleApplication articleApplication)
         {
             _articleQuery = articleQuery;
@@ -44,6 +45,7 @@ namespace ServiceHost.Controllers.Blog
         /// </summary>
         /// <param name="articleSlug">The slug of the article.</param>
         /// <param name="categorySlug">The slug of the category to which the article belongs.</param>
+        /// <param name="cancellation"></param>
         /// <remarks>
         /// This endpoint ensures the article exists and also verifies that
         /// the article belongs to the category specified in the URL.
@@ -57,21 +59,21 @@ namespace ServiceHost.Controllers.Blog
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [AllowAnonymous]
         [HttpGet("{categorySlug}/{articleSlug}")]
-        public async Task<ActionResult<ApiResponse<ArticleQueryModel>>> GetArticleDetails(string articleSlug, string categorySlug)
+        public async Task<ActionResult<ApiResponse<ArticleQueryModel>>> GetArticleDetails(string articleSlug, string categorySlug, CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(articleSlug))
                 return BadRequest(ApiResponse<ArticleQueryModel>.Fail(message: "مسیر مقاله معتبر نیست."));
 
-            var article = await _articleQuery.GetArticleDetails(articleSlug);
+            var article = await _articleQuery.GetArticleDetails(articleSlug, cancellation);
             if (article == null)
                 return NotFound(ApiResponse<ArticleQueryModel>.Fail(message: "مقاله یافت نشد."));
 
-            var category = await _articleCategoryQuery.GetArticleCategory(categorySlug);
+            var category = await _articleCategoryQuery.GetArticleCategory(categorySlug, cancellation);
             if (category == null || article.CategorySlug != category.Slug)
                 return NotFound(ApiResponse<ArticleQueryModel>.Fail(message: "مقاله با مسیر گروه مقاله موردنظر مطابقت ندارد."));
 
 
-            var articleId = await _articleQuery.GetArticleIdBySlug(articleSlug);
+            var articleId = await _articleQuery.GetArticleIdBySlug(articleSlug, cancellation);
             if (articleId <= 0)
                 return NotFound(ApiResponse<ArticleQueryModel>.Fail(message: "شناسه مقاله معتبر نیست."));
             
@@ -122,9 +124,9 @@ namespace ServiceHost.Controllers.Blog
         /// <response code="404">No articles found.</response>
         [AllowAnonymous]
         [HttpGet("latest-arrivals")]
-        public async Task<ActionResult<ApiResponse<List<ArticleQueryModel>>>> GetLatestArrivals()
+        public async Task<ActionResult<ApiResponse<List<ArticleQueryModel>>>> GetLatestArrivals(CancellationToken cancellation)
         {
-            var articles = await _articleQuery.GetLatestArticles();
+            var articles = await _articleQuery.GetLatestArticles(cancellation);
 
             if (articles == null || !articles.Any())
                 return NotFound(ApiResponse<List<ArticleQueryModel>>.Fail(message: "هیچ مقاله‌ای یافت نشد."));
@@ -138,6 +140,7 @@ namespace ServiceHost.Controllers.Blog
         /// <param name="value">The search keyword.</param>
         /// <param name="page">Page number for pagination (default: 1).</param>
         /// <param name="pageSize">Number of items per page (default: 10).</param>
+        /// <param name="cancellation"></param>
         /// <remarks>
         /// Performs a paginated search on article titles, descriptions, or body content.
         /// </remarks>
@@ -149,13 +152,13 @@ namespace ServiceHost.Controllers.Blog
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<ActionResult<ApiResponse<PagedResult<ArticleQueryModel>>>> Search(
-            string value, int page = 1, int pageSize = 10)
+            string value, int page = 1, int pageSize = 10, CancellationToken cancellation = default)
         {
             if (string.IsNullOrWhiteSpace(value))
                 return BadRequest(ApiResponse<PagedResult<ArticleQueryModel>>
                     .Fail("عبارت جستجو نمی‌تواند خالی باشد."));
 
-            var result = await _articleQuery.Search(value, page, pageSize);
+            var result = await _articleQuery.Search(value, page, pageSize, cancellation);
 
             return Ok(ApiResponse<PagedResult<ArticleQueryModel>>.Ok(
                 result,
@@ -176,13 +179,14 @@ namespace ServiceHost.Controllers.Blog
         /// Useful for displaying "Top Rated articles" or "Most Popular Items".
         /// </remarks>
         /// <param name="take">Number of top rated articles to return (default: 10).</param>
+        /// <param name="cancellation"></param>
         /// <response code="200">Returns the list of top rated article (may be fewer than requested).</response>
         /// <response code="404">No rated or in-stock article were found.</response>
         [AllowAnonymous]
         [HttpGet("top-rated")]
-        public async Task<ActionResult<ApiResponse<List<ArticleQueryModel>>>> TopRatedArticles(int take = 10)
+        public async Task<ActionResult<ApiResponse<List<ArticleQueryModel>>>> TopRatedArticles(int take = 10, CancellationToken cancellation = default)
         {
-            var articles = await _articleQuery.GetTopRatedArticles(take);
+            var articles = await _articleQuery.GetTopRatedArticles(take, cancellation);
 
             if (articles == null || !articles.Any())
                 return NotFound(ApiResponse<List<ArticleQueryModel>>
@@ -200,13 +204,14 @@ namespace ServiceHost.Controllers.Blog
         /// Useful for displaying "Most Viewed articles" or "Most Visited articles".
         /// </remarks>
         /// <param name="take">Number of top rated articles to return (default: 10).</param>
+        /// <param name="cancellation"></param>
         /// <response code="200">Returns the list of top rated articles (may be fewer than requested).</response>
         /// <response code="404">No rated articles were found.</response>
         [AllowAnonymous]
         [HttpGet("most-viewed")]
-        public async Task<ActionResult<ApiResponse<List<ArticleQueryModel>>>> MostViewedArticles(int take = 10)
+        public async Task<ActionResult<ApiResponse<List<ArticleQueryModel>>>> MostViewedArticles(int take = 10, CancellationToken cancellation = default)
         {
-            var articles = await _articleQuery.GetMostViewedArticles(take);
+            var articles = await _articleQuery.GetMostViewedArticles(take, cancellation);
 
             if (articles == null || !articles.Any())
                 return NotFound(ApiResponse<List<ArticleQueryModel>>

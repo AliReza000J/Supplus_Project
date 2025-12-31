@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using _0_Framework.Application;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ShopManagement.Application.Contracts.Product;
 using ShopManagement.Application.Contracts.ProductPicture;
+using ShopManagement.Domain.ProductAgg;
+using ShopManagement.Domain.ProductPictureAgg;
 using System.Collections.Generic;
 
 namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
@@ -17,10 +20,13 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
 
         private readonly IProductApplication _productApplication;
         private readonly IProductPictureApplication _productPictureApplication;
-        public IndexModel(IProductApplication ProductApplication, IProductPictureApplication productPictureApplication)
+        private readonly ICacheService _cacheService;
+
+        public IndexModel(IProductApplication ProductApplication, IProductPictureApplication productPictureApplication, ICacheService cacheService)
         {
             _productApplication = ProductApplication;
             _productPictureApplication = productPictureApplication;
+            _cacheService = cacheService;
         }
 
         public async Task OnGet(ProductPictureSearchModel searchModel)
@@ -62,6 +68,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
             var result = await _productPictureApplication.Edit(command);
+            _cacheService.Remove($"product:pictures:{command.ProductId}");
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
@@ -70,6 +77,8 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
         public async Task<IActionResult> OnGetRemove(long id)
         {
             var result = await _productPictureApplication.Remove(id);
+            var productPicture = await _productPictureApplication.GetDetails(id);
+            _cacheService.Remove($"product:pictures:{productPicture?.ProductId}");
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
@@ -78,6 +87,8 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductPictures
         public async Task<IActionResult> OnGetRestore(long id)
         {
             var result = await _productPictureApplication.Restore(id);
+            var productPicture = await _productPictureApplication.GetDetails(id);
+            _cacheService.Remove($"product:pictures:{productPicture?.ProductId}");
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");

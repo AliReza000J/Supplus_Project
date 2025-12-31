@@ -1,11 +1,9 @@
 ﻿using _0_Framework.Application;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using QuestPDF.Fluent;
 using ServiceHost.Services;
-using ShopManagement.Application;
 using ShopManagement.Application.Contracts.Order;
 using ShopManagement.Domain.OrderAgg;
 using System.Security.Claims;

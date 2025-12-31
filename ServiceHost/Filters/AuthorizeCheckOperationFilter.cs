@@ -2,17 +2,19 @@
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-public class AddAuthRequirementOperationFilter : IOperationFilter
+namespace ServiceHost.Filters
 {
-    public void Apply(OpenApiOperation operation, OperationFilterContext context)
+    public class AddAuthRequirementOperationFilter : IOperationFilter
     {
-        var hasAuthorize = context.MethodInfo.GetCustomAttributes(true).OfType<AuthorizeAttribute>().Any()
-                        || context.MethodInfo.DeclaringType.GetCustomAttributes(true).OfType<AuthorizeAttribute>().Any();
+        public void Apply(OpenApiOperation operation, OperationFilterContext context)
+        {
+            var hasAuthorize = context.MethodInfo.GetCustomAttributes(true).OfType<AuthorizeAttribute>().Any()
+                            || context.MethodInfo.DeclaringType.GetCustomAttributes(true).OfType<AuthorizeAttribute>().Any();
 
-        if (!hasAuthorize) return;
+            if (!hasAuthorize) return;
 
-        operation.Security ??= new List<OpenApiSecurityRequirement>();
-        operation.Security.Add(new OpenApiSecurityRequirement()
+            operation.Security ??= new List<OpenApiSecurityRequirement>();
+            operation.Security.Add(new OpenApiSecurityRequirement()
         {
             {
                 new OpenApiSecurityScheme
@@ -24,5 +26,6 @@ public class AddAuthRequirementOperationFilter : IOperationFilter
                 }, new string[]{}
             }
         });
+        }
     }
 }

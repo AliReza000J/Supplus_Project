@@ -136,6 +136,9 @@ namespace ShopManagement.Application
                 if (inv == null)
                     return (null, op.Failed("این محصول در انبار وجود ندارد."));
 
+                if(inv.CalculateCurrentCount() <= 0)
+                    return (null, op.Failed("این محصول ناموجود است."));
+
                 var disc = await _discountRepository.GetByProductId(cartItem.ProductId);
                 var discRate = disc != null ? disc.DiscountRate : 0;
                 var discQty = disc != null ? disc.ProductCount : 0;

@@ -22,7 +22,7 @@ namespace _01_PharmaPlusQuery.Query
             _cacheService = cache;
         }
 
-        public async Task<ArticleQueryModel> GetArticleDetails(string slug)
+        public async Task<ArticleQueryModel> GetArticleDetails(string slug, CancellationToken cancellation = default)
         {
             var cacheKey = $"article-details-{slug}";
 
@@ -31,7 +31,7 @@ namespace _01_PharmaPlusQuery.Query
             // -----------------------------
             var article = await _cacheService.GetOrCreateAsync(
                 cacheKey,
-                async () =>
+                factory: async () =>
                 {
                     return await _blogContext.Articles
                         .AsNoTracking()
@@ -55,10 +55,11 @@ namespace _01_PharmaPlusQuery.Query
                             CategoryName = x.Category.Name,
                             CategorySlug = x.Category.Slug
                         })
-                        .FirstOrDefaultAsync();
+                        .FirstOrDefaultAsync(cancellation);
                 },
-                absoluteExpiration: TimeSpan.FromMinutes(10),
-                slidingExpiration: TimeSpan.FromMinutes(5)
+                absoluteExpiration: TimeSpan.FromHours(1),
+                slidingExpiration: TimeSpan.FromMinutes(20),
+                size: 1
             );
 
             if (article == null)
@@ -98,7 +99,7 @@ namespace _01_PharmaPlusQuery.Query
                     LikedByUserIds = new List<long>(),
                     DislikedByUserIds = new List<long>()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var commentIds = comments.Select(c => c.Id).ToList();
 
@@ -111,7 +112,7 @@ namespace _01_PharmaPlusQuery.Query
                     r.Reaction,
                     r.UserIdentifier
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var reactionsLookup = reactions
                 .GroupBy(r => r.CommentId)
@@ -168,7 +169,7 @@ namespace _01_PharmaPlusQuery.Query
             return article;
         }
 
-        public async Task<List<ArticleQueryModel>> GetTopRatedArticles(int take = 10)
+        public async Task<List<ArticleQueryModel>> GetTopRatedArticles(int take = 10, CancellationToken cancellation = default)
         {
             if (take <= 0)
                 take = 10;
@@ -176,7 +177,7 @@ namespace _01_PharmaPlusQuery.Query
             var publishedArticledIds = await _blogContext.Articles
                 .Where(x => x.PublishDate <= DateTime.Now)
                 .Select(x => x.Id)
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             if (!publishedArticledIds.Any())
                 return new List<ArticleQueryModel>();
@@ -193,7 +194,7 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var popularIds = avgRates
                 .Where(x => publishedArticledIds.Contains(x.ArticleId))
@@ -223,7 +224,7 @@ namespace _01_PharmaPlusQuery.Query
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug,
-                }).AsNoTracking().ToListAsync();
+                }).AsNoTracking().ToListAsync(cancellation);
 
             foreach (var article in articles)
             {
@@ -241,7 +242,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<List<ArticleQueryModel>> GetLatestArticles()
+        public async Task<List<ArticleQueryModel>> GetLatestArticles(CancellationToken cancellation)
         {
             // ---------- Calculate AvgRate from Comments ----------
             var avgRates = await _commentContext.Comments
@@ -251,11 +252,11 @@ namespace _01_PharmaPlusQuery.Query
                 .GroupBy(x => x.OwnerRecordId)
                 .Select(g => new
                 {
-                    ArticleId = g.Key,  
+                    ArticleId = g.Key,
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var articles = await _blogContext.Articles
                 .Include(x => x.Category)
@@ -272,7 +273,7 @@ namespace _01_PharmaPlusQuery.Query
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug,
-                }).ToListAsync();
+                }).ToListAsync(cancellation);
 
             foreach (var article in articles)
             {
@@ -287,7 +288,7 @@ namespace _01_PharmaPlusQuery.Query
             return articles;
         }
 
-        public async Task<PagedResult<ArticleQueryModel>> Search(string value, int page, int pageSize)
+        public async Task<PagedResult<ArticleQueryModel>> Search(string value, int page, int pageSize, CancellationToken cancellation)
         {
             // ---------- Calculate AvgRate from Comments ----------
             var avgRates = await _commentContext.Comments
@@ -297,11 +298,11 @@ namespace _01_PharmaPlusQuery.Query
                 .GroupBy(x => x.OwnerRecordId)
                 .Select(g => new
                 {
-                    ArticleId = g.Key,  
+                    ArticleId = g.Key,
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 10;
@@ -325,7 +326,7 @@ namespace _01_PharmaPlusQuery.Query
                     EF.Functions.Like(x.Category.Name.ToLower(), $"%{value}%"));
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(cancellation);
 
             var items = await query
                 .OrderByDescending(x => x.Id)
@@ -344,7 +345,7 @@ namespace _01_PharmaPlusQuery.Query
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             foreach (var article in items)
             {
@@ -366,7 +367,7 @@ namespace _01_PharmaPlusQuery.Query
             };
         }
 
-        public async Task<List<ArticleQueryModel>> GetMostViewedArticles(int take = 10)
+        public async Task<List<ArticleQueryModel>> GetMostViewedArticles(int take = 10, CancellationToken cancellation = default)
         {
             if (take <= 0)
                 take = 10;
@@ -374,7 +375,7 @@ namespace _01_PharmaPlusQuery.Query
             var publishedArticledIds = await _blogContext.Articles
                 .Where(x => x.PublishDate <= DateTime.Now)
                 .Select(x => x.Id)
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             if (!publishedArticledIds.Any())
                 return new List<ArticleQueryModel>();
@@ -391,14 +392,14 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-            .ToListAsync();
+                .ToListAsync(cancellation);
 
             var popularIds = await _blogContext.Articles
                 .Where(x => publishedArticledIds.Contains(x.Id))
                 .OrderByDescending(x => x.ViewCount)
                 .Take(take)
                 .Select(x => x.Id)
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             if (!popularIds.Any())
                 return new List<ArticleQueryModel>();
@@ -421,7 +422,7 @@ namespace _01_PharmaPlusQuery.Query
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug,
-                }).AsNoTracking().ToListAsync();
+                }).AsNoTracking().ToListAsync(cancellation);
 
             foreach (var article in articles)
             {
@@ -440,12 +441,12 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<long> GetArticleIdBySlug(string articleSlug)
+        public async Task<long> GetArticleIdBySlug(string articleSlug, CancellationToken cancellation = default)
         {
             return await _blogContext.Articles
                 .Where(x => x.Slug == articleSlug)
                 .Select(x => x.Id)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
         }
     }
 }

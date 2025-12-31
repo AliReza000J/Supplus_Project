@@ -15,6 +15,7 @@ namespace ServiceHost.Middleware
 
             string message = context.Error switch
             {
+                "revoked_token" => "توکن باطل شده است.",
                 "invalid_token" => "توکن نامعتبر یا باطل شده است.",
                 "expired_token" => "توکن منقضی شده است.",
                 _ => "ابتدا وارد حساب کاربری شوید."
@@ -39,7 +40,7 @@ namespace ServiceHost.Middleware
             return context.Response.WriteAsJsonAsync(result);
         }
 
-        public override async Task MessageReceived(MessageReceivedContext context)
+        public override Task MessageReceived(MessageReceivedContext context)
         {
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
@@ -47,15 +48,9 @@ namespace ServiceHost.Middleware
             {
                 var repo = context.HttpContext.RequestServices.GetRequiredService<ITokenRepository>();
                 if (repo != null && repo.IsRevoked(token))
-                {
-                    context.Fail("این توکن باطل شده است.");
-                    return;
-                }
+                    context.Fail("revoked_token");
             }
-
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
     }
-
-
 }

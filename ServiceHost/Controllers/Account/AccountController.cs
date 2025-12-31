@@ -59,7 +59,7 @@ namespace ServiceHost.Controllers.Account
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("favorites")]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> UserFavoritedProdcts()
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> UserFavoritedProdcts(CancellationToken cancellationToken)
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -69,7 +69,7 @@ namespace ServiceHost.Controllers.Account
             if (!long.TryParse(idClaim, out var accountId))
                 return Unauthorized(ApiResponse<ProductQueryModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
 
-            var favs = await _productQuery.GetUserFavoriteList(idClaim);
+            var favs = await _productQuery.GetUserFavoriteList(idClaim, cancellationToken);
 
             return Ok(ApiResponse<List<ProductQueryModel>>.Ok(
                 favs,
@@ -81,7 +81,7 @@ namespace ServiceHost.Controllers.Account
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("orders")]
-        public async Task<ActionResult<ApiResponse<List<OrderQueryModel>>>> GetUserOrders()
+        public async Task<ActionResult<ApiResponse<List<OrderQueryModel>>>> GetUserOrders(CancellationToken cancellation)
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -91,7 +91,7 @@ namespace ServiceHost.Controllers.Account
             if (!long.TryParse(idClaim, out var accountId))
                 return Unauthorized(ApiResponse<OrderQueryModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
 
-            var orders = await _orderQuery.GetOrdersByUser(accountId);
+            var orders = await _orderQuery.GetOrdersByUser(accountId, cancellation);
 
             return Ok(ApiResponse<List<OrderQueryModel>>.Ok(
                 orders,

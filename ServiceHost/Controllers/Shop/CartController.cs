@@ -23,10 +23,10 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<CartViewModel>>> GetCart()
+        public async Task<ActionResult<ApiResponse<CartViewModel>>> GetCart(CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
-            var cart = await _cartQuery.GetCartAsync(cartKey);
+            var cart = await _cartQuery.GetCartAsync(cartKey, cancellation);
             if (cart == null)
                 return NotFound(ApiResponse<CartViewModel>.Fail("سبد خرید یافت نشد."));
             return Ok(ApiResponse<CartViewModel>.Ok(cart));

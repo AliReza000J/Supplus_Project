@@ -22,18 +22,9 @@
     <div class="col-md-6">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h3 class="panel-title">اطلاعات خریدار</h3>
+                <h3 class="panel-title">اطلاعات سفارش</h3>
             </div>
             <div class="panel-body">
-                <p><strong>نام خریدار:</strong> @Model.Order.RecieverFullName</p>
-                <p>
-                    <strong>موبایل گیرنده:</strong>
-                    <i class="fa fa-phone text-success m-l-5"></i>
-                    <a href="tel:@Model.Order.RecieverMobile"
-                       style="direction:ltr; display:inline-block">
-                        @Model.Order.RecieverMobile?.ToPersianNumber()
-                    </a>
-                </p>
                 <p><strong>تاریخ ثبت سفارش:</strong> @Model.Order.CreationDate?.ToPersianNumber()</p>
                 <p>
                     <strong>وضعیت فعلی:</strong>
@@ -41,7 +32,7 @@
                         @OrderStatus.GetStatusTitleByCode(Model.Order.Status)
                     </span>
                 </p>
-                <p><strong>تاریخ آخرین تغییر وضعیت:</strong> @Model.Order.LastModifiedDate?.ToPersianNumber()</p>
+                <p><strong>تاریخ آخرین تغییر وضعیت:</strong> <span style="direction: ltr; display:inline-block">@Model.Order.LastModifiedDate?.ToPersianNumber()</span></p>
                 <p><strong>روش پرداخت:</strong> @Model.Order.PaymentMethod</p>
             </div>
         </div>
@@ -163,7 +154,7 @@
 {
     <div class="row">
         <div class="col-md-12">
-            <div class="panel panel-warning">
+            <div class="panel panel-danger">
                 <div class="panel-heading">
                     <h3 class="panel-title">اطلاعات و دلیل لغو سفارش</h3>
                 </div>
@@ -187,7 +178,7 @@
 {
     <div class="row">
         <div class="col-md-12">
-            <div class="panel panel-warning">
+            <div class="panel panel-success">
                 <div class="panel-heading">
                     <h3 class="panel-title">شماره پیگیری پست</h3>
                 </div>

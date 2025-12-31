@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace _0_Framework.Application
@@ -6,12 +7,14 @@ namespace _0_Framework.Application
     public class MemoryCacheService : ICacheService
     {
         private readonly IMemoryCache _cache;
+        private readonly ILogger<MemoryCacheService> _logger;
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> _locks
             = new();
 
-        public MemoryCacheService(IMemoryCache cache)
+        public MemoryCacheService(IMemoryCache cache, ILogger<MemoryCacheService> logger)
         {
             _cache = cache;
+            _logger = logger;
         }
 
         public async Task<T> GetOrCreateAsync<T>(
@@ -23,11 +26,11 @@ namespace _0_Framework.Application
         {
             if (_cache.TryGetValue(key, out T cachedValue))
             {
-                Console.WriteLine($"CACHE HIT → {key}");
+                _logger.LogInformation("CACHE MISS → {0}", key);
                 return cachedValue;
             }
 
-            Console.WriteLine($"CACHE MISS → {key}");
+            _logger.LogInformation("CACHE MISS → {0}", key);
 
             var myLock = _locks.GetOrAdd(key, k => new SemaphoreSlim(1, 1));
 

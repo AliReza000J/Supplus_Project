@@ -50,8 +50,7 @@ namespace ServiceHost.Middleware
             await context.Response.WriteAsync(json);
         }
 
-        // الگوی استاندارد برای نگاشت خطاها
-        private (HttpStatusCode statusCode, string message) MapException(Exception ex)
+        private static (HttpStatusCode statusCode, string message) MapException(Exception ex)
         {
             return ex switch
             {

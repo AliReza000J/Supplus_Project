@@ -31,10 +31,10 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">No slides were found.</response>
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<List<SlideQueryModel>>>> GetSlides()
+        public async Task<ActionResult<ApiResponse<List<SlideQueryModel>>>> GetSlides(CancellationToken cancellation)
         {
             // Retrieve the slide list from the query service
-            var slides = await _slideQuery.GetSlides();
+            var slides = await _slideQuery.GetSlides(cancellation);
 
             // Return a 404 response if no slides exist
             if (slides == null || !slides.Any())

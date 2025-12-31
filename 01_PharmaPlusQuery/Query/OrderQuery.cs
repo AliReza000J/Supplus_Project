@@ -1,15 +1,9 @@
 ﻿using _0_Framework.Application;
 using _01_PharmaPlusQuery.Contracts.Order;
 using _01_PharmaPlusQuery.Contracts.Product;
-using CommentManagement.Domain.CommentAgg;
-using CommnetManagement.Infrastructure.EFCore;
-using DiscountManagement.Infrastructure.EFCore;
-using InventoryMangement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
-using ShopManagement.Application.Contracts.Order;
 using ShopManagement.Domain.OrderAgg;
 using ShopManagement.Infrastructure.EFCore;
-using System.Linq;
 
 namespace _01_PharmaPlusQuery.Query
 {
@@ -22,7 +16,7 @@ namespace _01_PharmaPlusQuery.Query
             _shopContext = orderContext;
         }
 
-        public async Task<List<OrderQueryModel>> GetOrdersByUser(long userId)
+        public async Task<List<OrderQueryModel>> GetOrdersByUser(long userId, CancellationToken cancellation = default)
         {
             var orders = await _shopContext.Orders
                 .Where(o => o.AccountId == userId &&
@@ -50,7 +44,7 @@ namespace _01_PharmaPlusQuery.Query
                         TotalPriceWithDiscount = i.TotalPriceWithDiscount
                     }).ToList()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             foreach (var order in orders)
             {
@@ -88,7 +82,7 @@ namespace _01_PharmaPlusQuery.Query
                     CategoryFullSlug = product.Category.FullSlug,
                     Slug = product.Slug,
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var productDict = products.ToDictionary(x => x.Id);
 

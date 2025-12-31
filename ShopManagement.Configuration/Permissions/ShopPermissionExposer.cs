@@ -25,6 +25,14 @@ namespace ShopManagement.Configuration.Permissions
                         new PermissionDto(ShopPermissions.CreateProductCategory, "ایجاد گروه محصول"),
                         new PermissionDto(ShopPermissions.EditProductCategory, "ویرایش گروه محصول"),
                     }
+                },
+                {
+                    "Orders", new List<PermissionDto>
+                    {
+                        new PermissionDto(ShopPermissions.SearchOrders, "جستجو سفارشات"),
+                        new PermissionDto(ShopPermissions.ListOrders, "لیست سفارشات"),
+                        new PermissionDto(ShopPermissions.ActionOrders, "اکشن های سفارشات"),
+                    }
                 }
             };
         }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShopManagement.Application.Contracts.Product;
 using System.Security.Claims;
+using System.Threading;
 
 namespace ServiceHost.Controllers.Shop
 {
@@ -32,6 +33,7 @@ namespace ServiceHost.Controllers.Shop
         /// Retrieves product details using a full hierarchical URL path.
         /// </summary>
         /// <param name="fullPath">The full slug path including category path + product slug.</param>
+        /// <param name="cancellationToken"></param>
         /// <remarks>
         /// This endpoint supports nested category paths.  
         /// Example: /shop/product/health/vitamins/magnesium/magnesium-500mg  
@@ -44,7 +46,7 @@ namespace ServiceHost.Controllers.Shop
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [AllowAnonymous]
         [HttpGet("{*fullPath}")]
-        public async Task<ActionResult<ApiResponse<ProductQueryModel>>> GetProductDetails(string fullPath)
+        public async Task<ActionResult<ApiResponse<ProductQueryModel>>> GetProductDetails(string fullPath, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(fullPath))
                 return BadRequest(ApiResponse<ProductQueryModel>
@@ -67,7 +69,7 @@ namespace ServiceHost.Controllers.Shop
             var categoryPath = string.Join('/', segments.Take(segments.Length - 1));
 
             // Fetch product by slug
-            var product = await _productQuery.GetProductDetails(productSlug, idClaim);
+            var product = await _productQuery.GetProductDetails(productSlug, idClaim, cancellationToken);
             if (product == null)
                 return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "محصول یافت نشد."));
 
@@ -122,6 +124,7 @@ namespace ServiceHost.Controllers.Shop
         /// <param name="productId">
         /// The Id the product.
         /// </param>
+        /// <param name="cancellationToken"></param>
         /// <response code="200">The product was successfully added to the favorites.</response>
         /// <response code="400">
         /// Returned when the product path is already marked as favorite.
@@ -130,7 +133,7 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">Returned when the product does not exist.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("favorite/{productId}")]
-        public async Task<ActionResult<ApiResponse<object>>> AddToFavorite(long productId)
+        public async Task<ActionResult<ApiResponse<object>>> AddToFavorite(long productId, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -140,7 +143,7 @@ namespace ServiceHost.Controllers.Shop
             if (!long.TryParse(userId, out var accountId))
                 return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
 
-            if (!await _productQuery.Exists(productId))
+            if (!await _productQuery.Exists(productId, cancellationToken))
                 return NotFound(ApiResponse<object>.Fail("محصول یافت نشد."));
 
             var op = await _productApplication.AddFavoriteAsync(userId, productId);
@@ -169,6 +172,7 @@ namespace ServiceHost.Controllers.Shop
         /// <param name="productId">
         /// The Id the product.
         /// </param>
+        /// <param name="cancellationToken"></param>
         /// <response code="200">The product was successfully removed from favorites.</response>
         /// <response code="400">
         /// Returned when the product is not found in the user's favorites.
@@ -177,7 +181,7 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">Returned when the product does not exist.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("favorite/{productId}")]
-        public async Task<ActionResult<ApiResponse<object>>> DeleteFavorite(long productId)
+        public async Task<ActionResult<ApiResponse<object>>> DeleteFavorite(long productId, CancellationToken cancellationToken)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
@@ -187,7 +191,7 @@ namespace ServiceHost.Controllers.Shop
             if (!long.TryParse(userId, out var accountId))
                 return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
 
-            if (!await _productQuery.Exists(productId))
+            if (!await _productQuery.Exists(productId, cancellationToken))
                 return NotFound(ApiResponse<object>.Fail("محصول یافت نشد."));
 
             var op = await _productApplication.DeleteFavoriteAsync(userId, productId);
@@ -216,9 +220,9 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">No products were found.</response>
         [AllowAnonymous]
         [HttpGet("latest-arrivals")]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> GetLatestArrivals()
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> GetLatestArrivals(CancellationToken cancellationToken)
         {
-            var products = await _productQuery.GetLatestArrivals();
+            var products = await _productQuery.GetLatestArrivals(cancellationToken);
 
             if (products == null || !products.Any())
                 return NotFound(ApiResponse<List<ProductQueryModel>>
@@ -233,6 +237,7 @@ namespace ServiceHost.Controllers.Shop
         /// <param name="value">Search term provided by the user.</param>
         /// <param name="page">Page number for pagination.</param>
         /// <param name="pageSize">Number of items per page.</param>
+        /// <param name="cancellationToken"></param>
         /// <remarks>
         /// Performs a full-text search within product titles, descriptions, and related searchable fields.  
         /// Returns a paged response with the list of matched products.
@@ -242,13 +247,13 @@ namespace ServiceHost.Controllers.Shop
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<ActionResult<ApiResponse<PagedResult<ProductQueryModel>>>> Search(
-            string value, int page = 1, int pageSize = 10)
+            string value, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(value))
                 return BadRequest(ApiResponse<PagedResult<ProductQueryModel>>
                     .Fail("عبارت جستجو نمی‌تواند خالی باشد."));
 
-            var result = await _productQuery.Search(value, page, pageSize);
+            var result = await _productQuery.Search(value, page, pageSize, cancellationToken);
 
             return Ok(ApiResponse<PagedResult<ProductQueryModel>>.Ok(
                 result,
@@ -268,13 +273,14 @@ namespace ServiceHost.Controllers.Shop
         /// This endpoint is intended for showing "You may also like" or "Recommended for you" items.
         /// </remarks>
         /// <param name="take">Number of random products to return.</param>
+        /// <param name="cancellationToken"></param>
         /// <response code="200">Returns a random list of available products (may be fewer than requested).</response>
         /// <response code="404">No in-stock products were found.</response>
         [AllowAnonymous]
         [HttpGet("random-recommendations")]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> RandomRecommendations(int take = 10)
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> RandomRecommendations(int take = 10, CancellationToken cancellationToken = default)
         {
-            var products = await _productQuery.GetRandomRecommendations(take);
+            var products = await _productQuery.GetRandomRecommendations(take, cancellationToken);
 
             if (products == null || !products.Any())
                 return NotFound(ApiResponse<List<ProductQueryModel>>
@@ -294,13 +300,14 @@ namespace ServiceHost.Controllers.Shop
         /// Useful for displaying "Top Rated Products" or "Most Popular Items".
         /// </remarks>
         /// <param name="take">Number of top rated products to return (default: 10).</param>
+        /// <param name="cancellationToken"></param>
         /// <response code="200">Returns the list of top rated products (may be fewer than requested).</response>
         /// <response code="404">No rated or in-stock products were found.</response>
         [AllowAnonymous]
         [HttpGet("top-rated")]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> TopRatedProducts(int take = 10)
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> TopRatedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
-            var products = await _productQuery.GetTopRatedProducts(take);
+            var products = await _productQuery.GetTopRatedProducts(take, cancellationToken);
 
             if (products == null || !products.Any())
                 return NotFound(ApiResponse<List<ProductQueryModel>>
@@ -318,13 +325,14 @@ namespace ServiceHost.Controllers.Shop
         /// Useful for displaying "Most Viewed Products" or "Most Visited Products".
         /// </remarks>
         /// <param name="take">Number of top rated products to return (default: 10).</param>
+        /// <param name="cancellationToken"></param>
         /// <response code="200">Returns the list of top rated products (may be fewer than requested).</response>
         /// <response code="404">No rated or in-stock products were found.</response>
         [AllowAnonymous]
         [HttpGet("most-viewed")]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> MostViewedProducts(int take = 10)
+        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> MostViewedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
-            var products = await _productQuery.GetMostViewedProducts(take);
+            var products = await _productQuery.GetMostViewedProducts(take, cancellationToken);
 
             if (products == null || !products.Any())
                 return NotFound(ApiResponse<List<ProductQueryModel>>

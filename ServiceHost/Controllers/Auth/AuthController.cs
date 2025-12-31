@@ -14,7 +14,7 @@ namespace ServiceHost.Controllers.Auth
     /// </summary>
     [Route("auth")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public partial class AuthController : ControllerBase
     {
         private readonly IOtpRateLimiter _otpRateLimiter;
         private readonly ISmsService _smsService;
@@ -36,9 +36,7 @@ namespace ServiceHost.Controllers.Auth
         /// Sends a one-time password (OTP) to the specified mobile number
         /// for authentication purposes.
         /// </summary>
-        /// <param name="mobile">
-        /// The user's mobile number to which the OTP code will be sent.
-        /// </param>
+        /// <param name="command"></param>
         /// <returns>
         /// An HTTP response indicating whether the OTP message was sent successfully
         /// or if an error occurred during SMS delivery.
@@ -50,18 +48,18 @@ namespace ServiceHost.Controllers.Auth
         /// Failed to send OTP due to SMS service error or invalid mobile number.
         /// </response>
         [HttpPost("send-otp")]
-        public async Task<IActionResult> SendOtp([FromBody] string mobile)
+        public async Task<IActionResult> SendOtp([FromBody] SendOtpDto command)
         {
             var otpCode = new Random().Next(10000, 99999).ToString();
 
-            _cache.Set(mobile, otpCode, TimeSpan.FromMinutes(2));
+            _cache.Set(command.Mobile, otpCode, TimeSpan.FromMinutes(2));
 
-            if (!_otpRateLimiter.CanSend(mobile))
+            if (!_otpRateLimiter.CanSend(command.Mobile))
             {
                 return BadRequest("تعداد درخواست‌های کد ورود بیش از حد مجاز است");
             }
 
-            var sent = await _smsService.SendLoginOtpAsync(mobile, otpCode);
+            var sent = await _smsService.SendLoginOtpAsync(command.Mobile, otpCode);
 
             if (sent)
                 return Ok(new { message = "کد تایید برای شما ارسال شد." });
@@ -120,7 +118,7 @@ namespace ServiceHost.Controllers.Auth
             var (loginOp, data) = await _accountApp
                 .LoginByMobileWithJwt(model.Mobile);
 
-            if (!loginOp.IsSucceeded)
+            if (!loginOp.IsSucceeded || data ==  null)
                 return Unauthorized(
                     ApiResponse<JwtResponseDto>
                     .Fail(loginOp.Message));
@@ -291,12 +289,6 @@ namespace ServiceHost.Controllers.Auth
             };
 
             return res.Success ? Ok(res) : BadRequest(res);
-        }
-
-        public class VerifyOtpDto
-        {
-            public string Mobile { get; set; }
-            public string Code { get; set; }
         }
     }
 }

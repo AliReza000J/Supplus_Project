@@ -2,6 +2,6 @@
 {
     public interface ICartQuery
     {
-        Task<CartViewModel> GetCartAsync(string cartKey);
+        Task<CartViewModel> GetCartAsync(string cartKey, CancellationToken cancellation);
     }
 }

@@ -1,5 +1,7 @@
 ﻿using _0_Framework.Application;
 using _0_Framework.Infrastructure;
+using _01_PharmaPlusQuery.Contracts.Dashbord;
+using _01_PharmaPlusQuery.Query;
 using AccountManagement.Configuration;
 using AccountManagement.Domain.RoleAgg;
 using BlogManagement.Configuration;
@@ -121,6 +123,7 @@ var fontPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "Adm
 
 // Add services to the container.
 builder.Services.AddTransient<IFileUploader, FileUploader>();
+builder.Services.AddTransient<IDashboardQuery, DashboardQuery>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthHelper, AuthHelper>();
 builder.Services.AddScoped<IJwtService, JwtService>();

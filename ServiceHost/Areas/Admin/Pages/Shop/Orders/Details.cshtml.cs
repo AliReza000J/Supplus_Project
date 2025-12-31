@@ -4,7 +4,6 @@ using ShopManagement.Application.Contracts.Order;
 using _0_Framework.Application;
 using Hangfire;
 using ServiceHost.Services;
-using ShopManagement.Domain.OrderAgg;
 
 namespace ServiceHost.Areas.Admin.Pages.Shop.Orders
 {

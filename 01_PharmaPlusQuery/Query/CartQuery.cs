@@ -20,11 +20,11 @@ namespace _01_PharmaPlusQuery.Query
             this.inventoryContext = inventoryContext;
         }
 
-        public async Task<CartViewModel> GetCartAsync(string cartKey)
+        public async Task<CartViewModel> GetCartAsync(string cartKey, CancellationToken cancellation = default)
         {
             var cart = await shopContext.Carts
                 .Include(x => x.Items)
-                .FirstOrDefaultAsync(x => x.CartKey == cartKey);
+                .FirstOrDefaultAsync(x => x.CartKey == cartKey, cancellation);
 
             if (cart == null)
                 return new CartViewModel();
@@ -33,18 +33,18 @@ namespace _01_PharmaPlusQuery.Query
 
             var inventoryList = await inventoryContext.Inventory
                 .Where(x => productIds.Contains(x.ProductId))
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var discountList = await discountContext.CustomerDiscounts
                 .Where(x => productIds.Contains(x.ProductId) &&
                             x.StartDate <= DateTime.Now &&
                             x.EndDate >= DateTime.Now)
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var productInfo = await shopContext.Products
                 .Where(x => productIds.Contains(x.Id))
                 .Select(x => new { x.Id, x.Picture, x.Name })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var vm = new CartViewModel
             {

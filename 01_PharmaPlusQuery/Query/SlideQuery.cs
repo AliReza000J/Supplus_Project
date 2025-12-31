@@ -13,7 +13,7 @@ namespace _01_PharmaPlusQuery.Query
             _context = context;
         }
 
-        public async Task<List<SlideQueryModel>> GetSlides()
+        public async Task<List<SlideQueryModel>> GetSlides(CancellationToken cancellation)
         {
             return await _context.Slides
                 .Where(x => x.IsRemoved == false)
@@ -29,7 +29,7 @@ namespace _01_PharmaPlusQuery.Query
                     Title = x.Title
                 })
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellation);
         }
     }
 }

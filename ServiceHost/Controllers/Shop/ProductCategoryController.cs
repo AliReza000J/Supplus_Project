@@ -1,6 +1,5 @@
 ﻿using _0_Framework.Application;
 using _01_PharmaPlusQuery.Contracts.ProductCategory;
-using _01_PharmaPlusQuery.Query;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,9 +31,9 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">No product categories were found.</response>
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<List<ProductCategoryQueryModel>>>> GetAllCategories() //full menu
+        public async Task<ActionResult<ApiResponse<List<ProductCategoryQueryModel>>>> GetAllCategories(CancellationToken cancellation) //full menu
         {
-            var result = await _productCategoryQuery.GetAll();
+            var result = await _productCategoryQuery.GetAll(cancellation);
 
             if (result == null || !result.Any())
                 return NotFound(ApiResponse<ProductCategoryQueryModel>
@@ -47,6 +46,7 @@ namespace ServiceHost.Controllers.Shop
         /// Retrieves a product category using its full hierarchical slug path.
         /// </summary>
         /// <param name="path">The hierarchical slug path representing the category.</param>
+        /// <param name="cancellation"></param>
         /// <remarks>
         /// This endpoint supports nested slugs using a catch-all route.
         /// For example: /shop/ProductCategory/health/vitamins/minerals
@@ -57,13 +57,13 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">No category found for the given path.</response>
         [AllowAnonymous]
         [HttpGet("{*path}")]
-        public async Task<ActionResult<ApiResponse<ProductCategoryQueryModel>>> GetCategoryByPath(string path)
+        public async Task<ActionResult<ApiResponse<ProductCategoryQueryModel>>> GetCategoryByPath(string path, CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(path))
                 return BadRequest(ApiResponse<ProductCategoryQueryModel>
                     .Fail(message: "مسیر نامعتبر."));
 
-            var productCategories = await _productCategoryQuery.GetCategoryByFullSlug(path);
+            var productCategories = await _productCategoryQuery.GetCategoryByFullSlug(path, cancellation);
 
             if (productCategories == null)
                 return NotFound(ApiResponse<ProductCategoryQueryModel>

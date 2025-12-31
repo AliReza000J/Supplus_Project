@@ -17,7 +17,6 @@ namespace ServiceHost.Services
             _logger = logger;
         }
 
-        // 1. متد مخصوص ارسال کد ورود
         public Task<bool> SendLoginOtpAsync(string mobile, string otpCode)
         {
             var templateId = _config.GetValue<int>("SmsSettings:Templates:LoginOtp");
@@ -30,7 +29,6 @@ namespace ServiceHost.Services
             return SendSmsInternalAsync(mobile, templateId, paramsList);
         }
 
-        // 2. متد مخصوص ارسال کد رهگیری پستی
         public Task<bool> SendPostTrackingAsync(string mobile, string trackingCode)
         {
             var templateId = _config.GetValue<int>("SmsSettings:Templates:PostTracking");
@@ -43,7 +41,6 @@ namespace ServiceHost.Services
             return SendSmsInternalAsync(mobile, templateId, paramsList);
         }
 
-        // 3. متد خصوصی و اصلی که با SMS.ir صحبت می‌کند
         private async Task<bool> SendSmsInternalAsync(string mobile, int templateId, VerifySendParameterModel[] parameters)
         {
             var apiKey = _config["SmsSettings:ApiKey"];

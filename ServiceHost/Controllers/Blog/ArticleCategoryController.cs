@@ -46,9 +46,9 @@ namespace ServiceHost.Controllers.Blog
         /// <response code="404">No categories were found.</response>
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<List<ArticleCategoryQueryModel>>>> GetAllCategories()
+        public async Task<ActionResult<ApiResponse<List<ArticleCategoryQueryModel>>>> GetAllCategories(CancellationToken cancellation)
         {
-            var result = await _articleCategoryQuery.GetArticleCategories();
+            var result = await _articleCategoryQuery.GetArticleCategories(cancellation);
 
             if (result == null || !result.Any())
                 return NotFound(ApiResponse<List<ArticleCategoryQueryModel>>
@@ -61,6 +61,7 @@ namespace ServiceHost.Controllers.Blog
         /// Retrieves a specific article category by slug.
         /// </summary>
         /// <param name="slug">The slug of the category.</param>
+        /// <param name="cancellation"></param>
         /// <remarks>
         /// Returns detailed information about a specific category using its slug.
         /// If the slug is invalid or the category does not exist, an appropriate error is returned.
@@ -73,13 +74,13 @@ namespace ServiceHost.Controllers.Blog
         /// <response code="404">No category exists with the specified slug.</response>
         [AllowAnonymous]
         [HttpGet("{slug}")]
-        public async Task<ActionResult<ApiResponse<ArticleCategoryQueryModel>>> GetCategoryBySlug(string slug)
+        public async Task<ActionResult<ApiResponse<ArticleCategoryQueryModel>>> GetCategoryBySlug(string slug, CancellationToken cancellation = default)
         {
             if (string.IsNullOrWhiteSpace(slug))
                 return BadRequest(ApiResponse<ArticleCategoryQueryModel>
                     .Fail("مسیر نامعتبر."));
 
-            var result = await _articleCategoryQuery.GetArticleCategory(slug);
+            var result = await _articleCategoryQuery.GetArticleCategory(slug, cancellation);
 
             if (result == null)
                 return NotFound(ApiResponse<ArticleCategoryQueryModel>

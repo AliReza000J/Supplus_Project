@@ -40,7 +40,7 @@ namespace _01_PharmaPlusQuery.Query
         //        }).AsNoTracking().ToListAsync();
         //}
 
-        public async Task<List<ProductCategoryQueryModel>> GetAll()
+        public async Task<List<ProductCategoryQueryModel>> GetAll(CancellationToken cancellation)
         {
             var categories = await _shopContext.ProductCategories
             .Select(x => new ProductCategoryQueryModel
@@ -52,7 +52,7 @@ namespace _01_PharmaPlusQuery.Query
                 ParentId = x.ParentId,
             })
             .AsNoTracking()
-            .ToListAsync();
+            .ToListAsync(cancellation);
 
             var lookup = categories.ToLookup(c => c.ParentId);
 
@@ -221,7 +221,7 @@ namespace _01_PharmaPlusQuery.Query
         //    return categories;
         //}
 
-        public async Task<ProductCategoryQueryModel> GetCategoryByFullSlug(string fullSlug)
+        public async Task<ProductCategoryQueryModel> GetCategoryByFullSlug(string fullSlug, CancellationToken cancellation)
         {
             var now = DateTime.Now;
 
@@ -230,7 +230,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Include(x => x.Children)
                 .Include(x => x.Products)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.FullSlug == fullSlug);
+                .FirstOrDefaultAsync(x => x.FullSlug == fullSlug, cancellation);
 
             if (category == null)
                 return null;
@@ -238,12 +238,12 @@ namespace _01_PharmaPlusQuery.Query
             // ===== Load Inventory & Discounts =====
             var inventory = await _inventoryContext.Inventory
             .Select(x => new ProductInventoryDto { ProductId = x.ProductId, UnitPrice = x.UnitPrice })
-            .ToListAsync();
+            .ToListAsync(cancellation);
 
             var discounts = await _discountContext.CustomerDiscounts
                 .Where(x => x.StartDate < now && x.EndDate > now)
                 .Select(x => new ProductDiscountDto { ProductId = x.ProductId, DiscountRate = x.DiscountRate, EndDate = x.EndDate })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var result = new ProductCategoryQueryModel
             {
@@ -282,7 +282,7 @@ namespace _01_PharmaPlusQuery.Query
                         .Take(10)
                         .AsNoTracking()
                         .Select(p => MapProductWithPrice(p, inventory, discounts))
-                        .ToListAsync();
+                        .ToListAsync(cancellation);
 
                     result.Children.Add(new ProductCategoryQueryModel
                     {

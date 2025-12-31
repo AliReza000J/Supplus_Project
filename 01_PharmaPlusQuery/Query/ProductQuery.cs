@@ -17,7 +17,7 @@ namespace _01_PharmaPlusQuery.Query
         private readonly InventoryContext _inventoryContext;
         private readonly DiscountContext _discountContext;
         private readonly CommentContext _commentContext;
-        //private readonly ICacheService _cacheService;
+        private readonly ICacheService _cacheService;
 
         public ProductQuery(ShopContext context, InventoryContext inventoryContext,
         DiscountContext discountContext, CommentContext commentContext, ICacheService cache)
@@ -26,38 +26,50 @@ namespace _01_PharmaPlusQuery.Query
             _discountContext = discountContext;
             _inventoryContext = inventoryContext;
             _commentContext = commentContext;
-            //_cacheService = cache;
+            _cacheService = cache;
         }
 
-        public async Task<ProductQueryModel> GetProductDetails(string productSlug, string accountId)
+        public async Task<ProductQueryModel> GetProductDetails(string productSlug, string accountId, CancellationToken cancellationToken = default)
         {
+            var productBaseCacheKey = $"product:base:{productSlug}";
+
             // -----------------------------
             // 1) Get Product Base Data
             // -----------------------------
-            var productBase = await _shopContext.Products
-                .AsNoTracking()
-                .Where(x => x.Slug == productSlug)
-                .Select(x => new
+            var productBase = await _cacheService.GetOrCreateAsync(
+                productBaseCacheKey,
+                factory: async () =>
                 {
-                    x.Id,
-                    x.Name,
-                    x.Code,
-                    x.Brand,
-                    x.Description,
-                    x.ShortDescription,
-                    x.MetaDescription,
-                    x.Specifications,
-                    x.Keywords,
-                    x.Slug,
-                    x.ViewCount,
-                    x.Picture,
-                    x.PictureAlt,
-                    x.PictureTitle,
-                    CategoryName = x.Category.Name,
-                    CategorySlug = x.Category.Slug,
-                    CategoryFullSlug = x.Category.FullSlug
-                })
-                .FirstOrDefaultAsync();
+                    return await _shopContext.Products
+                    .AsNoTracking()
+                    .AsSplitQuery()
+                    .Where(x => x.Slug == productSlug)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Name,
+                        x.Code,
+                        x.Brand,
+                        x.Description,
+                        x.ShortDescription,
+                        x.MetaDescription,
+                        x.Specifications,
+                        x.Keywords,
+                        x.Slug,
+                        x.ViewCount,
+                        x.Picture,
+                        x.PictureAlt,
+                        x.PictureTitle,
+                        CategoryName = x.Category.Name,
+                        CategorySlug = x.Category.Slug,
+                        CategoryFullSlug = x.Category.FullSlug
+                    })
+                    .FirstOrDefaultAsync(cancellationToken);
+                },
+                absoluteExpiration: TimeSpan.FromHours(1),
+                slidingExpiration: TimeSpan.FromMinutes(20),
+                size: 1
+                );
 
             if (productBase == null)
                 return null;
@@ -65,30 +77,40 @@ namespace _01_PharmaPlusQuery.Query
             long productId = productBase.Id;
             var cutoffTime = DateTime.Now.AddHours(-48);
 
+            var picturesCacheKey = $"product:pictures:{productBase.Id}";
+
             // Pictures (MANUAL SPLIT)
-            var picturesTask = _shopContext.ProductPictures
-                .AsNoTracking()
-                .Where(p => p.ProductId == productId && !p.IsRemoved)
-                .Select(p => new ProductPictureQueryModel
+            var pictures = await _cacheService.GetOrCreateAsync(
+                key: picturesCacheKey,
+                factory: async () =>
                 {
-                    Picture = p.Picture,
-                    PictureAlt = p.PictureAlt,
-                    PictureTitle = p.PictureTitle,
-                    ProductId = productId
-                })
-                .ToListAsync();
-            var pictures = await picturesTask;
+                    return await _shopContext.ProductPictures
+                        .AsNoTracking()
+                        .Where(p => p.ProductId == productBase.Id && !p.IsRemoved)
+                        .Select(p => new ProductPictureQueryModel
+                        {
+                            Picture = p.Picture,
+                            PictureAlt = p.PictureAlt,
+                            PictureTitle = p.PictureTitle,
+                            ProductId = productBase.Id
+                        })
+                        .ToListAsync(cancellationToken);
+                },
+                absoluteExpiration: TimeSpan.FromHours(3),
+                slidingExpiration: TimeSpan.FromMinutes(30),
+                size: 5
+            );
 
             // Recent Views (Real-time)
             var recentViewsTask = _shopContext.ProductViews
                 .AsNoTracking()
-                .CountAsync(v => v.ProductId == productId && v.CreationDate >= cutoffTime);
+                .CountAsync(v => v.ProductId == productId && v.CreationDate >= cutoffTime, cancellationToken);
             var recentViews = await recentViewsTask;
 
             // Current User favorited
             var currentUserfaved = await _shopContext.UserFavoriteProducts
                 .AnyAsync(x => x.ProductId == productId
-                && x.UserId == accountId);
+                && x.UserId == accountId, cancellationToken);
 
             // -----------------------------
             // 2) Parallel Data Fetching
@@ -97,7 +119,7 @@ namespace _01_PharmaPlusQuery.Query
             // Inventory (Real-time)
             var inventoryTask = _inventoryContext.Inventory
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.ProductId == productId);
+                .FirstOrDefaultAsync(x => x.ProductId == productId, cancellationToken);
 
             // Discount (Real-time)
             var discountTask = _discountContext.CustomerDiscounts
@@ -105,7 +127,8 @@ namespace _01_PharmaPlusQuery.Query
                 .FirstOrDefaultAsync(x =>
                     x.ProductId == productId &&
                     x.StartDate <= DateTime.Now &&
-                    x.EndDate >= DateTime.Now);
+                    x.EndDate >= DateTime.Now,
+                    cancellationToken);
 
             // Comments (Real-time)
             var commentsRawTask = _commentContext.Comments
@@ -132,7 +155,7 @@ namespace _01_PharmaPlusQuery.Query
                     DislikedByUserIds = new List<long>()
                 })
                 .OrderByDescending(x => x.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             await Task.WhenAll(inventoryTask, discountTask, commentsRawTask);
 
@@ -154,7 +177,7 @@ namespace _01_PharmaPlusQuery.Query
                     r.Reaction,
                     r.UserIdentifier
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var reactionsLookup = reactions
                 .GroupBy(r => r.CommentId)
@@ -246,7 +269,7 @@ namespace _01_PharmaPlusQuery.Query
             };
         }
 
-        public async Task<List<ProductQueryModel>> GetLatestArrivals()
+        public async Task<List<ProductQueryModel>> GetLatestArrivals(CancellationToken cancellationToken = default)
         {
             var now = DateTime.Now;
 
@@ -254,12 +277,12 @@ namespace _01_PharmaPlusQuery.Query
             var inventory = await _inventoryContext.Inventory
             .Select(x => new ProductInventoryDto
             { ProductId = x.ProductId, UnitPrice = x.UnitPrice, InStock = x.InStock })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
             var discounts = await _discountContext.CustomerDiscounts
                 .Where(x => x.StartDate < now && x.EndDate > now)
                 .Select(x => new ProductDiscountDto { ProductId = x.ProductId, DiscountRate = x.DiscountRate, EndDate = x.EndDate })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var avgRates = await _commentContext.Comments
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
@@ -272,7 +295,7 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var products = await _shopContext.Products.Include(x => x.Category)
                 .Select(product => new ProductQueryModel
@@ -286,7 +309,7 @@ namespace _01_PharmaPlusQuery.Query
                     PictureTitle = product.PictureTitle,
                     Slug = product.Slug,
                     MetaDescription = product.MetaDescription
-                }).AsNoTracking().OrderByDescending(x => x.Id).Take(10).ToListAsync();
+                }).AsNoTracking().OrderByDescending(x => x.Id).Take(10).ToListAsync(cancellationToken);
 
             foreach (var product in products)
             {
@@ -317,7 +340,7 @@ namespace _01_PharmaPlusQuery.Query
             return products;
         }
 
-        public async Task<PagedResult<ProductQueryModel>> Search(string value, int page, int pageSize)
+        public async Task<PagedResult<ProductQueryModel>> Search(string value, int page, int pageSize, CancellationToken cancellationToken = default)
         {
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 10;
@@ -354,7 +377,7 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var products = await query.OrderByDescending(x => x.Id)
                 .Skip((page - 1) * pageSize)
@@ -373,7 +396,7 @@ namespace _01_PharmaPlusQuery.Query
                     Brand = product.Brand,
                     Keywords = product.Keywords,
                     MetaDescription = product.MetaDescription,
-                }).ToListAsync();
+                }).ToListAsync(cancellationToken);
 
 
             var productIds = products.Select(x => x.Id).ToList();
@@ -381,14 +404,14 @@ namespace _01_PharmaPlusQuery.Query
             var inventory = await _inventoryContext.Inventory
                 .Where(x => productIds.Contains(x.ProductId))
                 .Select(x => new { x.ProductId, x.UnitPrice, x.InStock })
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock });
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock }, cancellationToken);
 
             var discounts = await _discountContext.CustomerDiscounts
                 .Where(x => productIds.Contains(x.ProductId)
                             && x.StartDate < DateTime.Now
                             && x.EndDate > DateTime.Now)
                 .Select(x => new { x.ProductId, x.DiscountRate, x.EndDate })
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.DiscountRate, x.EndDate });
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.DiscountRate, x.EndDate }, cancellationToken);
 
             foreach (var product in products)
             {
@@ -427,9 +450,9 @@ namespace _01_PharmaPlusQuery.Query
             };
         }
 
-        public async Task<List<ProductQueryModel>> GetRandomRecommendations(int take = 10)
+        public async Task<List<ProductQueryModel>> GetRandomRecommendations(int take = 10, CancellationToken cancellationToken = default)
         {
-            if (take <= 0)
+            if (take <= 0 || take > 50)
                 take = 10;
 
             var now = DateTime.Now;
@@ -442,7 +465,7 @@ namespace _01_PharmaPlusQuery.Query
                     UnitPrice = x.UnitPrice,
                     InStock = x.InStock
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var inStockProductIds = inventory
                 .Where(x => x.InStock == true)
@@ -461,7 +484,7 @@ namespace _01_PharmaPlusQuery.Query
                     DiscountRate = x.DiscountRate,
                     EndDate = x.EndDate
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             // ==== Rates ====
             var avgRates = await _commentContext.Comments
@@ -475,7 +498,7 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
 
             var rand = new Random();
@@ -504,7 +527,7 @@ namespace _01_PharmaPlusQuery.Query
                     MetaDescription = product.MetaDescription,
                 })
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             // ===== merge inventory & discount =====
             foreach (var product in products)
@@ -542,9 +565,9 @@ namespace _01_PharmaPlusQuery.Query
             return products;
         }
 
-        public async Task<List<ProductQueryModel>> GetTopRatedProducts(int take = 10)
+        public async Task<List<ProductQueryModel>> GetTopRatedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
-            if (take <= 0)
+            if (take <= 0 || take > 50)
                 take = 10;
 
             var now = DateTime.Now;
@@ -557,7 +580,7 @@ namespace _01_PharmaPlusQuery.Query
                     UnitPrice = x.UnitPrice,
                     InStock = x.InStock
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var inStockProductIds = inventory
                 .Where(x => x.InStock)
@@ -579,7 +602,7 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var popularIds = avgRates
                 .Where(x => inStockProductIds.Contains(x.ProductId))
@@ -609,7 +632,7 @@ namespace _01_PharmaPlusQuery.Query
                     PictureTitle = product.PictureTitle
                 })
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             // ---------- Merge Inventory & Discounts ----------
             var discounts = await _discountContext.CustomerDiscounts
@@ -620,7 +643,7 @@ namespace _01_PharmaPlusQuery.Query
                     DiscountRate = x.DiscountRate,
                     EndDate = x.EndDate
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             foreach (var product in products)
             {
@@ -658,9 +681,9 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<List<ProductQueryModel>> GetMostViewedProducts(int take = 10)
+        public async Task<List<ProductQueryModel>> GetMostViewedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
-            if (take <= 0)
+            if (take <= 0 || take > 50)
                 take = 10;
 
             var now = DateTime.Now;
@@ -673,7 +696,7 @@ namespace _01_PharmaPlusQuery.Query
                     UnitPrice = x.UnitPrice,
                     InStock = x.InStock
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var inStockProductIds = inventory
                 .Where(x => x.InStock)
@@ -695,14 +718,14 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var popularIds = await _shopContext.Products
                 .Where(x => inStockProductIds.Contains(x.Id))
                 .OrderByDescending(x => x.ViewCount)
                 .Take(take)
                 .Select(x => x.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             if (!popularIds.Any())
                 return new List<ProductQueryModel>();
@@ -725,7 +748,7 @@ namespace _01_PharmaPlusQuery.Query
                     ViewCount = product.ViewCount
                 })
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             // ---------- Merge Inventory & Discounts ----------
             var discounts = await _discountContext.CustomerDiscounts
@@ -736,7 +759,7 @@ namespace _01_PharmaPlusQuery.Query
                     DiscountRate = x.DiscountRate,
                     EndDate = x.EndDate
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             foreach (var product in products)
             {
@@ -775,11 +798,11 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<List<ProductQueryModel>> GetUserFavoriteList(string accountId)
+        public async Task<List<ProductQueryModel>> GetUserFavoriteList(string accountId, CancellationToken cancellationToken = default)
         {
             var favProducts = await _shopContext.UserFavoriteProducts
                 .Where(x => x.UserId == accountId)
-                .ToDictionaryAsync(x => x.ProductId, x => x.CreationDate);
+                .ToDictionaryAsync(x => x.ProductId, x => x.CreationDate, cancellationToken);
 
             var favProductIds = favProducts.Keys.ToList();
 
@@ -804,7 +827,7 @@ namespace _01_PharmaPlusQuery.Query
                     Keywords = product.Keywords,
                     MetaDescription = product.MetaDescription,
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken: cancellationToken);
 
             var avgRates = await _commentContext.Comments
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
@@ -812,17 +835,17 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
                 .GroupBy(x => x.OwnerRecordId)
                 .Select(g => new { ProductId = g.Key, AvgRate = g.Average(c => c.Rate), Count = g.Count() })
-                .ToDictionaryAsync(x => x.ProductId);
+                .ToDictionaryAsync(x => x.ProductId, cancellationToken);
 
             var inventory = await _inventoryContext.Inventory
                 .Where(x => favProductIds.Contains(x.ProductId))
-                .ToDictionaryAsync(x => x.ProductId);
+                .ToDictionaryAsync(x => x.ProductId, cancellationToken);
 
             var discounts = await _discountContext.CustomerDiscounts
                 .Where(x => favProductIds.Contains(x.ProductId)
                             && x.StartDate < DateTime.Now
                             && x.EndDate > DateTime.Now)
-                .ToDictionaryAsync(x => x.ProductId);
+                .ToDictionaryAsync(x => x.ProductId, cancellationToken);
 
             foreach (var p in products)
             {
@@ -856,7 +879,7 @@ namespace _01_PharmaPlusQuery.Query
             return products.OrderByDescending(x => x.UserFavedDate).ToList();
         }
 
-        public async Task<SearchByBrandResult> GetProductsByBrand(string brandName, int page, int pageSize)
+        public async Task<SearchByBrandResult> GetProductsByBrand(string brandName, int page, int pageSize, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(brandName))
                 return null;
@@ -881,7 +904,7 @@ namespace _01_PharmaPlusQuery.Query
                     AvgRate = g.Average(c => c.Rate),
                     RateCount = g.Count()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var products = await query.OrderByDescending(x => x.Id)
                 .Skip((page - 1) * pageSize)
@@ -900,26 +923,26 @@ namespace _01_PharmaPlusQuery.Query
                     Brand = product.Brand,
                     Keywords = product.Keywords,
                     MetaDescription = product.MetaDescription,
-                }).ToListAsync();
+                }).ToListAsync(cancellationToken);
 
             var categories = await query
                 .Select(x => x.Category.Name)
                 .Distinct()
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var productIds = products.Select(x => x.Id).ToList();
 
             var inventory = await _inventoryContext.Inventory
                 .Where(x => productIds.Contains(x.ProductId))
                 .Select(x => new { x.ProductId, x.UnitPrice, x.InStock })
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock });
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock }, cancellationToken);
 
             var discounts = await _discountContext.CustomerDiscounts
                 .Where(x => productIds.Contains(x.ProductId)
                             && x.StartDate < DateTime.Now
                             && x.EndDate > DateTime.Now)
                 .Select(x => new { x.ProductId, x.DiscountRate, x.EndDate })
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.DiscountRate, x.EndDate });
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.DiscountRate, x.EndDate }, cancellationToken);
 
             foreach (var product in products)
             {
@@ -962,10 +985,10 @@ namespace _01_PharmaPlusQuery.Query
             };
         }
 
-        public async Task<bool> Exists(long productId)
+        public async Task<bool> Exists(long productId, CancellationToken cancellationToken = default)
         {
             return await _shopContext.Products.AnyAsync(
-                x => x.Id == productId);
+                x => x.Id == productId, cancellationToken);
         }
 
 
