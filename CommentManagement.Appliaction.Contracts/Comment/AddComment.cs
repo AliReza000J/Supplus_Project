@@ -8,7 +8,7 @@ namespace CommentManagement.Application.Contracts.Comment
         public string? Message { get; set; }
 
         [Required]
-        public long OwnerRecordId { get; set; }
+        public long RecordId { get; set; }
 
         [Required]
         public int Type { get; set; }

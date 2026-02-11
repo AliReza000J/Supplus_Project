@@ -47,7 +47,7 @@
 					null,
 					null,
 					null,
-					{ "bSortable": false }
+					{ "bSortable": true }
 				]
 			});
 

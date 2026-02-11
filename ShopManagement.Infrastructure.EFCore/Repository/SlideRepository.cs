@@ -18,7 +18,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<EditSlide?> GetDetails(long id)
+        public async Task<EditSlide?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.Slides.Select(x => new EditSlide
             {
@@ -30,10 +30,10 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 Text = x.Text,
                 Link = x.Link,
                 Title = x.Title
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<List<SlideViewModel>> GetList()
+        public async Task<List<SlideViewModel>> GetList(CancellationToken cancellation)
         {
             return await _context.Slides.Select(x => new SlideViewModel
             {
@@ -43,7 +43,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 Title = x.Title,
                 IsRemoved = x.IsRemoved,
                 CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
-            }).OrderByDescending(x => x.Id).ToListAsync();
+            }).OrderByDescending(x => x.Id).ToListAsync(cancellation);
         }
     }
 }

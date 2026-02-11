@@ -18,68 +18,74 @@ namespace ShopManagement.Application
             _productPictureRepository = productPictureRepository;
         }
 
-        public async Task<OperationResult> Create(CreateProductPicture command)
+        public async Task<OperationResult> Create(CreateProductPicture command, CancellationToken cancellation)
         {
             var operation = new OperationResult();
             
-            var product = await _productRepository.GetProductWithCategory(command.ProductId);
+            var product = await _productRepository.GetProductWithCategory(command.ProductId, cancellation);
 
-            var path = $"ProductCategories/{product.Category.FullSlug}/Products/{product.Slug}";
-            var picturePath = _fileUploader.Upload(command.Picture, path);
+            var path = $"ProductCategories/{product?.Category.FullSlug}/Products/{product?.Slug}";
+            var picturePath = await _fileUploader.UploadAsync(command.Picture, path, cancellation);
 
             var productPicture = new ProductPicture(command.ProductId, picturePath, command.PictureAlt, command.PictureTitle);
             _productPictureRepository.Create(productPicture);
-            await _productPictureRepository.SaveChangesAsync();
+            await _productPictureRepository.SaveChangesAsync(cancellation);
             return operation.Succeeded();
         }
 
-        public async Task<OperationResult> Edit(EditProductPicture command)
+        public async Task<OperationResult> Edit(EditProductPicture command, CancellationToken cancellation)
         {
             var operation = new OperationResult();
-            var productPicture = await _productPictureRepository.GetWithProductAndCategory(command.Id);
+            var productPicture = await _productPictureRepository.GetWithProductAndCategory(command.Id, cancellation);
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             var path = $"ProductCategories/{productPicture.Product.Category.FullSlug}/Products/{productPicture.Product.Slug}";
-            var picturePath = _fileUploader.Upload(command.Picture, path);
+            var picturePath = "";
+
+            if (!(command.Picture == null && string.IsNullOrEmpty(command.Picture?.FileName)))
+            {
+                _fileUploader.DeleteFile(productPicture.Picture);
+                picturePath = await _fileUploader.UploadAsync(command.Picture, path, cancellation);
+            }
 
             productPicture.Edit(command.ProductId, picturePath, command.PictureAlt, command.PictureTitle);
-            await _productPictureRepository.SaveChangesAsync();
+            await _productPictureRepository.SaveChangesAsync(cancellation);
             return operation.Succeeded();
         }
 
-        public async Task<EditProductPicture?> GetDetails(long id)
+        public async Task<EditProductPicture?> GetDetails(long id, CancellationToken cancellation)
         {
-            return await _productPictureRepository.GetDetails(id);
+            return await _productPictureRepository.GetDetails(id, cancellation);
         }
 
-        public async Task<OperationResult> Remove(long id)
+        public async Task<OperationResult> Remove(long id, CancellationToken cancellation)
         {
             var operation = new OperationResult();
-            var productPicture = await _productPictureRepository.GetAsync(id);
+            var productPicture = await _productPictureRepository.GetAsync(id, cancellation);
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             productPicture.Remove();
-            await _productPictureRepository.SaveChangesAsync();
+            await _productPictureRepository.SaveChangesAsync(cancellation);
             return operation.Succeeded();
         }
 
-        public async Task<OperationResult> Restore(long id)
+        public async Task<OperationResult> Restore(long id, CancellationToken cancellation)
         {
             var operation = new OperationResult();
-            var productPicture = await _productPictureRepository.GetAsync(id);
+            var productPicture = await _productPictureRepository.GetAsync(id, cancellation);
             if (productPicture == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
             productPicture.Restore();
-            await _productPictureRepository.SaveChangesAsync();
+            await _productPictureRepository.SaveChangesAsync(cancellation);
             return operation.Succeeded();
         }
 
-        public async Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel)
+        public async Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel, CancellationToken cancellation)
         {
-            return await _productPictureRepository.Search(searchModel);
+            return await _productPictureRepository.Search(searchModel, cancellation);
         }
     }
 }

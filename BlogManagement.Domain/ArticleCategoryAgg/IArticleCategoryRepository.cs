@@ -5,9 +5,9 @@ namespace BlogManagement.Domain.ArticleCategoryAgg
 {
     public interface IArticleCategoryRepository : IRepository<long, ArticleCategory>
     {
-        Task<string> GetSlugBy(long id);
-        Task<EditArticleCategory> GetDetails(long id);
-        Task<List<ArticleCategoryViewModel>> GetArticleCategories();
-        Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel);
+        Task<string> GetSlugBy(long id, CancellationToken cancellation);
+        Task<EditArticleCategory?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<ArticleCategoryViewModel>> GetArticleCategories(CancellationToken cancellation);
+        Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel, CancellationToken cancellation);
     }
 }

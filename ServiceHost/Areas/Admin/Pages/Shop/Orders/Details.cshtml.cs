@@ -4,15 +4,17 @@ using ShopManagement.Application.Contracts.Order;
 using _0_Framework.Application;
 using Hangfire;
 using ServiceHost.Services;
+using ServiceHost.Filters;
 
 namespace ServiceHost.Areas.Admin.Pages.Shop.Orders
 {
+    [RateLimit(Limit = 10, Seconds = 300)]
     public class DetailsModel : PageModel
     {
         [TempData]
         public string Message { get; set; }
 
-        public OrderViewModel Order { get; set; }
+        public OrderViewModel? Order { get; set; }
 
         [BindProperty]
         public RejectPaymentManually RejectPayment { get; set; }
@@ -33,51 +35,51 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Orders
             _adminSmsRateLimiter = adminSmsRateLimiter;
         }
 
-        public async Task<IActionResult> OnGet(long id)
+        public async Task<IActionResult> OnGet(long id, CancellationToken cancellation)
         {
-            Order = await _orderApplication.GetDetails(id);
+            Order = await _orderApplication.GetDetails(id, cancellation);
 
             if (Order == null)
                 return NotFound();
 
             RejectPayment = new RejectPaymentManually { OrderId = id };
             ConfirmPayment = new ConfirmPaymentManually { OrderId = id };
-            Ship = new ShipCommand { OrderId = id, Mobile = Order.RecieverMobile ?? "" };
+            Ship = new ShipCommand { OrderId = id, Mobile = Order.ReceiverMobile ?? "" };
 
             return Page();
         }
 
-        public async Task<IActionResult> OnPostRejectPayment()
+        public async Task<IActionResult> OnPostRejectPayment(CancellationToken cancellation)
         {
-            RejectPayment.AdminId = _authHelper.CurrentAccountId();
-            var op = await _orderApplication.RejectPaymentManuallyAsync(RejectPayment);
+            RejectPayment.AdminId = _authHelper.CurrentUserId();
+            var op = await _orderApplication.RejectPaymentManuallyAsync(RejectPayment, cancellation);
 
             TempData["Toast.Success"] = op.IsSucceeded;
             TempData["Toast.Message"] = op.Message;
             return RedirectToPage(new { id = RejectPayment.OrderId });
         }
 
-        public async Task<IActionResult> OnPostConfirmPayment()
+        public async Task<IActionResult> OnPostConfirmPayment(CancellationToken cancellation)
         {
-            var op = await _orderApplication.ConfirmPaymentManuallyAsync(ConfirmPayment);
+            var op = await _orderApplication.ConfirmPaymentManuallyAsync(ConfirmPayment, cancellation);
 
             TempData["Toast.Success"] = op.IsSucceeded;
             TempData["Toast.Message"] = op.Message;
             return RedirectToPage(new { id = ConfirmPayment.OrderId });
         }
 
-        public async Task<IActionResult> OnPostProccessing(long orderId)
+        public async Task<IActionResult> OnPostProccessing(long orderId, CancellationToken cancellation)
         {
-            var op = await _orderApplication.ChangeStatusToProcessing(orderId);
+            var op = await _orderApplication.ChangeStatusToProcessing(orderId, cancellation);
 
             TempData["Toast.Success"] = op.IsSucceeded;
             TempData["Toast.Message"] = op.Message;
             return RedirectToPage(new { id = orderId });
         }
 
-        public async Task<IActionResult> OnPostShip()
+        public async Task<IActionResult> OnPostShip(CancellationToken cancellation)
         {
-            var op = await _orderApplication.ChangeStatusToShipped(Ship);
+            var op = await _orderApplication.ChangeStatusToShipped(Ship, cancellation);
 
             if (!op.IsSucceeded)
             {
@@ -94,11 +96,11 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Orders
             return RedirectToPage(new { id = Ship.OrderId });
         }
 
-        public async Task<IActionResult> OnPostResendTrackingSms(long orderId)
+        public async Task<IActionResult> OnPostResendTrackingSms(long orderId, CancellationToken cancellation)
         {
-            var adminId = _authHelper.CurrentAccountId();
+            var adminId = _authHelper.CurrentUserId();
 
-            var trackingSmsDto = await _orderApplication.GetOrderForTrackingSms(orderId);
+            var trackingSmsDto = await _orderApplication.GetOrderForTrackingSms(orderId, cancellation);
             if (trackingSmsDto == null)
             {
                 TempData["Toast.Success"] = false;
@@ -130,9 +132,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Orders
             return RedirectToPage(new { id = orderId });
         }
 
-        public async Task<IActionResult> OnPostDelivered(long orderId)
+        public async Task<IActionResult> OnPostDelivered(long orderId, CancellationToken cancellation)
         {
-            var op = await _orderApplication.ChangeStatusToDelivered(orderId);
+            var op = await _orderApplication.ChangeStatusToDelivered(orderId, cancellation);
 
             TempData["Toast.Success"] = op.IsSucceeded;
             TempData["Toast.Message"] = op.Message;

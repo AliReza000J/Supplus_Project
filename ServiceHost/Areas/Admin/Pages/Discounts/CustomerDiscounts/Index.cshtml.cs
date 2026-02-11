@@ -24,39 +24,39 @@ namespace ServiceHost.Areas.Administration.Pages.Discounts.CustomerDiscounts
             _customerDiscountApplication = customerDiscountApplication;
         }
 
-        public async Task OnGet(CustomerDiscountSearchModel searchModel)
+        public async Task OnGet(CustomerDiscountSearchModel searchModel, CancellationToken cancellation)
         {
-            Products = new SelectList(await _productApplication.GetProducts(), "Id", "Name");
-            CustomerDiscounts = await _customerDiscountApplication.Search(searchModel);
+            Products = new SelectList(await _productApplication.GetProducts(cancellation), "Id", "Name");
+            CustomerDiscounts = await _customerDiscountApplication.Search(searchModel, cancellation);
         }
 
-        public async Task<IActionResult> OnGetCreate()
+        public async Task<IActionResult> OnGetCreate(CancellationToken cancellation)
         {
             var command = new DefineCustomerDiscount
             {
-                Products = await _productApplication.GetProducts()
+                Products = await _productApplication.GetProducts(cancellation)
             };
             return Partial("./Create", command);
         }
 
-        public async Task<JsonResult> OnPostCreate(DefineCustomerDiscount command)
+        public async Task<JsonResult> OnPostCreate(DefineCustomerDiscount command, CancellationToken cancellation)
         {
-            var result = await _customerDiscountApplication.Define(command);
+            var result = await _customerDiscountApplication.Define(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
-        public async Task<IActionResult> OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id, CancellationToken cancellation)
         {
-            var customerDiscount = await _customerDiscountApplication.GetDetails(id);
-            customerDiscount.Products = await _productApplication.GetProducts();
+            var customerDiscount = await _customerDiscountApplication.GetDetails(id, cancellation);
+            customerDiscount.Products = await _productApplication.GetProducts(cancellation);
             return Partial("Edit", customerDiscount);
         }
 
-        public async Task<JsonResult> OnPostEdit(EditCustoemrDiscount command)
+        public async Task<JsonResult> OnPostEdit(EditCustoemrDiscount command, CancellationToken cancellation)
         {
-            var result = await _customerDiscountApplication.Edit(command);
+            var result = await _customerDiscountApplication.Edit(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);

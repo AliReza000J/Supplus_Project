@@ -12,9 +12,10 @@ namespace ShopManagement.Application.Contracts.Order
         public string? SelectedReason { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        public string ReasonDescription { get; set; }
+        [MaxLength(80, ErrorMessage = ValidationMessages.MaxLenght)]
+        public string? ReasonDescription { get; set; }
 
-        [Range(1,999, ErrorMessage =  ValidationMessages.IsRequired)]
+        [Range(1, 999, ErrorMessage = ValidationMessages.IsRequired)]
         public long AdminId { get; set; }
     }
 }

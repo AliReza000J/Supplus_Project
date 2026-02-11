@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ServiceHost.Controllers.Shop
 {
-    [Route("shop/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class BrandController : ControllerBase
     {

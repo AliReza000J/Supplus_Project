@@ -8,8 +8,8 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
     //[Authorize(Roles = "1, 3")]
     public class IndexModel : PageModel
     {
-        public ProductCategorySearchModel SearchModel;
-        public List<ProductCategoryViewModel> ProductCategories;
+        public ProductCategorySearchModel? SearchModel;
+        public List<ProductCategoryViewModel>? ProductCategories;
 
         private readonly IProductCategoryApplication _productCategoryApplication;
 
@@ -19,37 +19,37 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         }
 
         //[NeedsPermission(ShopPermissions.ListProductCategories)]
-        public async Task OnGet(ProductCategorySearchModel searchModel)
+        public async Task OnGet(ProductCategorySearchModel searchModel, CancellationToken cancellation)
         {
-            ProductCategories = await _productCategoryApplication.Search(searchModel);
+            ProductCategories = await _productCategoryApplication.Search(searchModel, cancellation);
         }
 
-        public async Task<IActionResult> OnGetCreate()
+        public async Task<IActionResult> OnGetCreate(CancellationToken cancellation)
         {
             var command = new CreateProductCategory
             {
-                Categories = await _productCategoryApplication.GetProductCategories()
+                Categories = await _productCategoryApplication.GetProductCategories(cancellation)
             };
             return Partial("./Create", command);
         }
 
         //[NeedsPermission(ShopPermissions.CreateProductCategory)]
-        public async Task<JsonResult> OnPostCreate(CreateProductCategory command)
+        public async Task<JsonResult> OnPostCreate(CreateProductCategory command, CancellationToken cancellation)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = await _productCategoryApplication.Create(command);
+            var result = await _productCategoryApplication.Create(command, cancellation);
 
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
-        public async Task<IActionResult> OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id, CancellationToken cancellation)
         {
-            var productCategory = await _productCategoryApplication.GetDetails(id);
-            productCategory.Categories = (await _productCategoryApplication.GetProductCategories())
+            var productCategory = await _productCategoryApplication.GetDetails(id, cancellation);
+            productCategory.Categories = (await _productCategoryApplication.GetProductCategories(cancellation))
                 .Where(x => x.Id != id)
                 .ToList();
 
@@ -57,13 +57,13 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.ProductCategories
         }
 
         //[NeedsPermission(ShopPermissions.EditProductCategory)]
-        public async Task<JsonResult> OnPostEdit(EditProductCategory command)
+        public async Task<JsonResult> OnPostEdit(EditProductCategory command, CancellationToken cancellation)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
 
-            var result = await _productCategoryApplication.Edit(command);
+            var result = await _productCategoryApplication.Edit(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);

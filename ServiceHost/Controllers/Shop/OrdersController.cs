@@ -1,48 +1,63 @@
 ﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Product;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuestPDF.Fluent;
+using ServiceHost.Filters;
 using ServiceHost.Services;
 using ShopManagement.Application.Contracts.Order;
 using ShopManagement.Domain.OrderAgg;
+using SiteManagement.Application;
 using System.Security.Claims;
 
 namespace ServiceHost.Controllers.Shop
 {
-    [Route("shop/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
     {
         private readonly IOrderApplication _orderApp;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly GetLogoFromSetting _getLogoCommand;
 
-        public OrdersController(IOrderApplication orderApp, IWebHostEnvironment webHostEnvironment)
+        public OrdersController(IOrderApplication orderApp, IWebHostEnvironment webHostEnvironment, GetLogoFromSetting getLogoCommand)
         {
             _orderApp = orderApp;
             _webHostEnvironment = webHostEnvironment;
+            _getLogoCommand = getLogoCommand;
         }
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("place")]
-        public async Task<ActionResult<ApiResponse<PlaceOrderResult>>> PlaceOrder([FromBody] CreateOrderCommand command)
+        [RateLimit(Limit = 3, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<PlaceOrderResult>>> PlaceOrder([FromForm] CreateOrderCommandDto orderInput, CancellationToken cancellation)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (long.TryParse(userId, out long accountId))
+            var nameIdentifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var command = new CreateOrderCommand
             {
-                command.AccountId = accountId;
+                CardOwnerName = orderInput.CardOwnerName,
+                NationalCode = orderInput.NationalCode,
+                PaymentReceiptPic = orderInput.PaymentReceiptPic,
+                PayMethod = orderInput.PayMethod,
+                ReceiverAddress = orderInput.ReceiverAddress,
+                ReceiverFullName = orderInput.ReceiverFullName,
+                ReceiverMobile = orderInput.ReceiverMobile,
+                ReceiverZipCode = orderInput.ReceiverZipCode
+            };
+            if (long.TryParse(nameIdentifier, out long userId))
+            {
+                command.UserId = userId;
             }
             else
             {
                 return Unauthorized(ApiResponse<PlaceOrderResult>.Fail("کاربر شناسایی نشد."));
             }
 
-            var (result, op) = await _orderApp.PlaceOrderAsync(command);
+            var (result, op) = await _orderApp.PlaceOrderAsync(command, cancellation);
 
             if (op.IsSucceeded && result != null)
             {
-                // موفقیت: چه کارت به کارت باشد (بدون ریدارکت) چه درگاه (با ریدارکت)
-                // فرانت‌اند بر اساس result.ShouldRedirect تصمیم می‌گیرد
                 return Ok(ApiResponse<PlaceOrderResult>.Ok(data: result, message: op.Message));
             }
             else
@@ -53,16 +68,13 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("verify-payment")]
-        public async Task<ActionResult<ApiResponse<object>>> VerifyPayment([FromBody] VerifyGatewayPaymentCommand command)
+        public async Task<ActionResult<ApiResponse<object>>> VerifyPayment([FromBody] VerifyGatewayPaymentCommand command, CancellationToken cancellation)
         {
-            // این متد زمانی صدا زده می‌شود که کاربر از درگاه به سایت شما برگشته
-            // و فرانت‌اند پارامترهای Authority و RefId را به این متد می‌فرستد.
-
-            var op = await _orderApp.VerifyGatewayPaymentAsync(command);
+            var op = await _orderApp.VerifyGatewayPaymentAsync(command, cancellation);
 
             return op.IsSucceeded
-                ? Ok(ApiResponse<object>.Ok(data: null, message: op.Message)) // موفق و سبد خالی شده
-                : BadRequest(ApiResponse<object>.Fail(op.Message)); // ناموفق، سبد پر مانده
+                ? Ok(ApiResponse<object>.Ok(data: null, message: op.Message))
+                : BadRequest(ApiResponse<object>.Fail(op.Message));
         }
 
         [HttpGet("confirm-callback")]
@@ -90,14 +102,23 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("download-invoice/{orderId}")]
-        public async Task<ActionResult<ApiResponse<object>>> DownloadInvoice(long orderId)
+        [RateLimit(Limit = 5, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<object>>> DownloadInvoice(long orderId, CancellationToken cancellation)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
-            if (!await _orderApp.UserOwnsOrder(userId, orderId))
+            var nameIdentifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? null;
+            if (string.IsNullOrWhiteSpace(nameIdentifier))
+                BadRequest(ApiResponse<object>
+                    .Fail(message: "عملیات غیرمجاز!"));
+
+            long userId = 0;
+            if (nameIdentifier != null)
+                userId = long.Parse(nameIdentifier);
+
+            if (!await _orderApp.UserOwnsOrder(userId, orderId, cancellation))
                 return StatusCode(403,
                     ApiResponse<object>.Fail("شما مجوز دسترسی به این بخش را ندارید."));
 
-            var orderViewModel = await _orderApp.GetDetails(orderId);
+            var orderViewModel = await _orderApp.GetDetails(orderId, cancellation);
             if (orderViewModel == null)
                 return StatusCode(404,
                     ApiResponse<object>.Fail("موردی یافت نشد."));
@@ -107,8 +128,9 @@ namespace ServiceHost.Controllers.Shop
                     ApiResponse<object>.Fail("موردی یافت نشد."));
 
             string webRootPath = _webHostEnvironment.WebRootPath;
+            string logoPath = await _getLogoCommand.Execute(cancellation);
 
-            var document = new InvoiceDocument(orderViewModel, webRootPath);
+            var document = new InvoiceDocument(orderViewModel, webRootPath, logoPath);
             byte[] pdfBytes = document.GeneratePdf();
 
             return File(pdfBytes, "application/pdf", $"Invoice-PharmaPlus-{orderId}.pdf");

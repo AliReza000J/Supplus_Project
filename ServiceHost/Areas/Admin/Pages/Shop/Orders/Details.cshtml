@@ -59,7 +59,7 @@
     </div>
 </div>
 
-@if (!string.IsNullOrWhiteSpace(Model.Order.RecieverFullName))
+@if (!string.IsNullOrWhiteSpace(Model.Order.ReceiverFullName))
 {
     <div class="row">
         <div class="col-md-12">
@@ -74,7 +74,7 @@
                         <div class="col-md-6">
                             <p>
                                 <strong>نام گیرنده:</strong>
-                                @Model.Order.RecieverFullName
+                                @Model.Order.ReceiverFullName
                             </p>
                         </div>
 
@@ -83,9 +83,9 @@
                             <p>
                                 <strong>موبایل گیرنده:</strong>
                                 <i class="fa fa-phone text-success m-l-5"></i>
-                                <a href="tel:@Model.Order.RecieverMobile"
+                                <a href="tel:@Model.Order.ReceiverMobile"
                                    style="direction:ltr; display:inline-block">
-                                    @Model.Order.RecieverMobile?.ToPersianNumber()
+                                    @Model.Order.ReceiverMobile?.ToPersianNumber()
                                 </a>
                             </p>
                         </div>
@@ -96,7 +96,7 @@
                                 <strong>آدرس گیرنده:</strong>
                                 <i class="fa fa-map-marker text-danger m-l-5"></i>
                                 <span id="receiverAddress">
-                                    @Model.Order.RecieverAddress
+                                    @Model.Order.ReceiverAddress
                                 </span>
 
                                 <button type="button"
@@ -112,7 +112,7 @@
                         <div class="col-md-4 m-t-10">
                             <p>
                                 <strong>کد پستی:</strong>
-                                @Model.Order.RecieverZipCode?.ToPersianNumber()
+                                @Model.Order.ReceiverZipCode?.ToPersianNumber()
                             </p>
                         </div>
 

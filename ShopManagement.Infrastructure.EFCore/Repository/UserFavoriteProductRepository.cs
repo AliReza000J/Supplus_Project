@@ -12,7 +12,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<UserFavoriteProduct?> GetByUserIdAndProductId(string userId, long productId)
+        public async Task<UserFavoriteProduct?> GetByUserIdAndProductId(long userId, long productId)
         {
             return await _context.UserFavoriteProducts
                 .FirstOrDefaultAsync(x => x.UserId == userId &&

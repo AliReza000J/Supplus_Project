@@ -718,7 +718,7 @@
 		/* Feature sorting overrides column specific when off */
 		if ( !oSettings.oFeatures.bSort )
 		{
-			oCol.bSortable = false;
+			oCol.bSortable = true;
 			th.addClass( oClasses.sSortableNone ); // Have to add class here as order event isn't called
 		}
 	

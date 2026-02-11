@@ -5,6 +5,7 @@ using BlogManagement.Application.Contracts.Article;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServiceHost.Filters;
 using System.Security.Claims;
 
 namespace ServiceHost.Controllers.Blog
@@ -16,7 +17,7 @@ namespace ServiceHost.Controllers.Blog
     /// This controller exposes endpoints for viewing article details,
     /// retrieving the latest published articles, and searching articles.
     /// </remarks>
-    [Route("blog/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class ArticleController : ControllerBase
     {
@@ -79,23 +80,23 @@ namespace ServiceHost.Controllers.Blog
             
             string cookieName = $"av_{articleId}";
 
-            long? userId = null;
+            long userId = 0;
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (long.TryParse(idClaim, out var parsedId))
                 userId = parsedId;
 
-            var usernname = User.FindFirst(ClaimTypes.Name)?.Value ?? "ANON";
+            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "ANON";
 
             if (!Request.Cookies.ContainsKey(cookieName))
             {
                 var now = DateTime.UtcNow;
 
-                var op = await _articleApplication.IncrementArticleViewCountAsync(articleId, userId.ToString());
+                var op = await _articleApplication.IncrementArticleViewCountAsync(articleId, userId);
                 if (op.IsSucceeded)
                 {
                     Response.Cookies.Append(
                     cookieName,
-                    $"1ck-{usernname}_{now}",
+                    $"2ck-{username}_{now}",
                     new CookieOptions
                     {
                         Expires = DateTimeOffset.UtcNow.AddHours(16),
@@ -151,6 +152,7 @@ namespace ServiceHost.Controllers.Blog
         /// <response code="400">Search keyword is empty or invalid.</response>
         [AllowAnonymous]
         [HttpGet("search")]
+        [RateLimit(Limit = 30, Seconds = 60)]
         public async Task<ActionResult<ApiResponse<PagedResult<ArticleQueryModel>>>> Search(
             string value, int page = 1, int pageSize = 10, CancellationToken cancellation = default)
         {

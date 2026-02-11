@@ -108,15 +108,15 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<string>("PaymentRefId")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RecieverAddress")
+                    b.Property<string>("ReceiverAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RecieverFullName")
+                    b.Property<string>("ReceiverFullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RecieverMobile")
+                    b.Property<string>("ReceiverMobile")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

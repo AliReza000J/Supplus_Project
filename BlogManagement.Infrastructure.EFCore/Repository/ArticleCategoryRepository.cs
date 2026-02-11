@@ -15,17 +15,17 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<List<ArticleCategoryViewModel>> GetArticleCategories()
+        public async Task<List<ArticleCategoryViewModel>> GetArticleCategories(CancellationToken cancellation)
         {
             return await _context.ArticleCategories
                 .Select(x => new ArticleCategoryViewModel
             {
                 Id = x.Id,
                 Name = x.Name
-            }).ToListAsync();
+            }).ToListAsync(cancellation);
         }
 
-        public async Task<EditArticleCategory> GetDetails(long id)
+        public async Task<EditArticleCategory?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.ArticleCategories
                 .Select(x => new EditArticleCategory
@@ -40,16 +40,16 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 Slug = x.Slug,
                 PictureAlt = x.PictureAlt,
                 PictureTitle = x.PictureTitle
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<string> GetSlugBy(long id)
+        public async Task<string> GetSlugBy(long id, CancellationToken cancellation)
         {
             return (await _context.ArticleCategories.Select(x => new { x.Id, x.Slug })
-                .FirstOrDefaultAsync(x => x.Id == id)).Slug;
+                .FirstOrDefaultAsync(x => x.Id == id, cancellation)).Slug;
         }
 
-        public async Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel)
+        public async Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel, CancellationToken cancellation)
         {
             var query = _context.ArticleCategories
                 .Include(x => x.Articles)
@@ -67,7 +67,7 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             if (!string.IsNullOrWhiteSpace(searchModel.Name))
                 query = query.Where(x => x.Name.Contains(searchModel.Name));
 
-            return await query.OrderByDescending(x => x.ShowOrder).ToListAsync();
+            return await query.OrderByDescending(x => x.ShowOrder).ToListAsync(cancellation);
         }
     }
 }

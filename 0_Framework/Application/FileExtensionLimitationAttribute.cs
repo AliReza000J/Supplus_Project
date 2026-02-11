@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System;
 using System.ComponentModel.DataAnnotations;
-using System.IO;
-using System.Linq;
 
 namespace _0_Framework.Application
 {
@@ -17,8 +14,7 @@ namespace _0_Framework.Application
 
         public override bool IsValid(object value)
         {
-            var file = value as IFormFile;
-            if (file == null) return true;
+            if (value is not IFormFile file) return true;
             var fileExtension = Path.GetExtension(file.FileName).ToLower();
             return _validExtensions.Contains(fileExtension);
         }

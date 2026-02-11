@@ -1,0 +1,100 @@
+﻿@using SiteManagement.Application.Contracts.Ticket
+@model ReplyTicket
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h4 class="modal-title">مشاهده و پاسخ تیکت</h4>
+</div>
+
+<form asp-page="./Index"
+      asp-page-handler="Reply"
+      method="post"
+      data-ajax="true"
+      data-callback=""
+      data-action="Refresh"
+      enctype="multipart/form-data">
+
+    <div class="modal-body">
+
+        <input type="hidden" asp-for="TicketId" />
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group no-margin">
+                    <div class="alert alert-info alert-title">
+                        <strong>عنوان</strong>
+                        <p>@Model.Subject</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group no-margin">
+                    <div class="alert alert-info alert-user">
+                        <strong>متن پیام کاربر</strong>
+                        <p>@Model.Message</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.IsAnswered)
+        {
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group no-margin">
+                        <div class="alert alert-info alert-admin">
+                            <strong>پاسخ ادمین:</strong>
+                            <p>@Model.ReplyMessage</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="form-group no-margin">
+                <textarea class="form-control autogrow" asp-for="ReplyMessage" id="Reply"
+                          style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 140px; width: 560px"
+                          placeholder="پاسخ ادمین..."></textarea>
+                <span asp-validation-for="ReplyMessage" class="error"></span>
+            </div>
+        }
+
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">بستن</button>
+        @if (!Model.IsAnswered)
+        {
+            <button type="submit" class="btn btn-success">ارسال پاسخ</button>
+        }
+    </div>
+</form>
+
+<style>
+    .alert-title {
+        background-color: #d0ebff; /* آبی روشن */
+        color: #0c5460;
+        border-color: #b6e0fe;
+    }
+
+    .alert-user {
+        background-color: #d1f7dc; /* سبز روشن */
+        color: #155724;
+        border-color: #a2f5b1;
+    }
+
+    .alert-admin {
+        background-color: #fff3cd; /* زرد روشن */
+        color: #856404;
+        border-color: #ffeeba;
+    }
+
+    .alert strong {
+        display: block;
+        margin-bottom: 5px;
+    }
+</style>

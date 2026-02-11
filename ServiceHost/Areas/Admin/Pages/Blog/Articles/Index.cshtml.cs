@@ -7,9 +7,9 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
 {
     public class IndexModel : PageModel
     {
-        public ArticleSearchModel SearchModel;
-        public List<ArticleViewModel> Articles;
-        public SelectList ArticleCategories;
+        public ArticleSearchModel? SearchModel;
+        public List<ArticleViewModel>? Articles;
+        public SelectList? ArticleCategories;
 
         private readonly IArticleApplication _articleApplication;
         private readonly IArticleCategoryApplication _articleCategoryApplication;
@@ -21,10 +21,10 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
             _articleCategoryApplication = articleCategoryApplication;
         }
 
-        public async Task OnGet(ArticleSearchModel searchModel)
+        public async Task OnGet(ArticleSearchModel searchModel, CancellationToken cancellation)
         {
-            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(), "Id", "Name");
-            Articles = await _articleApplication.Search(searchModel);
+            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(cancellation), "Id", "Name");
+            Articles = await _articleApplication.Search(searchModel, cancellation);
         }
     }
 }

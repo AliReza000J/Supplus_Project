@@ -24,10 +24,10 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         }
 
         [NeedsPermission(ShopPermissions.ListProducts)]
-        public async Task OnGet(ProductSearchModel searchModel)
+        public async Task OnGet(ProductSearchModel searchModel, CancellationToken cancellation)
         {
-            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(), "Id", "Name");
-            Products = await _productApplication.Search(searchModel);
+            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(cancellation), "Id", "Name");
+            Products = await _productApplication.Search(searchModel, cancellation);
         }
     }
 }

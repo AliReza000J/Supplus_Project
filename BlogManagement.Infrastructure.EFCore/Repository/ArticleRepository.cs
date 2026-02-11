@@ -15,7 +15,7 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<EditArticle> GetDetails(long id)
+        public async Task<EditArticle?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.Articles.Select(x => new EditArticle
             {
@@ -31,16 +31,16 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 ShortDescription = x.ShortDescription,
                 Slug = x.Slug,
                 Title = x.Title,
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<Article> GetWithCategory(long id)
+        public async Task<Article> GetWithCategory(long id, CancellationToken cancellation)
         {
             return await _context.Articles.Include(x => x.Category)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<List<ArticleViewModel>> Search(ArticleSearchModel searchModel)
+        public async Task<List<ArticleViewModel>> Search(ArticleSearchModel searchModel, CancellationToken cancellation)
         {
             var query = _context.Articles.Select(x => new ArticleViewModel
             {
@@ -60,7 +60,7 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
             if (searchModel.CategoryId > 0)
                 query = query.Where(x => x.CategoryId == searchModel.CategoryId);
 
-            return await query.OrderByDescending(x => x.Id).ToListAsync();
+            return await query.OrderByDescending(x => x.Id).ToListAsync(cancellation);
         }
     }
 }

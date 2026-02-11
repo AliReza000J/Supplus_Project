@@ -1,22 +1,39 @@
 ﻿using _0_Framework.Domain;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using System.Text.RegularExpressions;
 
 namespace ShopManagement.Domain.CartAgg
 {
     public class Cart : BaseEntity
     {
-        public long? AccountId { get; private set; } = 0; // user id
+        public long? UserId { get; private set; } = 0; // user id
         public string CartKey { get; private set; } // e.g. "user:123" or "anon:GUID"
         public List<CartItem> Items { get; private set; } = new();
         public DateTime LastUpdatedAt { get; private set; }
 
         protected Cart() { }
 
-        public Cart(string cartKey, long? accountId = null)
+        public Cart(string cartKey, long? userId = null)
         {
             if (string.IsNullOrWhiteSpace(cartKey)) throw new ArgumentException("cartKey required", nameof(cartKey));
             CartKey = cartKey;
-            AccountId = accountId;
+            UserId = userId;
             LastUpdatedAt = DateTime.Now;
+        }
+
+        public static Cart Create(string cartKey)
+        {
+            if (!Regex.IsMatch(cartKey, @"^user:\d+$"))
+                throw new ArgumentException("Invalid CartKey!!!");
+
+            return new Cart
+            {
+                CartKey = cartKey,
+                CreationDate = DateTime.Now,
+                LastUpdatedAt = DateTime.Now,
+                Items = new(),
+                UserId = long.Parse(cartKey[5..])
+            };
         }
 
         public void AddItem(long productId, int qty)

@@ -16,7 +16,6 @@ namespace ShopManagement.Infrastructure.EFCore.Mapping
                 .IsRequired();
 
             builder.Property(x => x.UserId)
-                .HasMaxLength(450)
                 .IsRequired();
 
             builder.HasIndex(e => new { e.UserId, e.ProductId }).IsUnique();

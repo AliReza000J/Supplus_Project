@@ -5,18 +5,18 @@ namespace CommentManagement.Domain.CommentAgg
 {
     public interface ICommentRepository : IRepository<long, Comment>
     {
-        Task<List<CommentViewModel>> Search(CommentSearchModel searchModel);
-        Task<CommentViewModel> GetDetails(long id);
-        Task<bool> OwnsComment(long commentId, string userIdentifier);
+        Task<List<CommentViewModel>> Search(CommentSearchModel searchModel, CancellationToken cancellation);
+        Task<CommentViewModel> GetDetails(long id, CancellationToken cancellation);
+        Task<bool> OwnsComment(long commentId, long userId, CancellationToken cancellation);
 
         // reactions
-        Task<bool> HasUserLiked(long commentId, string userIdentifier);
-        Task<bool> HasUserDisliked(long commentId, string userIdentifier);
+        Task<bool> HasUserLiked(long commentId, long userId, CancellationToken cancellation);
+        Task<bool> HasUserDisliked(long commentId, long userId, CancellationToken cancellation);
 
         // reaction add/remove helpers for repository-level operations
         void AddReaction(CommentReaction reaction);
         void RemoveReaction(CommentReaction reaction);
-        Task<CommentReaction?> GetUserReaction(long commentId, string userIdentifier);
-        Task<bool> HasUserCommented(string userIdentifier, int type, long ownerRecordId);
+        Task<CommentReaction?> GetUserReaction(long commentId, long userId, CancellationToken cancellation);
+        Task<bool> HasUserCommented(long userId, int type, long ownerRecordId, CancellationToken cancellation);
     }
 }

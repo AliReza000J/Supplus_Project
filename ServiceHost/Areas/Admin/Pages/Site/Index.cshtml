@@ -1,0 +1,222 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "تنظیمات سایت";
+}
+
+<div class="container-fluid">
+    <form method="post" enctype="multipart/form-data">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">اطلاعات تماس</h3></div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label asp-for="Command.Contact.Phone">تلفن</label>
+                        <input asp-for="Command.Contact.Phone" class="form-control" />
+                        <span asp-validation-for="Command.Contact.Phone" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Command.Contact.Email">ایمیل</label>
+                        <input asp-for="Command.Contact.Email" class="form-control" />
+                        <span asp-validation-for="Command.Contact.Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Command.Contact.Address">آدرس</label>
+                        <input asp-for="Command.Contact.Address" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">تصاویر و برندینگ</h3></div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6 text-center">
+                        @if (Model.Setting.Logo != null)
+                        {
+                            <label>لوگو فعلی</label>
+                            <div class="thumbnail" style="width: 100px;">
+                                <img src="~/Pictures/@Model.Setting.Logo" alt="Logo" class="img-responsive" />
+                            </div>
+                        }
+                        <input asp-for="Command.Branding.LogoFile" type="file" class="form-control" accept="image/*" />
+                        <span asp-validation-for="Command.Branding.LogoFile" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        @if (Model.Setting.Favicon != null)
+                        {
+                            <label>فاوآیکون فعلی</label>
+                            <div class="thumbnail" style="width: 100px;">
+                                <img src="~/Pictures/@Model.Setting.Favicon" alt="Logo" class="img-responsive" />
+                            </div>
+                        }
+                        <input asp-for="Command.Branding.FaviconFile" type="file" class="form-control" accept="image/*" />
+                        <span asp-validation-for="Command.Branding.FaviconFile" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">درباره ما</h3></div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label asp-for="Command.About.Text">متن درباره ما</label>
+                    <textarea asp-for="Command.About.Text" class="form-control" rows="5" placeholder="توضیحات سایت را اینجا بنویسید..."></textarea>
+                    <span asp-validation-for="Command.About.Text" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">اطلاعات پرداخت (کارت‌های بانکی)</h3>
+            </div>
+            <div class="panel-body">
+                <div id="cards-container">
+                    @for (int i = 0; i < Model.Command.Payment.Cards.Count; i++)
+                    {
+                        <div class="row card-item" style="margin-bottom: 10px;">
+                            <div class="col-md-5">
+                                <input asp-for="Command.Payment.Cards[i].Owner" class="form-control" placeholder="نام صاحب کارت" />
+                                <span asp-validation-for="Command.Payment.Cards[i].Owner"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-5">
+                                <input asp-for="Command.Payment.Cards[i].Number" class="form-control" placeholder="شماره کارت" />
+                                <span asp-validation-for="Command.Payment.Cards[i].Number"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-block remove-card">حذف</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <hr />
+                <button type="button" id="add-card" class="btn btn-info btn-sm">افزودن کارت جدید</button>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">قوانین و ضوابط</h3></div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>قوانین و مقررات سایت</label>
+                    <textarea asp-for="Command.TermsAndConditions.Text" class="form-control" rows="4"></textarea>
+                </div>
+                <hr />
+                <div class="form-group">
+                    <label>شرایط و ضوابط مرجوعی کالا</label>
+                    <textarea asp-for="Command.ReturnPolicy.Text" class="form-control" rows="4"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">شبکه‌های اجتماعی</h3>
+            </div>
+            <div class="panel-body">
+                <div id="socials-container">
+                    @for (int i = 0; i < Model.Command.Socials.Items.Count; i++)
+                    {
+                        <div class="row social-item" style="margin-bottom: 10px;">
+                            <div class="col-md-5">
+                                <input asp-for="Command.Socials.Items[i].PlatformName" class="form-control" placeholder="نام پلتفرم (مثلا اینستاگرام)" />
+                                <span asp-validation-for="Command.Socials.Items[i].PlatformName"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-5">
+                                <input asp-for="Command.Socials.Items[i].LinkOrId" class="form-control" placeholder="لینک یا آی‌دی بدون @@" />
+                                <span asp-validation-for="Command.Socials.Items[i].LinkOrId"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-block remove-social">حذف</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" id="add-social" class="btn btn-info btn-sm mt-2">افزودن شبکه اجتماعی</button>
+            </div>
+        </div>
+
+        <div class="well">
+            <button type="submit" class="btn btn-primary btn-block btn-lg">ذخیره نهایی تمامی تنظیمات</button>
+        </div>
+    </form>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $("#add-social").click(function () {
+                var index = $(".social-item").length;
+                var html = `
+                    <div class="row social-item" style="margin-bottom: 10px;">
+                        <div class="col-md-5">
+                            <input name="Command.Socials.Items[${index}].PlatformName" class="form-control" placeholder="نام پلتفرم" />
+                        </div>
+                        <div class="col-md-5">
+                            <input name="Command.Socials.Items[${index}].LinkOrId" class="form-control" placeholder="لینک یا آی‌دی بدون نماد @@" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger btn-block remove-social">حذف</button>
+                        </div>
+                    </div>`;
+                $("#socials-container").append(html);
+            });
+
+            $(document).on("click", ".remove-social", function () {
+                $(this).closest(".social-item").remove();
+                $(".social-item").each(function (index, element) {
+                    $(element).find("input").each(function () {
+                        var name = $(this).attr("name");
+                        if (name.includes("PlatformName")) $(this).attr("name", `Command.Socials.Items[${index}].PlatformName`);
+                        if (name.includes("LinkOrId")) $(this).attr("name", `Command.Socials.Items[${index}].LinkOrId`);
+                    });
+                });
+            });
+
+        });
+
+        $(document).ready(function () {
+            $("#add-card").click(function () {
+                var index = $(".card-item").length;
+                var html = `
+                    <div class="row card-item" style="margin-bottom: 10px;">
+                        <div class="col-md-5">
+                            <input name="Command.Payment.Cards[${index}].Owner" class="form-control" placeholder="نام صاحب کارت" />
+                        </div>
+                        <div class="col-md-5">
+                            <input name="Command.Payment.Cards[${index}].Number" class="form-control" placeholder="شماره کارت" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger btn-block remove-card">حذف</button>
+                        </div>
+                    </div>`;
+                $("#cards-container").append(html);
+            });
+
+            $(document).on("click", ".remove-card", function () {
+                $(this).closest(".card-item").remove();
+                reIndexCards();
+            });
+
+            function reIndexCards() {
+                $(".card-item").each(function (index, element) {
+                    $(element).find("input").each(function () {
+                        var name = $(this).attr("name");
+                        if (name.includes("Owner")) $(this).attr("name", `Command.Payment.Cards[${index}].Owner`);
+                        if (name.includes("Number")) $(this).attr("name", `Command.Payment.Cards[${index}].Number`);
+                    });
+                });
+            }
+        });
+    </script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+}

@@ -22,16 +22,16 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Orders
             _accountApplication = accountApplication;
         }
 
-        public async Task OnGet(OrderSearchModel searchModel)
+        public async Task OnGet(OrderSearchModel searchModel, CancellationToken cancellation)
         {
-            Accounts = new SelectList(await _accountApplication.GetAccounts(), "Id", "Fullname");
+            Accounts = new SelectList(await _accountApplication.GetAccounts(cancellation), "Id", "Fullname");
             Statuses = new SelectList(_orderApplication.GetStatuses(), "Id", "Name");
-            Orders = await _orderApplication.SearchAsync(searchModel);
+            Orders = await _orderApplication.SearchAsync(searchModel, cancellation);
         }
 
-        public async Task<IActionResult> OnGetItems(long id)
+        public async Task<IActionResult> OnGetItems(long id, CancellationToken cancellation)
         {
-            var items = await _orderApplication.GetItems(id);
+            var items = await _orderApplication.GetItems(id, cancellation);
             return Partial("Items", items);
         }
     }

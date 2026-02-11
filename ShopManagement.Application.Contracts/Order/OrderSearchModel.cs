@@ -2,7 +2,7 @@
 {
     public class OrderSearchModel
     {
-        public long? AccountId { get; set; }
+        public long? UserId { get; set; }
         public long? OrderId { get; set; }
         public string? Mobile { get; set; }
         public int? Status { get; set; } = null;

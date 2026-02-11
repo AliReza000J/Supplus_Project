@@ -9,7 +9,7 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
 {
     public class EditModel : PageModel
     {
-        public EditRole Command;
+        public EditRole? Command;
         public List<SelectListItem> Permissions = new List<SelectListItem>();
         private readonly IRoleApplication _roleApplication;
         private readonly IEnumerable<IPermissionExposer> _exposers;
@@ -21,13 +21,13 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.EditRole)]
-        public async Task<IActionResult> OnGet(long id)
+        public async Task<IActionResult> OnGet(long id, CancellationToken cancellation)
         {
             if (id == 1)
                 return RedirectToPage("/AccessDenied");
 
             var groups = new Dictionary<string, SelectListGroup>();
-            Command = await _roleApplication.GetDetails(id);
+            Command = await _roleApplication.GetDetails(id, cancellation);
             foreach (var exposer in _exposers)
             {
                 var exposedPermissions = exposer.Expose();
@@ -58,9 +58,9 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.EditRole)]
-        public async Task<IActionResult> OnPost(EditRole command)
+        public async Task<IActionResult> OnPost(EditRole command, CancellationToken cancellation)
         {
-            var result = await _roleApplication.Edit(command);
+            var result = await _roleApplication.Edit(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("Index");

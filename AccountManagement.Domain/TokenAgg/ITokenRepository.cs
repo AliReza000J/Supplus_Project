@@ -2,11 +2,11 @@
 {
     public interface ITokenRepository
     {
-        Task AddAsync(Token token);
-        Task<Token?> GetByRefreshTokenAsync(string refreshToken);
-        Task<Token?> GetByAccessTokenAsync(string accessToken);
-        Task RevokeAsync(Token token);
-        Task<bool> IsRevokedAsync(string accessToken);
+        Task AddAsync(Token token, CancellationToken cancellation);
+        Task<Token?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellation);
+        Task<Token?> GetByAccessTokenAsync(string accessToken, CancellationToken cancellation);
+        Task RevokeAsync(Token token, CancellationToken cancellation);
+        Task<bool> IsRevokedAsync(string accessToken, CancellationToken cancellation);
         bool IsRevoked(string accessToken);
     }
 }

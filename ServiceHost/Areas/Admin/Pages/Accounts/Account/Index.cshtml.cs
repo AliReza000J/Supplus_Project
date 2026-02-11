@@ -30,47 +30,47 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
             _authHelper = authHelper;
         }
 
-        public async Task OnGetAsync(AccountSearchModel searchModel)
+        public async Task OnGetAsync(AccountSearchModel searchModel, CancellationToken cancellation)
         {
-            Roles = new SelectList((await _roleApplication.ListAsync())
+            Roles = new SelectList((await _roleApplication.ListAsync(cancellation))
                 .Where(x => x.Id != 1).ToList(), "Id", "Name");
-            Accounts = await _accountApplication.Search(searchModel);
+            Accounts = await _accountApplication.Search(searchModel, cancellation);
         }
 
         [NeedsPermission(AccountPermissions.CreateAccount)]
-        public async Task<IActionResult> OnGetCreateAsync()
+        public async Task<IActionResult> OnGetCreateAsync(CancellationToken cancellation)
         {
             var command = new RegisterAccount
             {
-                Roles = (await _roleApplication.ListAsync())
+                Roles = (await _roleApplication.ListAsync(cancellation))
                 .Where(x => x.Id != 1).ToList()
             };
             return Partial("./Create", command);
         }
 
         [NeedsPermission(AccountPermissions.CreateAccount)]
-        public async Task<JsonResult> OnPostCreateAsync(RegisterAccount command)
+        public async Task<JsonResult> OnPostCreateAsync(RegisterAccount command, CancellationToken cancellation)
         {
-            var result = await _accountApplication.Register(command);
+            var result = await _accountApplication.Register(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
         [NeedsPermission(AccountPermissions.EditAccount)]
-        public async Task<IActionResult> OnGetEditAsync(long id)
+        public async Task<IActionResult> OnGetEditAsync(long id, CancellationToken cancellation)
         {
-            var account = await _accountApplication.GetDetails(id);
-            account.Roles = (await _roleApplication.ListAsync())
+            var account = await _accountApplication.GetDetails(id, cancellation);
+            account.Roles = (await _roleApplication.ListAsync(cancellation))
                 .Where(x => x.Id != 1).ToList();
             return Partial("Edit", account);
         }
 
         [NeedsPermission(AccountPermissions.EditAccount)]
-        public async Task<JsonResult> OnPostEditAsync(EditAccount command)
+        public async Task<JsonResult> OnPostEditAsync(EditAccount command, CancellationToken cancellation)
         {
-            var userId = _authHelper.CurrentAccountId();
-            var result = await _accountApplication.Edit(command, userId.ToString());
+            var userId = _authHelper.CurrentUserId();
+            var result = await _accountApplication.Edit(command, userId, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
@@ -82,34 +82,34 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Account
             return Partial("ChangePassword", command);
         }
 
-        public async Task<JsonResult> OnPostChangePasswordAsync(ChangePassword command)
+        public async Task<IActionResult> OnPostChangePasswordAsync(ChangePassword command, CancellationToken cancellation)
         {
-            var userId = _authHelper.CurrentAccountId();
-            var result = await _accountApplication.ChangePassword(command, userId.ToString());
+            var userId = _authHelper.CurrentUserId();
+            var result = await _accountApplication.ChangePassword(command, userId, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
         [NeedsPermission(AccountPermissions.DeleteAccount)]
-        public async Task<IActionResult> OnGetDeleteAsync(long id)
+        public async Task<IActionResult> OnGetDeleteAsync(long id, CancellationToken cancellation)
         {
             if (id == 1)
                 return RedirectToPage();
 
-            var result = await _accountApplication.Delete(id);
+            var result = await _accountApplication.Deactivate(id, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage();
         }
 
         [NeedsPermission(AccountPermissions.ActivateAccount)]
-        public async Task<IActionResult> OnGetActivateAsync(long id)
+        public async Task<IActionResult> OnGetActivateAsync(long id, CancellationToken cancellation)
         {
             if (id == 1)
                 return RedirectToPage();
 
-            var result = await _accountApplication.Activate(id);
+            var result = await _accountApplication.Activate(id, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage();

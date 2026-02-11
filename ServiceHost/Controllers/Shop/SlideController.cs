@@ -2,11 +2,10 @@
 using _01_PharmaPlusQuery.Contracts.Slide;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace ServiceHost.Controllers.Shop
 {
-    [Route("shop/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class SlideController : ControllerBase
     {

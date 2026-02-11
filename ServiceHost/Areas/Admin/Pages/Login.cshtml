@@ -1,4 +1,5 @@
 ﻿@page
+@using SiteManagement.Application
 @model ServiceHost.Areas.Admin.Pages.LoginModel
 @{
     Layout = "~/Areas/Admin/Pages/Shared/_AuthLayout.cshtml";
@@ -7,7 +8,7 @@
 
 <div class="login-card text-center">
     <div class="mb-4">
-        @* <img src="~/AdminTheme/assets/img/logo.png" alt="Logo" style="height:60px;" /> *@
+        <img src="~/Pictures/@Model.Logo" alt="Logo" style="height:60px;" />
         <h4 class="mt-3 mb-1 text-dark">ورود به پنل مدیریتی</h4>
         <p class="text-muted small">لطفاً اطلاعات ورود خود را وارد کنید</p>
     </div>
@@ -20,17 +21,28 @@
     <form method="post" asp-page-handler="Login">
         <div class="mb-3 text-start">
             <label class="form-label fw-semibold">نام کاربری</label>
-            <input type="text" name="username" class="form-control form-control-lg" placeholder="نام کاربری" required />
+            <input type="text" name="username" class="form-control form-control-lg" placeholder="نام کاربری" required autocomplete="username" />
         </div>
 
         <div class="mb-3 text-start">
             <label class="form-label fw-semibold">کلمه عبور</label>
-            <input type="password" name="password" class="form-control form-control-lg" placeholder="کلمه عبور" required />
+            <div class="password-input-wrapper">
+                <input type="password"
+                       name="password"
+                       class="form-control form-control-lg password-field"
+                       placeholder="کلمه عبور"
+                       required
+                       autocomplete="current-password">
+
+                <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                    <i class="fa fa-eye-slash"></i>
+                </span>
+            </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="remember_me" />
+                <input class="form-check-input" type="checkbox" id="remember_me" name="rememberMe" value="true" />
                 <label class="form-check-label small" for="remember_me">مرا به خاطر بسپار</label>
             </div>
             <a href="#" class="forget-pass-link small">رمز عبور را فراموش کرده‌اید؟</a>
@@ -38,4 +50,28 @@
 
         <button type="submit" class="btn btn-primary w-100 py-2 fs-5 rounded-3">ورود</button>
     </form>
+
 </div>
+
+<script type="text/javascript">
+        document.addEventListener('click', function (e) {
+        const toggle = e.target.closest('.password-toggle');
+        if (!toggle) return;
+
+        const wrapper = toggle.closest('.password-input-wrapper');
+        if (!wrapper) return;
+
+        const input = wrapper.querySelector('input');
+        const icon = toggle.querySelector('i');
+
+        if (!input || !icon) return;
+
+        const isPassword = input.type === 'password';
+
+        input.type = isPassword ? 'text' : 'password';
+
+        icon.classList.toggle('fa-eye', isPassword);
+        icon.classList.toggle('fa-eye-slash', !isPassword);
+    });
+
+</script>

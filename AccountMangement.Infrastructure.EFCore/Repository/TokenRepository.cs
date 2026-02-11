@@ -8,42 +8,42 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
         private readonly AccountContext _context;
         public TokenRepository(AccountContext context) => _context = context;
 
-        public async Task AddAsync(Token token)
+        public async Task AddAsync(Token token, CancellationToken cancellation)
         {
-            await _context.Tokens.AddAsync(token);
-            await _context.SaveChangesAsync();
+            await _context.Tokens.AddAsync(token, cancellation);
+            await _context.SaveChangesAsync(cancellation);
         }
 
-        public async Task<Token?> GetByRefreshTokenAsync(string refreshToken)
+        public async Task<Token?> GetByRefreshTokenAsync(string refreshToken, CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(refreshToken)) return null;
 
             return await _context.Tokens.SingleOrDefaultAsync
-                (t => t.RefreshToken == refreshToken && !t.IsRevoked);
+                (t => t.RefreshToken == refreshToken && !t.IsRevoked, cancellation);
         }
 
-        public async Task<Token?> GetByAccessTokenAsync(string accessToken)
+        public async Task<Token?> GetByAccessTokenAsync(string accessToken, CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(accessToken)) return null;
             return await _context.Tokens.SingleOrDefaultAsync
-                (t => t.AccessToken == accessToken && !t.IsRevoked);
+                (t => t.AccessToken == accessToken && !t.IsRevoked, cancellation);
         }
 
-        public async Task RevokeAsync(Token token)
+        public async Task RevokeAsync(Token token, CancellationToken cancellation)
         {
             if (token == null) return;
             token.Revoke();
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellation);
         }
 
-        public async Task<bool> IsRevokedAsync(string accessToken)
+        public async Task<bool> IsRevokedAsync(string accessToken, CancellationToken cancellation)
         {
             if (string.IsNullOrWhiteSpace(accessToken)) return false;
 
             var t = await _context.Tokens.SingleOrDefaultAsync
-                (x => x.AccessToken == accessToken);
+                (x => x.AccessToken == accessToken, cancellation);
 
-            return t == null ? false : t.IsRevoked;
+            return t != null && t.IsRevoked;
         }
 
         public bool IsRevoked(string accessToken)
@@ -52,7 +52,7 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
 
             var t = _context.Tokens.SingleOrDefault(x => x.AccessToken == accessToken);
 
-            return t == null ? false : t.IsRevoked;
+            return t != null && t.IsRevoked;
         }
     }
 }

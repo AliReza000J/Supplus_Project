@@ -22,19 +22,19 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         }
 
         [NeedsPermission(ShopPermissions.CreateProduct)]
-        public async Task OnGet()
+        public async Task OnGet(CancellationToken cancellation)
         {
-            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(), "Id", "Name");
+            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(cancellation), "Id", "Name");
         }
 
         [NeedsPermission(ShopPermissions.CreateProduct)]
-        public async Task<IActionResult> OnPost(CreateProduct command)
+        public async Task<IActionResult> OnPost(CreateProduct command, CancellationToken cancellation)
         {
-            command.Categories = await _productCategoryApplication.GetLeafCategories();
+            command.Categories = await _productCategoryApplication.GetLeafCategories(cancellation);
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = await _productApplication.Create(command);
+            var result = await _productApplication.Create(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index", result);

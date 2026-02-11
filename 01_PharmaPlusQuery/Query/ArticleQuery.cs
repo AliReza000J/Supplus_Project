@@ -80,7 +80,7 @@ namespace _01_PharmaPlusQuery.Query
                 .AsNoTracking()
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Article)
-                .Where(x => x.OwnerRecordId == articleId)
+                .Where(x => x.RecordId == articleId)
                 .OrderByDescending(x => x.Id)
                 .Select(x => new CommentQueryModel
                 {
@@ -94,7 +94,7 @@ namespace _01_PharmaPlusQuery.Query
                     Rate = x.Rate,
                     ReplyDate = x.AdminReplyDate.ToFarsi().ToPersianNumber(),
                     HasEdited = x.CreationDate == x.LastModified,
-                    UserId = long.Parse(x.UserIdentifier),
+                    UserId = x.UserId,
                     LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber(),
                     LikedByUserIds = new List<long>(),
                     DislikedByUserIds = new List<long>()
@@ -110,7 +110,7 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     r.CommentId,
                     r.Reaction,
-                    r.UserIdentifier
+                    r.UserId
                 })
                 .ToListAsync(cancellation);
 
@@ -125,16 +125,14 @@ namespace _01_PharmaPlusQuery.Query
 
                 comment.LikedByUserIds = relatedReactions
                     .Where(r => r.Reaction == ReactionType.Like)
-                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
-                    .Where(id => id.HasValue)
-                    .Select(id => id.Value)
+                    .Select(r => r.UserId)
+                    .Where(id => id > 0)
                     .ToList();
 
                 comment.DislikedByUserIds = relatedReactions
                     .Where(r => r.Reaction == ReactionType.Dislike)
-                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
-                    .Where(id => id.HasValue)
-                    .Select(id => id.Value)
+                    .Select(r => r.UserId)
+                    .Where(id => id > 0)
                     .ToList();
             }
 
@@ -187,7 +185,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Article)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ArticleId = g.Key,
@@ -249,7 +247,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Article)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ArticleId = g.Key,
@@ -295,7 +293,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Article)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ArticleId = g.Key,
@@ -385,7 +383,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Article)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ArticleId = g.Key,

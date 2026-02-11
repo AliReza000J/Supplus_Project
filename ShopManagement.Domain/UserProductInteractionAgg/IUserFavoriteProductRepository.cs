@@ -4,7 +4,7 @@ namespace ShopManagement.Domain.UserProductInteractionAgg
 {
     public interface IUserFavoriteProductRepository: IRepository<long, UserFavoriteProduct>
     {
-        Task<UserFavoriteProduct?> GetByUserIdAndProductId(string userId, long productId);
+        Task<UserFavoriteProduct?> GetByUserIdAndProductId(long userId, long productId);
         void Remove(UserFavoriteProduct ufp);
     }
 }

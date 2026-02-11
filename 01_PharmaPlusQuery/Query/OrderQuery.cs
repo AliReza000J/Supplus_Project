@@ -19,13 +19,13 @@ namespace _01_PharmaPlusQuery.Query
         public async Task<List<OrderQueryModel>> GetOrdersByUser(long userId, CancellationToken cancellation = default)
         {
             var orders = await _shopContext.Orders
-                .Where(o => o.AccountId == userId &&
+                .Where(o => o.UserId == userId &&
                             o.Status >= OrderStatus.Paid &&
                             o.Status <= OrderStatus.Delivered)
                 .Select(o => new OrderQueryModel
                 {
                     Id = o.Id,
-                    AccountId = o.AccountId,
+                    UserId = o.UserId,
                     DiscountAmount = o.DiscountAmount,
                     PayAmount = o.PayAmount,
                     TotalAmount = o.TotalAmount,

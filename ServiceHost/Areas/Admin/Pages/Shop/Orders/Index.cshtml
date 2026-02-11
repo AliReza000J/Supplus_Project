@@ -26,13 +26,21 @@
             <div class="panel-body">
                 <form class="form-inline" role="form" method="get">
                     <div class="form-group">
-                        <label class="sr-only" asp-for="SearchModel.AccountId"></label>
-                        <select class="form-control" asp-for="SearchModel.AccountId" asp-items="Model.Accounts">
+                        <label class="sr-only" asp-for="SearchModel.FromDate"></label>
+                        <input class="form-control persianDateInput" asp-for="SearchModel.FromDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" asp-for="SearchModel.ToDate"></label>
+                        <input class="form-control persianDateInput" asp-for="SearchModel.ToDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" asp-for="SearchModel.UserId"></label>
+                        <select class="form-control" asp-for="SearchModel.UserId" asp-items="Model.Accounts">
                             <option value="0">انتخاب کاربر خریدار ...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label asp-for="SearchModel.Status">جستجو بر اساس وضعیت سفارش</label>
+                        <label class="sr-only" asp-for="SearchModel.Status"></label>
                         <select class="form-control" asp-for="SearchModel.Status" asp-items="Model.Statuses">
                             <option value="-1">انتخاب وضعیت پرداخت ...</option>
                         </select>
@@ -59,7 +67,6 @@
                                 <tr>
                                     <th>#</th>
                                     <th>نام سفارش دهنده</th>
-                                    <th>شماره موبایل</th>
                                     <th>مبلغ نهایی</th>
                                     <th>نحوه پرداخت</th>
                                     <th>شناسه خرید</th>
@@ -71,10 +78,13 @@
                             <tbody>
                                 @foreach (var item in Model.Orders)
                                 {
-                                    <tr>
+                                    <tr class="@(
+                                                item.Status <= OrderStatus.WaitingForManualVerification ? "pending-order" :
+                                                item.Status == OrderStatus.Cancelled ? "cancelled-order" :
+                                                item.Status == OrderStatus.Paid ? "paid-order" : "default-order"
+                                                )">
                                         <td>@item.Id</td>
-                                        <td>@item.RecieverFullName</td>
-                                        <td>@item.RecieverMobile?.ToPersianNumber()</td>
+                                        <td>@item.ReceiverFullName</td>
                                         <td>@item.PayAmount.ToMoney().ToPersianNumber()</td>
                                         <td>@item.PaymentMethod</td>
                                         <td>
@@ -86,7 +96,11 @@
                                                 </span>
                                             }
                                         </td>
-                                        <td>@item.CreationDate?.ToPersianNumber()</td>
+                                        <td>
+                                            <span style="direction:ltr; unicode-bidi:embed;">
+                                                @item.CreationDate?.ToPersianNumber()
+                                            </span>
+                                        </td>
                                         <td>
                                             <span> @OrderStatus.GetStatusTitleByCode(item.Status)</span>
                                         </td>
@@ -121,7 +135,9 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            $('#datatable').dataTable();
+            $('#datatable').dataTable({
+                order: [[0, 'desc']]
+            });
         });
     </script>
 }

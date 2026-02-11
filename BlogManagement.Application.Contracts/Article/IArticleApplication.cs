@@ -4,10 +4,10 @@ namespace BlogManagement.Application.Contracts.Article
 {
     public interface IArticleApplication
     {
-        Task<OperationResult> Create(CreateArticle command);
-        Task<OperationResult> Edit(EditArticle command);
-        Task<OperationResult> IncrementArticleViewCountAsync(long articleId, string? userId = null);
-        Task<EditArticle> GetDetails(long id);
-        Task<List<ArticleViewModel>> Search(ArticleSearchModel searchModel);
+        Task<OperationResult> Create(CreateArticle command, CancellationToken cancellation);
+        Task<OperationResult> Edit(EditArticle command, CancellationToken cancellation);
+        Task<OperationResult> IncrementArticleViewCountAsync(long articleId, long userId = 0, CancellationToken cancellation = default);
+        Task<EditArticle?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<ArticleViewModel>> Search(ArticleSearchModel searchModel, CancellationToken cancellation);
     }
 }

@@ -17,9 +17,9 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
             _slideApplication = slideApplication;
         }
 
-        public async Task OnGet()
+        public async Task OnGet(CancellationToken cancellation)
         {
-            Slides = await _slideApplication.GetList();
+            Slides = await _slideApplication.GetList(cancellation);
         }
 
         public IActionResult OnGetCreate()
@@ -28,45 +28,45 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Slides
             return Partial("./Create", command);
         }
 
-        public async Task<JsonResult> OnPostCreate(CreateSlide command)
+        public async Task<JsonResult> OnPostCreate(CreateSlide command, CancellationToken cancellation)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = await _slideApplication.Create(command);
+            var result = await _slideApplication.Create(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
-        public async Task<IActionResult> OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id, CancellationToken cancellation)
         {
-            var slide = await _slideApplication.GetDetails(id);
+            var slide = await _slideApplication.GetDetails(id, cancellation);
             return Partial("Edit", slide);
         }
 
-        public async Task<JsonResult> OnPostEdit(EditSlide command)
+        public async Task<JsonResult> OnPostEdit(EditSlide command, CancellationToken cancellation)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = await _slideApplication.Edit(command);
+            var result = await _slideApplication.Edit(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
-        public async Task<IActionResult> OnGetRemove(long id)
+        public async Task<IActionResult> OnGetRemove(long id, CancellationToken cancellation)
         {
-            var result = await _slideApplication.Remove(id);
+            var result = await _slideApplication.Remove(id, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");
         }
 
-        public async Task<IActionResult> OnGetRestore(long id)
+        public async Task<IActionResult> OnGetRestore(long id, CancellationToken cancellation)
         {
-            var result = await _slideApplication.Restore(id);
+            var result = await _slideApplication.Restore(id, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");

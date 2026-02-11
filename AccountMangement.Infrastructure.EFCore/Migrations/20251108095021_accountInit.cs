@@ -108,6 +108,7 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
                 table: "Tokens",
                 column: "RefreshToken",
                 unique: true);
+
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

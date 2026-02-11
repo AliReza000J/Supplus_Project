@@ -4,11 +4,11 @@ namespace ShopManagement.Application.Contracts.ProductCategory
 {
     public interface IProductCategoryApplication
     {
-        Task<OperationResult> Create(CreateProductCategory command);
-        Task<OperationResult> Edit(EditProductCategory command);
-        Task<EditProductCategory?> GetDetails(long id);
-        Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel);
-        Task<List<ProductCategoryViewModel>> GetProductCategories();
-        Task<List<ProductCategoryViewModel>> GetLeafCategories();
+        Task<OperationResult> Create(CreateProductCategory command, CancellationToken cancellation);
+        Task<OperationResult> Edit(EditProductCategory command, CancellationToken cancellation);
+        Task<EditProductCategory?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel, CancellationToken cancellation);
+        Task<List<ProductCategoryViewModel>> GetProductCategories(CancellationToken cancellation);
+        Task<List<ProductCategoryViewModel>> GetLeafCategories(CancellationToken cancellation);
     }
 }

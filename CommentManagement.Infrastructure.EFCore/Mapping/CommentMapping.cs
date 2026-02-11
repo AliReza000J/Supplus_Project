@@ -11,12 +11,12 @@ namespace CommnetManagement.Infrastructure.EFCore.Mapping
             builder.ToTable("Comments");
             builder.HasKey(c => c.Id);
             builder.Property(c => c.Username).IsRequired().HasMaxLength(200);
-            builder.Property(c => c.UserIdentifier).IsRequired();
+            builder.Property(c => c.UserId).IsRequired();
             builder.Property(c => c.Message).HasMaxLength(4000);
             builder.Property(c => c.AdminReply).HasMaxLength(4000);
             builder.Property(c => c.LastModified);
 
-            builder.HasIndex(c => new { c.OwnerRecordId, c.Type });
+            builder.HasIndex(c => new { c.RecordId, c.Type });
             builder.HasIndex(c => c.IsConfirmed);
             builder.HasIndex(c => c.IsCanceled);
 

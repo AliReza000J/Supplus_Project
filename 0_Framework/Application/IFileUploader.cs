@@ -4,7 +4,8 @@ namespace _0_Framework.Application
 {
     public interface IFileUploader
     {
-        string Upload(IFormFile file, string path);
+        Task<string> UploadAsync(IFormFile? file, string folder, CancellationToken cancellation);
+        void DeleteFile(string? fileName);
         IFormFile GenerateIdenticonAsFormFile(string seed, int size = 200);
     }
 }

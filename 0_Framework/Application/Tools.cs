@@ -43,6 +43,20 @@ namespace _0_Framework.Application
             return $"_{date.Hour:00}_{date.Minute:00}_{date.Second:00}";
         }
 
+        public static string ToFarsiFull(this DateTime? date)
+        {
+            try
+            {
+                if (date != null) return date.Value.ToFarsiFull();
+            }
+            catch (Exception)
+            {
+                return "";
+            }
+
+            return "";
+        }
+
         public static string ToFarsiFull(this DateTime date)
         {
             var pc = new PersianCalendar();

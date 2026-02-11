@@ -15,17 +15,17 @@ namespace _0_Framework.Infrastructure
             _contextAccessor = contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
         }
 
-        public async Task SignIn(AuthViewModel account)
+        public async Task SignIn(AuthViewModel account, bool rememberMe)
         {
             if (account == null) throw new ArgumentNullException(nameof(account));
             var http = _contextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is not available.");
 
             var claims = new List<Claim>
             {
-                new Claim("AccountId", account.Id.ToString()),
-                new Claim("RoleId", account.RoleId.ToString()),
-                new Claim(ClaimTypes.Name, account.Fullname ?? string.Empty),
-                new Claim("Username", account.Username ?? string.Empty),
+                new("UserId", account.Id.ToString()),
+                new("RoleId", account.RoleId.ToString()),
+                new(ClaimTypes.Name, account.Fullname ?? string.Empty),
+                new("Username", account.Username ?? string.Empty),
             };
 
             if (!string.IsNullOrWhiteSpace(account.Role))
@@ -43,8 +43,9 @@ namespace _0_Framework.Infrastructure
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(2)
+                IsPersistent = rememberMe,
+                ExpiresUtc = rememberMe ? DateTime.UtcNow.AddDays(30) : DateTime.UtcNow.AddMinutes(20),
+                AllowRefresh = true
             };
 
             await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
@@ -65,11 +66,11 @@ namespace _0_Framework.Infrastructure
             return http?.User?.Identity?.IsAuthenticated ?? false;
         }
 
-        public long CurrentAccountId()
+        public long CurrentUserId()
         {
             var http = _contextAccessor.HttpContext;
             if (http?.User == null || !http.User.Identity.IsAuthenticated) return 0;
-            var claim = http.User.Claims.FirstOrDefault(x => x.Type == "AccountId");
+            var claim = http.User.Claims.FirstOrDefault(x => x.Type == "UserId");
             if (claim == null) return 0;
             return long.TryParse(claim.Value, out var id) ? id : 0;
         }
@@ -109,7 +110,7 @@ namespace _0_Framework.Infrastructure
             if (http?.User == null || !http.User.Identity.IsAuthenticated) return null;
 
             var user = http.User;
-            var id = CurrentAccountId();
+            var id = CurrentUserId();
             var roleIdClaim = user.Claims.FirstOrDefault(x => x.Type == "RoleId");
             long roleId = 0;
             if (roleIdClaim != null) long.TryParse(roleIdClaim.Value, out roleId);
@@ -128,7 +129,7 @@ namespace _0_Framework.Infrastructure
             if (http?.User == null || !http.User.Identity.IsAuthenticated) return false;
 
             var user = http.User;
-            var id = CurrentAccountId();
+            var id = CurrentUserId();
             var roleIdClaim = user.Claims.FirstOrDefault(x => x.Type == "RoleId");
             long roleId = 0;
             if (roleIdClaim != null) long.TryParse(roleIdClaim.Value, out roleId);

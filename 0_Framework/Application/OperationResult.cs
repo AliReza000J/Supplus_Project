@@ -24,9 +24,11 @@
             return this;
         }
 
-        //public OperationResult Failed(object passwordsNotMatch)
-        //{
-        //    throw new NotImplementedException();
-        //}
+        public OperationResult Warn(string message)
+        {
+            IsSucceeded = true;
+            Message = message;
+            return this;
+        }
     }
 }

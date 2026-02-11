@@ -3,11 +3,11 @@
     public class OrderViewModel
     {
         public long Id { get; set; }
-        public long AccountId { get; set; }
-        public string? RecieverFullName { get; set; }
-        public string? RecieverMobile { get; set; }
-        public string? RecieverAddress { get; set; }
-        public string? RecieverZipCode { get; set; }
+        public long UserId { get; set; }
+        public string? ReceiverFullName { get; set; }
+        public string? ReceiverMobile { get; set; }
+        public string? ReceiverAddress { get; set; }
+        public string? ReceiverZipCode { get; set; }
 
         public string? CreationDate { get; set; }
         public string? LastModifiedDate { get; set; }

@@ -24,27 +24,28 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
             _inventoryContext = inventoryContext;
         }
 
-        public async Task<Inventory?> GetBy(long productId)
+        public async Task<Inventory?> GetBy(long productId, CancellationToken cancellation)
         {
             return await _inventoryContext.Inventory
-                .FirstOrDefaultAsync(x => x.ProductId == productId);
+                .FirstOrDefaultAsync(x => x.ProductId == productId, cancellation);
         }
 
-        public async Task<EditInventory> GetDetails(long id)
+        public async Task<EditInventory?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _inventoryContext.Inventory.Select(x => new EditInventory
             {
                 Id = x.Id,
                 ProductId = x.ProductId,
                 UnitPrice = x.UnitPrice
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId)
+        public async Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId, CancellationToken cancellation)
         {
-            var accounts = await _accountContext.Accounts.Select(x => new {x.Id, x.Fullname}).ToListAsync();
+            var accounts = await _accountContext.Accounts.Select(x => new {x.Id, x.Fullname}).ToListAsync(cancellation);
             var inventory = await _inventoryContext.Inventory
-                .FirstOrDefaultAsync(x => x.Id == inventoryId);
+                .FirstOrDefaultAsync(x => x.Id == inventoryId, cancellation);
+
             var operations = inventory.Operations
                 .Select(x => new InventoryOperationViewModel
             {
@@ -66,11 +67,11 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
             return operations;
         }
 
-        public async Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel)
+        public async Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel, CancellationToken cancellation)
         {
             var products = await _shopContext.Products
                 .Select(x => new { x.Id, x.Name })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var query = _inventoryContext.Inventory.Select(x => new InventoryViewModel
             {
@@ -87,7 +88,7 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
             if (searchModel.NotInStock)
                 query = query.Where(x => !x.InStock);
 
-            var inventory = await query.OrderByDescending(x => x.Id).ToListAsync();
+            var inventory = await query.OrderByDescending(x => x.Id).ToListAsync(cancellation);
 
             inventory.ForEach(item =>
                 item.CurrentCount = _inventoryContext.Inventory

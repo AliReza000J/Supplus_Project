@@ -8,7 +8,7 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
 {
     public class CreateModel : PageModel
     {
-        public CreateRole Command;
+        public CreateRole? Command;
         private readonly IRoleApplication _roleApplication;
 
         public CreateModel(IRoleApplication roleApplication)
@@ -22,9 +22,9 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.CreateRole)]
-        public async Task<IActionResult> OnPost(CreateRole command)
+        public async Task<IActionResult> OnPost(CreateRole command, CancellationToken cancellation)
         {
-            var result = await _roleApplication.Create(command);
+            var result = await _roleApplication.Create(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("Index");

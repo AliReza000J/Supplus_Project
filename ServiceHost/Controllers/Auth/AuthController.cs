@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using System.Security.Claims;
+using ServiceHost.Filters;
 
 namespace ServiceHost.Controllers.Auth
 {
@@ -12,7 +12,7 @@ namespace ServiceHost.Controllers.Auth
     /// Handles user authentication operations such as registration, login,
     /// token refresh, logout, and retrieving authenticated user information.
     /// </summary>
-    [Route("auth")]
+    [Route("api/[controller]")]
     [ApiController]
     public partial class AuthController : ControllerBase
     {
@@ -48,6 +48,7 @@ namespace ServiceHost.Controllers.Auth
         /// Failed to send OTP due to SMS service error or invalid mobile number.
         /// </response>
         [HttpPost("send-otp")]
+        [RateLimit(Limit = 3, Seconds = 60)]
         public async Task<IActionResult> SendOtp([FromBody] SendOtpDto command)
         {
             var otpCode = new Random().Next(10000, 99999).ToString();
@@ -75,6 +76,7 @@ namespace ServiceHost.Controllers.Auth
         /// <param name="model">
         /// OTP verification details including the mobile number and the verification code.
         /// </param>
+        /// <param name="cancellation"></param>
         /// <returns>
         /// A JWT authentication response containing access and refresh tokens
         /// if verification and login succeed, or an error message otherwise.
@@ -89,7 +91,7 @@ namespace ServiceHost.Controllers.Auth
         /// Authentication failed during login.
         /// </response>
         [HttpPost("verify-otp")]
-        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> VerifyOtp([FromBody] VerifyOtpDto model)
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> VerifyOtp([FromBody] VerifyOtpDto model, CancellationToken cancellation)
         {
             if (!_cache.TryGetValue(model.Mobile, out string cachedCode))
             {
@@ -105,10 +107,10 @@ namespace ServiceHost.Controllers.Auth
 
             _cache.Remove(model.Mobile);
 
-            if (!await _accountApp.ExistsAccountByMobile(model.Mobile))
+            if (!await _accountApp.ExistsAccountByMobile(model.Mobile, cancellation))
             {
                 var command = new RegisterByMobile { Mobile = model.Mobile };
-                var registerOp = await _accountApp.RegisterByMobile(command);
+                var registerOp = await _accountApp.RegisterByMobile(command, cancellation);
 
                 if (!registerOp.IsSucceeded)
                     return BadRequest(ApiResponse<JwtResponseDto>
@@ -116,44 +118,15 @@ namespace ServiceHost.Controllers.Auth
             }
 
             var (loginOp, data) = await _accountApp
-                .LoginByMobileWithJwt(model.Mobile);
+                .LoginByMobileWithJwt(model.Mobile, cancellation);
 
-            if (!loginOp.IsSucceeded || data ==  null)
+            if (!loginOp.IsSucceeded || data == null)
                 return Unauthorized(
                     ApiResponse<JwtResponseDto>
                     .Fail(loginOp.Message));
 
             return Ok(ApiResponse<JwtResponseDto>
                 .Ok(data, loginOp.Message));
-        }
-
-        /// <summary>
-        /// Completes the authenticated user's profile information.
-        /// This endpoint requires a valid JWT access token.
-        /// </summary>
-        /// <param name="command">
-        /// Profile completion details provided by the user.
-        /// The user identifier is automatically extracted from the JWT token.
-        /// </param>
-        /// <returns>
-        /// A standard API response indicating whether the profile completion
-        /// operation was successful or not.
-        /// </returns>
-        /// <response code="200">Profile completed successfully.</response>
-        /// <response code="400">Profile completion failed due to validation or business rules.</response>
-        /// <response code="401">User is not authenticated or JWT token is invalid.</response>
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        [HttpPost("complete-profile")]
-        public async Task<ActionResult<ApiResponse<object>>> CompleteProfile(
-            [FromBody] CompleteProfile command)
-        {
-            command.Id = long.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-            var op = await _accountApp.CompleteProfile(command);
-            
-            return op.IsSucceeded
-                ? Ok(ApiResponse<object>.Ok(null, message: op.Message))
-                : BadRequest(ApiResponse<object>.Fail(op.Message));
         }
 
         // ============================================================
@@ -165,6 +138,7 @@ namespace ServiceHost.Controllers.Auth
         /// by issuing a JWT access token and refresh token.
         /// </summary>
         /// <param name="command">Registration details: username, password, mobile, etc.</param>
+        /// <param name="cancellation"></param>
         /// <returns>
         /// A JWT authentication response containing access/refresh tokens, 
         /// or an error message if registration fails.
@@ -173,9 +147,12 @@ namespace ServiceHost.Controllers.Auth
         /// <response code="400">Validation error or registration failed.</response>
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Register([FromBody] RegisterAccount command)
+        [RateLimit(Limit = 3, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Register(
+            [FromForm] RegisterAccountApiDto command, CancellationToken cancellation)
         {
-            var op = await _accountApp.Register(command);
+            var regCommand = command as RegisterAccount;
+            var op = await _accountApp.Register(regCommand, cancellation);
 
             var res = new ApiResponse<JwtResponseDto>
             {
@@ -192,7 +169,7 @@ namespace ServiceHost.Controllers.Auth
                 Password = command.Password
             };
 
-            var (loginOp, data) = await _accountApp.LoginWithJwt(loginCommand);
+            var (loginOp, data) = await _accountApp.LoginWithJwt(loginCommand, cancellation);
 
             if (!loginOp.IsSucceeded)
                 return Unauthorized(res);
@@ -211,6 +188,7 @@ namespace ServiceHost.Controllers.Auth
         /// along with a refresh token.
         /// </summary>
         /// <param name="command">Login credentials.</param>
+        /// <param name="cancellation"></param>
         /// <returns>JWT tokens if authentication succeeds.</returns>
         /// <response code="200">Login successful.</response>
         /// <response code="401">Invalid credentials.</response>
@@ -218,9 +196,10 @@ namespace ServiceHost.Controllers.Auth
         [HttpPost("login")]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Login([FromBody] Login command)
+        [RateLimit(Limit = 5, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Login([FromBody] Login command, CancellationToken cancellation)
         {
-            var (op, data) = await _accountApp.LoginWithJwt(command);
+            var (op, data) = await _accountApp.LoginWithJwt(command, cancellation);
 
             if (!op.IsSucceeded)
                 return Unauthorized(ApiResponse<JwtResponseDto>.Fail(message: op.Message));
@@ -236,17 +215,20 @@ namespace ServiceHost.Controllers.Auth
         /// Refreshes the JWT access token using a valid refresh token.
         /// </summary>
         /// <param name="request">Refresh token request data.</param>
+        /// <param name="cancellation"></param>
         /// <returns>New access and refresh tokens.</returns>
         /// <response code="200">Token successfully refreshed.</response>
         /// <response code="401">Invalid or expired refresh token.</response>
+        [RateLimit(Limit = 5, Seconds = 60)]
         [AllowAnonymous]
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("refresh")]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Refresh([FromBody] RefreshRequestDto request)
+        [RateLimit(Limit = 10, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Refresh([FromBody] RefreshRequestDto request, CancellationToken cancellation)
         {
-            var (op, data) = await _accountApp.RefreshToken(request.RefreshToken);
+            var (op, data) = await _accountApp.RefreshToken(request.RefreshToken, cancellation);
 
             if (!op.IsSucceeded)
                 return Unauthorized(ApiResponse<JwtResponseDto>.Fail(message: op.Message));
@@ -270,7 +252,7 @@ namespace ServiceHost.Controllers.Auth
         /// <response code="401">Token missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("logout")]
-        public async Task<ActionResult<ApiResponse<object>>> Logout()
+        public async Task<ActionResult<ApiResponse<object>>> Logout(CancellationToken cancellation)
         {
             var accessToken = Request.Headers["Authorization"]
                     .FirstOrDefault()?
@@ -280,7 +262,7 @@ namespace ServiceHost.Controllers.Auth
             if (string.IsNullOrWhiteSpace(accessToken))
                 return Unauthorized(ApiResponse<JwtResponseDto>.Fail(message: "توکن ارسال نشده است."));
 
-            var op = await _accountApp.LogoutWithJwt(accessToken);
+            var op = await _accountApp.LogoutWithJwt(accessToken, cancellation);
 
             var res = new ApiResponse<object>
             {

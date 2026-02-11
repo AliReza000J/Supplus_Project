@@ -1,4 +1,7 @@
-﻿namespace ShopManagement.Application.Contracts.Cart
+﻿using _0_Framework.Application;
+using System.ComponentModel.DataAnnotations;
+
+namespace ShopManagement.Application.Contracts.Cart
 {
     public class RemoveFromCart
     {

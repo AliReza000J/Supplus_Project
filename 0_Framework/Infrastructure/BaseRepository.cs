@@ -20,31 +20,31 @@ namespace _0_Framework.Infrastructure
             _context.Add(entity);
         }
 
-        public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> expression)
+        public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> expression, CancellationToken cancellation)
         {
-            return await _set.AnyAsync(expression);
+            return await _set.AnyAsync(expression, cancellation);
         }
 
-        public virtual async Task<T?> GetAsync(TKey id)
+        public virtual async Task<T?> GetAsync(TKey id, CancellationToken cancellation = default)
         {
             return await _set.FindAsync(id);
         }
 
-        public virtual async Task<List<T>> GetAllAsync()
+        public virtual async Task<List<T>> GetAllAsync(CancellationToken cancellation)
         {
-            return await _set.ToListAsync();
+            return await _set.ToListAsync(cancellation);
         }
 
-        public virtual async Task SaveChangesAsync()
+        public virtual async Task SaveChangesAsync(CancellationToken cancellation)
         {
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellation);
         }
 
 
-        public bool Exists(Expression<Func<T, bool>> expression)
-        {
-            return _context.Set<T>().Any(expression);
-        }
+        //public bool Exists(Expression<Func<T, bool>> expression)
+        //{
+        //    return _context.Set<T>().Any(expression);
+        //}
         //////////////////////
         //public T Get(TKey id)
         //{

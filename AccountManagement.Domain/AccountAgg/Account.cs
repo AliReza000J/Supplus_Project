@@ -20,12 +20,13 @@ namespace AccountManagement.Domain.AccountAgg
         public Role? Role { get; private set; }
 
         // --- Constructor for creation ---
-        public Account(string fullname, string username, string mobile, string email, string password, long roleId, string profilePhoto)
+        public Account(string fullname, string username, string mobile, string? email, string password, long roleId, string profilePhoto)
         {
             Fullname = fullname;
             Username = username;
             Mobile = mobile;
-            Email = email;
+            if (!string.IsNullOrWhiteSpace(email))
+                Email = email;
             Password = password;
             RoleId = roleId;
             ProfilePhoto = profilePhoto;
@@ -33,7 +34,7 @@ namespace AccountManagement.Domain.AccountAgg
             IsProfileCompleted = true;
         }
 
-        public Account(string mobile)
+        public Account(string mobile, string photo)
         {
             Fullname = null;
             Mobile = mobile;
@@ -42,28 +43,31 @@ namespace AccountManagement.Domain.AccountAgg
             IsProfileCompleted = false;
             IsActive = true;
             RoleId = Roles.Customer;
+            ProfilePhoto = photo;
         }
 
         // --- Behaviors (methods) ---
-        public void Edit(string fullname, string username, string email, string mobile, long roleId, string profilePhoto)
+        public void Edit(string fullname, string username,
+            string? email, string mobile, long roleId, string profilePhoto)
         {
             Fullname = fullname;
             Username = username;
             Mobile = mobile;
-            Email = email;
+            if (!string.IsNullOrWhiteSpace(email))
+                Email = email;
             RoleId = roleId;
-
             if (!string.IsNullOrWhiteSpace(profilePhoto))
                 ProfilePhoto = profilePhoto;
         }
 
         public void CompleteProfile(string fullname,
-            string username, string email, string password,
+            string username, string? email, string password,
             string profilePhoto)
         {
             Fullname = fullname;
             Username = username;
-            Email = email;
+            if (!string.IsNullOrWhiteSpace(email))
+                Email = email;
             Password = password;
             if (!string.IsNullOrWhiteSpace(profilePhoto))
                 ProfilePhoto = profilePhoto;
@@ -77,6 +81,6 @@ namespace AccountManagement.Domain.AccountAgg
 
         public void Activate() => IsActive = true;
         public void Deactivate() => IsActive = false;
-        public void SetProfilePhoto(string photo) => ProfilePhoto = photo;
+        public bool IsCompleted() => IsProfileCompleted;
     }
 }

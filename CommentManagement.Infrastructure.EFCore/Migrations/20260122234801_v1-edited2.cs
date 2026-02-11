@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CommentManagement.Infrastructure.EFCore.Migrations
 {
-    public partial class CommentUpdated : Migration
+    public partial class v1edited2 : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -22,9 +22,9 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Username = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    UserIdentifier = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
                     Message = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
-                    OwnerRecordId = table.Column<long>(type: "bigint", nullable: false),
+                    RecordId = table.Column<long>(type: "bigint", nullable: false),
                     Type = table.Column<int>(type: "int", nullable: false),
                     Rate = table.Column<int>(type: "int", nullable: false),
                     LikeCount = table.Column<int>(type: "int", nullable: false),
@@ -49,7 +49,7 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CommentId = table.Column<long>(type: "bigint", nullable: false),
-                    UserIdentifier = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    UserId = table.Column<long>(type: "bigint", nullable: false),
                     Reaction = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -65,9 +65,9 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_CommentReactions_CommentId_UserIdentifier",
+                name: "IX_CommentReactions_CommentId_UserId",
                 table: "CommentReactions",
-                columns: new[] { "CommentId", "UserIdentifier" },
+                columns: new[] { "CommentId", "UserId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -81,9 +81,9 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                 column: "IsConfirmed");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_OwnerRecordId_Type",
+                name: "IX_Comments_RecordId_Type",
                 table: "Comments",
-                columns: new[] { "OwnerRecordId", "Type" });
+                columns: new[] { "RecordId", "Type" });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

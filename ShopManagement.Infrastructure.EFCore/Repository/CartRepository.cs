@@ -1,16 +1,20 @@
 ﻿using _0_Framework.Infrastructure;
+using AccountManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Domain.CartAgg;
+using System.Text.RegularExpressions;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class CartRepository: BaseRepository<long, Cart>, ICartRepository
+    public class CartRepository : BaseRepository<long, Cart>, ICartRepository
     {
         private readonly ShopContext _context;
+        private readonly AccountContext _accContext;
 
-        public CartRepository(ShopContext context) : base(context)
+        public CartRepository(ShopContext context, AccountContext accContext) : base(context)
         {
             _context = context;
+            this._accContext = accContext;
         }
 
         public void DeleteCartItem(CartItem cartItem)
@@ -18,15 +22,28 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context.CartItems.Remove(cartItem);
         }
 
-        public async Task<Cart?> GetByCartKeyAsync(string cartKey)
+        public async Task<Cart?> GetOrCreateByCartKeyAsync(string cartKey, CancellationToken cancellation)
         {
-            return await _context.Carts
-                .Include(x=>x.Items)
+            var cart = await _context.Carts
+                .Include(x => x.Items)
                 .FirstOrDefaultAsync(
-                x => x.CartKey == cartKey);
+                    x => x.CartKey == cartKey,
+                cancellation);
+
+            var id = long.Parse(cartKey[5..]);
+            var isIdValid = await _accContext.Accounts.AnyAsync(x => x.Id == id, cancellation);
+
+            if (cart == null && Regex.IsMatch(cartKey, @"^user:\d+$") && isIdValid)
+            {
+                cart = Cart.Create(cartKey);
+                _context.Carts.Add(cart);
+                await _context.SaveChangesAsync(cancellation);
+            }
+
+            return cart;
         }
 
-        public Task UpdateAsync(Cart cart)
+        public Task UpdateAsync(Cart cart, CancellationToken cancellation = default)
         {
             _context.Carts.Update(cart);
             return Task.CompletedTask;

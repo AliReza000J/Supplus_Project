@@ -3,7 +3,7 @@
     public class Token
     {
         public long Id { get; private set; }
-        public long AccountId { get; private set; }
+        public long UserId { get; private set; }
 
         public string AccessToken { get; private set; }
         public DateTime AccessTokenExpiry { get; private set; }
@@ -15,9 +15,9 @@
 
         protected Token() { }
 
-        public Token(long accountId, string accessToken, DateTime accessExpiry, string refreshToken, DateTime refreshExpiry)
+        public Token(long userId, string accessToken, DateTime accessExpiry, string refreshToken, DateTime refreshExpiry)
         {
-            AccountId = accountId;
+            UserId = userId;
             AccessToken = accessToken;
             AccessTokenExpiry = accessExpiry;
             RefreshToken = refreshToken;

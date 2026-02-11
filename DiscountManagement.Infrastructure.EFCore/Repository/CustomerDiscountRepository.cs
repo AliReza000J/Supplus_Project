@@ -19,16 +19,17 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
             _shopContext = shopContext;
         }
 
-        public async Task<CustomerDiscount?> GetByProductId(long productId)
+        public async Task<CustomerDiscount?> GetByProductId(long productId, CancellationToken cancellation)
         {
             return await _discountContext.CustomerDiscounts
                 .FirstOrDefaultAsync(x =>
                     x.ProductId == productId &&
                     x.StartDate <= DateTime.Now &&
-                    x.EndDate >= DateTime.Now);
+                    x.EndDate >= DateTime.Now,
+                    cancellation);
         }
 
-        public async Task<EditCustoemrDiscount> GetDetails(long id)
+        public async Task<EditCustoemrDiscount?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _discountContext.CustomerDiscounts.Select(x => new EditCustoemrDiscount
             {
@@ -39,14 +40,15 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
                 EndDate = x.EndDate.ToString(CultureInfo.InvariantCulture),
                 Reason = x.Reason,
                 ProductCount = x.ProductCount
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id,
+            cancellation);
         }
 
-        public async Task<List<CustomerDiscountViewModel>> Search(CustomerDiscountSearchModel searchModel)
+        public async Task<List<CustomerDiscountViewModel>> Search(CustomerDiscountSearchModel searchModel, CancellationToken cancellation)
         {
             var products = await _shopContext.Products
                 .Select(x => new { x.Id, x.Name })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var query = _discountContext.CustomerDiscounts.AsQueryable();
 
@@ -80,7 +82,7 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
                     ProductCount = x.ProductCount,
                     CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
                 })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             discounts.ForEach(discount =>
                 discount.Product = products.FirstOrDefault(x => x.Id == discount.ProductId)?.Name

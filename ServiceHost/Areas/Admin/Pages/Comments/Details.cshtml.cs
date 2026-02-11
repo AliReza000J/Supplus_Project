@@ -15,9 +15,9 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
 
         public CommentViewModel Comment;
 
-        public async Task<IActionResult> OnGet(long id)
+        public async Task<IActionResult> OnGet(long id, CancellationToken cancellation)
         {
-            Comment = await _commentApplication.GetDetailsAsync(id);
+            Comment = await _commentApplication.GetDetailsAsync(id, cancellation);
             if (Comment == null)
                 return RedirectToPage();
 
@@ -26,11 +26,11 @@ namespace ServiceHost.Areas.Admin.Pages.Comments
         }
 
         // Reply (admin)
-        public async Task<IActionResult> OnPostReply(CommentViewModel comment, bool reset)
+        public async Task<IActionResult> OnPostReply(CommentViewModel comment, bool reset, CancellationToken cancellation)
         {
             if (comment == null) return RedirectToPage();
 
-            var result = await _commentApplication.Reply(comment.Id, comment.Reply ?? string.Empty);
+            var result = await _commentApplication.Reply(comment.Id, comment.Reply ?? string.Empty, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return result.IsSucceeded ? RedirectToPage("./Index") : RedirectToPage();

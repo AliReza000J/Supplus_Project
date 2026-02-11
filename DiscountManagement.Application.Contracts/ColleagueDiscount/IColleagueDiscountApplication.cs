@@ -4,11 +4,11 @@ namespace DiscountManagement.Application.Contracts.ColleagueDiscount
 {
     public interface IColleagueDiscountApplication
     {
-        Task<OperationResult> Define(DefineColleagueDiscount command);
-        Task<OperationResult> Edit(EditColleagueDiscount command);
-        Task<OperationResult> Remove(long id);
-        Task<OperationResult> Restore(long id);
-        Task<EditColleagueDiscount> GetDetails(long id);
-        Task<List<ColleagueDiscountViewModel>> Search(ColleagueDiscountSearchModel searchModel);
+        Task<OperationResult> Define(DefineColleagueDiscount command, CancellationToken cancellation);
+        Task<OperationResult> Edit(EditColleagueDiscount command, CancellationToken cancellation);
+        Task<OperationResult> Remove(long id, CancellationToken cancellation);
+        Task<OperationResult> Restore(long id, CancellationToken cancellation);
+        Task<EditColleagueDiscount?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<ColleagueDiscountViewModel>> Search(ColleagueDiscountSearchModel searchModel, CancellationToken cancellation);
     }
 }

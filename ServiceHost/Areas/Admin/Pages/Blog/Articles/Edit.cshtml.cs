@@ -8,8 +8,8 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
 {
     public class EditModel : PageModel
     {
-        public EditArticle Command;
-        public SelectList ArticleCategories;
+        public EditArticle? Command;
+        public SelectList? ArticleCategories;
 
         private readonly IArticleApplication _articleApplication;
         private readonly IArticleCategoryApplication _articleCategoryApplication;
@@ -20,15 +20,15 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
             _articleCategoryApplication = articleCategoryApplication;
         }
 
-        public async Task OnGet(long id)
+        public async Task OnGet(long id, CancellationToken cancellation)
         {
-            Command = await _articleApplication.GetDetails(id);
-            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(), "Id", "Name");
+            Command = await _articleApplication.GetDetails(id, cancellation);
+            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(cancellation), "Id", "Name");
         }
 
-        public async Task<IActionResult> OnPost(EditArticle command)
+        public async Task<IActionResult> OnPost(EditArticle command, CancellationToken cancellation)
         {
-            var result = await _articleApplication.Edit(command);
+            var result = await _articleApplication.Edit(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");

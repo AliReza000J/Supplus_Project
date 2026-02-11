@@ -23,16 +23,16 @@ namespace ShopManagement.Application
             _userFavoriteProductRepository = userFavoriteProductRepository;
         }
 
-        public async Task<OperationResult> Create(CreateProduct command)
+        public async Task<OperationResult> Create(CreateProduct command, CancellationToken cancellation)
         {
             var operation = new OperationResult();
-            if (await _productRepository.ExistsAsync(x => x.Name == command.Name && x.Code == command.Code))
+            if (await _productRepository.ExistsAsync(x => x.Name == command.Name && x.Code == command.Code, cancellation))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var slug = command.Slug.Slugify();
-            var categoryFullSlug = await _productCategoryRepository.GetFullSlugById(command.CategoryId);
+            var categoryFullSlug = await _productCategoryRepository.GetFullSlugById(command.CategoryId, cancellation);
             var path = $"ProductCategories/{categoryFullSlug}/Products/{slug}";
-            var picturePath = _fileUploader.Upload(command.Picture, path);
+            var picturePath = await _fileUploader.UploadAsync(command.Picture, path, cancellation);
 
             var product = new Product(command.Name, command.Code, command.Brand,
                 command.ShortDescription, command.Description, picturePath,
@@ -40,51 +40,56 @@ namespace ShopManagement.Application
                 command.Keywords, command.MetaDescription, command.Specifications);
 
             _productRepository.Create(product);
-            await _productRepository.SaveChangesAsync();
+            await _productRepository.SaveChangesAsync(cancellation);
 
             return operation.Succeeded();
         }
 
-        public async Task<OperationResult> Edit(EditProduct command)
+        public async Task<OperationResult> Edit(EditProduct command, CancellationToken cancellation)
         {
             var operation = new OperationResult();
 
-            var product = await _productRepository.GetProductWithCategory(command.Id);
+            var product = await _productRepository.GetProductWithCategory(command.Id, cancellation);
 
             if (product == null)
                 return operation.Failed(ApplicationMessages.RecordNotFound);
 
-            if (await _productRepository.ExistsAsync(x => x.Name == command.Name && x.Code == command.Code && x.Id != command.Id))
+            if (await _productRepository.ExistsAsync(x => x.Name == command.Name && x.Code == command.Code && x.Id != command.Id, cancellation))
                 return operation.Failed(ApplicationMessages.DuplicatedRecord);
 
             var slug = command.Slug.Slugify();
             var path = $"ProductCategories/{product.Category.FullSlug}/Products/{slug}";
-            var picturePath = _fileUploader.Upload(command.Picture, path);
+            var picturePath = "";
+            if (!(command.Picture == null && string.IsNullOrEmpty(command.Picture?.FileName)))
+            {
+                _fileUploader.DeleteFile(product.Picture);
+                picturePath = await _fileUploader.UploadAsync(command.Picture, path, cancellation);
+            }
 
             product.Edit(command.Name, command.Code, command.Brand,
                 command.ShortDescription, command.Description, picturePath,
                 command.PictureAlt, command.PictureTitle, command.CategoryId, slug,
                 command.Keywords, command.MetaDescription, command.Specifications);
 
-            await _productRepository.SaveChangesAsync();
+            await _productRepository.SaveChangesAsync(cancellation);
 
             return operation.Succeeded();
         }
 
-        public async Task<EditProduct?> GetDetails(long id)
+        public async Task<EditProduct?> GetDetails(long id, CancellationToken cancellation)
         {
-            return await _productRepository.GetDetails(id);
+            return await _productRepository.GetDetails(id, cancellation);
         }
 
-        public async Task<List<ProductViewModel>> GetProducts()
+        public async Task<List<ProductViewModel>> GetProducts(CancellationToken cancellation)
         {
-            return await _productRepository.GetProducts();
+            return await _productRepository.GetProducts(cancellation);
         }
 
-        public async Task<OperationResult> IncrementProductViewCountAsync(long productId, string? userId = null)
+        public async Task<OperationResult> IncreaseProductViewCountAsync(long productId, long userId = 0, CancellationToken cancellation = default)
         {
             var op = new OperationResult();
-            var product = await _productRepository.GetAsync(productId);
+            var product = await _productRepository.GetAsync(productId, cancellation);
             if (product == null)
                 return op.Failed(ApplicationMessages.RecordNotFound);
 
@@ -92,16 +97,16 @@ namespace ShopManagement.Application
 
             _productViewRepository.Create(new ProductView(productId, userId));
 
-            await _productViewRepository.SaveChangesAsync();
+            await _productViewRepository.SaveChangesAsync(cancellation);
             return op.Succeeded();
         }
 
-        public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel)
+        public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel, CancellationToken cancellation)
         {
-            return await _productRepository.Search(searchModel);
+            return await _productRepository.Search(searchModel, cancellation);
         }
 
-        public async Task<OperationResult> AddFavoriteAsync(string userId, long productId)
+        public async Task<OperationResult> AddFavoriteAsync(long userId, long productId, CancellationToken cancellation = default)
         {
             var op = new OperationResult();
 
@@ -114,12 +119,12 @@ namespace ShopManagement.Application
             var favorite = new UserFavoriteProduct(userId, productId);
 
             _userFavoriteProductRepository.Create(favorite);
-            await _userFavoriteProductRepository.SaveChangesAsync();
+            await _userFavoriteProductRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("محصول با موفقیت به لیست علاقه‌مندی شما اضافه شد.");
         }
 
-        public async Task<OperationResult> DeleteFavoriteAsync(string userId, long productId)
+        public async Task<OperationResult> DeleteFavoriteAsync(long userId, long productId, CancellationToken cancellation = default)
         {
             var op = new OperationResult();
 
@@ -130,7 +135,7 @@ namespace ShopManagement.Application
                 return op.Failed("این محصول در لیست علاقه‌مندی شما یافت نشد.");
 
             _userFavoriteProductRepository.Remove(existing);
-            await _userFavoriteProductRepository.SaveChangesAsync();
+            await _userFavoriteProductRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("محصول با موفقیت از لیست علاقه‌مندی شما حذف شد.");
         }

@@ -29,7 +29,7 @@ namespace _01_PharmaPlusQuery.Query
             _cacheService = cache;
         }
 
-        public async Task<ProductQueryModel> GetProductDetails(string productSlug, string accountId, CancellationToken cancellationToken = default)
+        public async Task<ProductQueryModel> GetProductDetails(string productSlug, long userId, CancellationToken cancellationToken = default)
         {
             var productBaseCacheKey = $"product:base:{productSlug}";
 
@@ -110,7 +110,7 @@ namespace _01_PharmaPlusQuery.Query
             // Current User favorited
             var currentUserfaved = await _shopContext.UserFavoriteProducts
                 .AnyAsync(x => x.ProductId == productId
-                && x.UserId == accountId, cancellationToken);
+                && x.UserId == userId, cancellationToken);
 
             // -----------------------------
             // 2) Parallel Data Fetching
@@ -134,7 +134,7 @@ namespace _01_PharmaPlusQuery.Query
             var commentsRawTask = _commentContext.Comments
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
-                .Where(x => x.OwnerRecordId == productId)
+                .Where(x => x.RecordId == productId)
                 .AsNoTracking()
                 .Select(x => new CommentQueryModel
                 {
@@ -149,7 +149,7 @@ namespace _01_PharmaPlusQuery.Query
                     ReplyDate = x.AdminReplyDate.ToFarsi().ToPersianNumber(),
                     IsBuyer = x.IsBuyer,
                     HasEdited = x.CreationDate != x.LastModified,
-                    UserId = long.Parse(x.UserIdentifier),
+                    UserId = x.UserId,
                     LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber(),
                     LikedByUserIds = new List<long>(),
                     DislikedByUserIds = new List<long>()
@@ -175,7 +175,7 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     r.CommentId,
                     r.Reaction,
-                    r.UserIdentifier
+                    r.UserId
                 })
                 .ToListAsync(cancellationToken);
 
@@ -190,16 +190,14 @@ namespace _01_PharmaPlusQuery.Query
 
                 comment.LikedByUserIds = relatedReactions
                     .Where(r => r.Reaction == ReactionType.Like)
-                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
-                    .Where(id => id.HasValue)
-                    .Select(id => id.Value)
+                    .Select(r => r.UserId)
+                    .Where(id => id > 0)
                     .ToList();
 
                 comment.DislikedByUserIds = relatedReactions
                     .Where(r => r.Reaction == ReactionType.Dislike)
-                    .Select(r => long.TryParse(r.UserIdentifier, out var id) ? (long?)id : null)
-                    .Where(id => id.HasValue)
-                    .Select(id => id.Value)
+                    .Select(r => r.UserId)
+                    .Where(id => id > 0)
                     .ToList();
             }
 
@@ -288,7 +286,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ProductId = g.Key,
@@ -370,7 +368,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ProductId = g.Key,
@@ -491,7 +489,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ProductId = g.Key,
@@ -595,7 +593,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ProductId = g.Key,
@@ -711,7 +709,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ProductId = g.Key,
@@ -798,10 +796,10 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<List<ProductQueryModel>> GetUserFavoriteList(string accountId, CancellationToken cancellationToken = default)
+        public async Task<List<ProductQueryModel>> GetUserFavoriteList(long userId, CancellationToken cancellationToken = default)
         {
             var favProducts = await _shopContext.UserFavoriteProducts
-                .Where(x => x.UserId == accountId)
+                .Where(x => x.UserId == userId)
                 .ToDictionaryAsync(x => x.ProductId, x => x.CreationDate, cancellationToken);
 
             var favProductIds = favProducts.Keys.ToList();
@@ -833,7 +831,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new { ProductId = g.Key, AvgRate = g.Average(c => c.Rate), Count = g.Count() })
                 .ToDictionaryAsync(x => x.ProductId, cancellationToken);
 
@@ -897,7 +895,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
                 .Where(x => x.Rate >= 1 && x.Rate <= 5)
-                .GroupBy(x => x.OwnerRecordId)
+                .GroupBy(x => x.RecordId)
                 .Select(g => new
                 {
                     ProductId = g.Key,

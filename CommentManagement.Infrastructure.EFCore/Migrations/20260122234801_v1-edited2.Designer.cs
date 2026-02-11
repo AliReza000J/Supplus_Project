@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CommentManagement.Infrastructure.EFCore.Migrations
 {
     [DbContext(typeof(CommentContext))]
-    [Migration("20251114150049_CommentUpdated")]
-    partial class CommentUpdated
+    [Migration("20260122234801_v1-edited2")]
+    partial class v1edited2
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -64,18 +64,17 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
 
-                    b.Property<long>("OwnerRecordId")
-                        .HasColumnType("bigint");
-
                     b.Property<int>("Rate")
                         .HasColumnType("int");
+
+                    b.Property<long>("RecordId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<string>("UserIdentifier")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -88,7 +87,7 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
 
                     b.HasIndex("IsConfirmed");
 
-                    b.HasIndex("OwnerRecordId", "Type");
+                    b.HasIndex("RecordId", "Type");
 
                     b.ToTable("Comments", (string)null);
                 });
@@ -110,14 +109,12 @@ namespace CommentManagement.Infrastructure.EFCore.Migrations
                     b.Property<int>("Reaction")
                         .HasColumnType("int");
 
-                    b.Property<string>("UserIdentifier")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CommentId", "UserIdentifier")
+                    b.HasIndex("CommentId", "UserId")
                         .IsUnique();
 
                     b.ToTable("CommentReactions", (string)null);

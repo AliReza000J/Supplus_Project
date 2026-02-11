@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace ServiceHost.Controllers.Shop
 {
-    [Route("shop/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class CartController : ControllerBase
     {
@@ -34,13 +34,17 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("items")]
-        public async Task<IActionResult> AddOrIncreaseItem([FromBody] AddToCart command)
+        public async Task<IActionResult> AddOrIncreaseItem([FromBody] AddToCartDto input, CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
+            var command = new AddToCart
+            {
+                CartKey = cartKey,
+                ProductId = input.ProductId,
+                Qty = input.Qty
+            };
 
-            command.CartKey = cartKey;
-
-            var result = await _cartApplication.AddOrIncreaseCartItem(command);
+            var result = await _cartApplication.AddOrIncreaseCartItem(command, cancellation);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
@@ -50,12 +54,12 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("items/increase/{productId}")]
-        public async Task<IActionResult> IncreaseItem(long productId)
+        public async Task<IActionResult> IncreaseItem(long productId, CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
             var command = new IncOrDecItem { CartKey = cartKey, ProductId = productId };
 
-            var result = await _cartApplication.IncreaseCartItem(command);
+            var result = await _cartApplication.IncreaseCartItem(command, cancellation);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
@@ -65,12 +69,12 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("items/decrease/{productId}")]
-        public async Task<IActionResult> DecreaseItem(long productId)
+        public async Task<IActionResult> DecreaseItem(long productId, CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
             var command = new IncOrDecItem { CartKey = cartKey, ProductId = productId };
 
-            var result = await _cartApplication.DecreaseCartItem(command);
+            var result = await _cartApplication.DecreaseCartItem(command, cancellation);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
@@ -80,7 +84,7 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("items/{productId}")]
-        public async Task<IActionResult> UpdateItem(long productId, [FromBody] QtyDto qty)
+        public async Task<IActionResult> UpdateItem(long productId, [FromBody] QtyDto qty, CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
             var command = new UpdateCartItem
@@ -90,7 +94,7 @@ namespace ServiceHost.Controllers.Shop
                 ProductId = productId
             };
 
-            var result = await _cartApplication.UpdateCartItemAsync(command);
+            var result = await _cartApplication.UpdateCartItemAsync(command, cancellation);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
@@ -100,12 +104,12 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("items/{productId}")]
-        public async Task<IActionResult> RemoveItem(long productId)
+        public async Task<IActionResult> RemoveItem(long productId, CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
             var command = new RemoveFromCart { CartKey = cartKey, ProductId = productId };
 
-            var result = await _cartApplication.RemoveFromCartAsync(command);
+            var result = await _cartApplication.RemoveFromCartAsync(command, cancellation);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));
@@ -115,10 +119,29 @@ namespace ServiceHost.Controllers.Shop
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("items")]
-        public async Task<IActionResult> ClearCart()
+        public async Task<IActionResult> ClearCart(CancellationToken cancellation)
         {
             var cartKey = GetCartKey(User);
-            var result = await _cartApplication.ClearCartItemsAsync(cartKey);
+            var result = await _cartApplication.ClearCartItemsAsync(cartKey, cancellation);
+
+            if (!result.IsSucceeded)
+                return BadRequest(ApiResponse<object>.Fail(result.Message));
+
+            return Ok(ApiResponse<object>.Ok(data: new object(), message: result.Message));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("sync")]
+        public async Task<IActionResult> SyncCart(SyncCartDto dto, CancellationToken cancellation)
+        {
+            var cartKey = GetCartKey(User);
+            var command = new SyncCart
+            {
+                CartKey = cartKey,
+                Items = dto.Items
+            };
+
+            var result = await _cartApplication.SyncCartAsync(command, cancellation);
 
             if (!result.IsSucceeded)
                 return BadRequest(ApiResponse<object>.Fail(result.Message));

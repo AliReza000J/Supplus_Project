@@ -15,7 +15,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<EditProduct?> GetDetails(long id)
+        public async Task<EditProduct?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.Products.Select(x => new EditProduct
             {
@@ -32,40 +32,40 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 PictureAlt = x.PictureAlt,
                 PictureTitle = x.PictureTitle,
                 ShortDescription = x.ShortDescription,
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<string?> GetProductName(long prodcutId)
+        public async Task<string?> GetProductName(long prodcutId, CancellationToken cancellation)
         {
             return await _context.Products
                 .Where(x => x.Id == prodcutId)
                 .Select(x => x.Name)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
         }
 
-        public async Task<string?> GetProductPic(long prodcutId)
+        public async Task<string?> GetProductPic(long prodcutId, CancellationToken cancellation)
         {
             return await _context.Products
                 .Where(x => x.Id == prodcutId)
                 .Select(x => x.Picture)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
         }
 
-        public async Task<List<ProductViewModel>> GetProducts()
+        public async Task<List<ProductViewModel>> GetProducts(CancellationToken cancellation)
         {
             return await _context.Products.Select(x => new ProductViewModel
             {
                 Id = x.Id,
                 Name = x.Name
-            }).ToListAsync();
+            }).ToListAsync(cancellation);
         }
 
-        public async Task<Product?> GetProductWithCategory(long id)
+        public async Task<Product?> GetProductWithCategory(long id, CancellationToken cancellation)
         {
-            return await _context.Products.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id);
+            return await _context.Products.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel)
+        public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel, CancellationToken cancellation)
         {
             var query = _context.Products
                 .Include(x => x.Category)
@@ -94,7 +94,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             if (searchModel.CategoryId != 0)
                 query = query.Where(x => x.CategoryId == searchModel.CategoryId);
 
-            return await query.OrderByDescending(x => x.Id).ToListAsync();
+            return await query.OrderByDescending(x => x.Id).ToListAsync(cancellation);
         }
     }
 }

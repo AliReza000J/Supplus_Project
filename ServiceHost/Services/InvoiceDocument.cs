@@ -3,6 +3,7 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ShopManagement.Application.Contracts.Order;
+using SiteManagement.Application;
 
 namespace ServiceHost.Services
 {
@@ -10,36 +11,38 @@ namespace ServiceHost.Services
     {
         public OrderViewModel Model { get; }
         private readonly string _webRootPath;
+        private readonly string _baseLogoPath;
 
-        public InvoiceDocument(OrderViewModel model, string webRootPath)
+        public InvoiceDocument(OrderViewModel model, string webRootPath, string baseLogoPath)
         {
             Model = model;
             _webRootPath = webRootPath;
+            _baseLogoPath = baseLogoPath;
         }
 
         public void Compose(IDocumentContainer container)
         {
             container.Page(page =>
             {
-                page.DefaultTextStyle(x => x.FontFamily("Tahoma").FontSize(10));
+                page.DefaultTextStyle(x => x.FontFamily("XB Niloofar").FontSize(11));
                 page.Margin(1.5f, Unit.Centimetre);
                 page.ContentFromRightToLeft();
                 page.PageColor(Colors.White);
 
                 // --- هدر فاکتور ---
-                page.Header().PaddingBottom(20).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Row(row =>
+                page.Header().PaddingBottom(30).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Row(row =>
                 {
                     // بخش راست: لوگو و نام
                     row.RelativeItem().Column(col =>
                     {
-                        var logoPath = Path.Combine(_webRootPath, "favicon.png");
+                        var logoPath = Path.Combine(_webRootPath, "Pictures", _baseLogoPath);
                         if (File.Exists(logoPath))
                         {
-                            // تغییر سایز: عرض روی 50 تنظیم شد (قبلا 80 بود)
-                            col.Item().Width(50).Image(logoPath);
+                            // تغییر سایز: عرض روی 65 تنظیم شد (قبلا 80 بود)
+                            col.Item().Width(65).Image(logoPath);
                         }
 
-                        col.Item().PaddingTop(5).Text("داروخانه آنلاین فارماپلاس").FontSize(16).Bold().FontColor(Colors.Blue.Darken2);
+                        col.Item().PaddingTop(5).PaddingBottom(5).Text("داروخانه آنلاین فارماپلاس").FontSize(18).Bold().FontColor(Colors.Blue.Darken4);
                     });
 
                     // بخش چپ: اطلاعات فاکتور
@@ -61,10 +64,10 @@ namespace ServiceHost.Services
 
                         if (!string.IsNullOrEmpty(Model.RefNumber))
                         {
-                            col.Item().PaddingTop(5).Text(txt =>
+                            col.Item().PaddingTop(5).PaddingBottom(5).Text(txt =>
                             {
-                                txt.Span("کد پیگیری پرداخت: ").FontSize(9);
-                                txt.Span(Model.RefNumber.ToPersianNumber()).FontSize(9).DirectionFromLeftToRight();
+                                txt.Span("کد پیگیری پرداخت: ").FontSize(10);
+                                txt.Span(Model.RefNumber.ToPersianNumber()).FontSize(10).DirectionFromLeftToRight();
                             });
                         }
                     });
@@ -76,7 +79,7 @@ namespace ServiceHost.Services
                     // --- بخش مشخصات خریدار (اصلاح شده) ---
                     col.Item().Background(Colors.Grey.Lighten4).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c =>
                     {
-                        c.Item().PaddingBottom(10).Text("مشخصات خریدار").FontSize(12).Bold();
+                        c.Item().PaddingBottom(10).Text("مشخصات خریدار").FontSize(14).Bold();
 
                         // ردیف اول: نام، موبایل و کد پستی
                         c.Item().Row(row =>
@@ -85,21 +88,21 @@ namespace ServiceHost.Services
                             row.RelativeItem().Text(txt =>
                             {
                                 txt.Span("نام و نام خانوادگی: ").Bold();
-                                txt.Span(Model.RecieverFullName);
+                                txt.Span(Model.ReceiverFullName);
                             });
 
                             // ستون وسط: موبایل
                             row.RelativeItem().Text(txt =>
                             {
                                 txt.Span("شماره موبایل: ").Bold();
-                                txt.Span(Model.RecieverMobile?.ToPersianNumber()).DirectionFromLeftToRight();
+                                txt.Span(Model.ReceiverMobile?.ToPersianNumber()).DirectionFromLeftToRight();
                             });
 
                             // ستون چپ: کد پستی
                             row.RelativeItem().Text(txt =>
                             {
                                 txt.Span("کد پستی: ").Bold();
-                                txt.Span(Model.RecieverZipCode?.ToPersianNumber()).DirectionFromLeftToRight();
+                                txt.Span(Model.ReceiverZipCode?.ToPersianNumber()).DirectionFromLeftToRight();
                             });
                         });
 
@@ -110,7 +113,7 @@ namespace ServiceHost.Services
                         c.Item().Text(txt =>
                         {
                             txt.Span("آدرس پستی: ").Bold();
-                            txt.Span(Model.RecieverAddress?.ToPersianNumber());
+                            txt.Span(Model.ReceiverAddress?.ToPersianNumber());
                         });
                     });
 
@@ -120,7 +123,7 @@ namespace ServiceHost.Services
                         table.ColumnsDefinition(columns =>
                         {
                             columns.ConstantColumn(30); // ردیف
-                            columns.RelativeColumn(4);  // شرح کالا
+                            columns.RelativeColumn(6);  // شرح کالا
                             columns.RelativeColumn(1);  // تعداد
                             columns.RelativeColumn(2);  // قیمت واحد
                             columns.RelativeColumn(2);  // تخفیف
@@ -132,9 +135,9 @@ namespace ServiceHost.Services
                             header.Cell().Element(HeaderStyle).Text("#");
                             header.Cell().Element(HeaderStyle).Text("شرح کالا / خدمات");
                             header.Cell().Element(HeaderStyle).Text("تعداد");
-                            header.Cell().Element(HeaderStyle).Text("قیمت واحد (تومان)");
-                            header.Cell().Element(HeaderStyle).Text("تخفیف (تومان)");
-                            header.Cell().Element(HeaderStyle).Text("مبلغ کل (تومان)");
+                            header.Cell().Element(HeaderStyle).Text("قیمت واحد");
+                            header.Cell().Element(HeaderStyle).Text("تخفیف");
+                            header.Cell().Element(HeaderStyle).Text("مبلغ کل");
 
                             static IContainer HeaderStyle(IContainer c)
                             {
@@ -168,8 +171,8 @@ namespace ServiceHost.Services
                     {
                         row.RelativeItem(1); // فضای خالی سمت راست
 
-                        // افزایش عرض باکس محاسبات به 320 برای جلوگیری از شکستن خطوط
-                        row.ConstantItem(320).Background(Colors.Grey.Lighten5).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c =>
+                        // افزایش عرض باکس محاسبات به 350 برای جلوگیری از شکستن خطوط
+                        row.ConstantItem(350).Background(Colors.Grey.Lighten5).Border(1).BorderColor(Colors.Grey.Lighten3).Padding(15).Column(c =>
                         {
                             c.Item().Table(table =>
                             {
@@ -184,8 +187,8 @@ namespace ServiceHost.Services
 
                             c.Item().PaddingTop(10).BorderTop(1).BorderColor(Colors.Grey.Lighten3).PaddingTop(10).Row(r =>
                             {
-                                r.RelativeItem().Text("مبلغ قابل پرداخت: (تومان)").Bold().FontSize(12);
-                                r.RelativeItem().AlignLeft().Text(t => t.Span($"{Model.PayAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight().Bold().FontSize(13).FontColor(Colors.Blue.Darken2));
+                                r.RelativeItem().Text("مبلغ قابل پرداخت به تومان: ").Bold().FontSize(14);
+                                r.RelativeItem().AlignLeft().Text(t => t.Span($"{Model.PayAmount.ToMoney().ToPersianNumber()}").DirectionFromLeftToRight().Bold().FontSize(13).FontColor(Colors.Blue.Darken4));
                             });
                         });
                     });
@@ -196,7 +199,7 @@ namespace ServiceHost.Services
                 {
                     col.Item().BorderTop(1).BorderColor(Colors.Grey.Lighten2).PaddingTop(10).AlignCenter().Text(x =>
                     {
-                        x.Span("از اعتماد شما به داروخانه آنلاین فارماپلاس سپاسگزاریم | ").FontSize(9).FontColor(Colors.Grey.Medium);
+                        x.Span("از اعتماد شما به داروخانه آنلاین فارماپلاس سپاسگزاریم | ").FontSize(9).FontColor(Colors.Grey.Darken1);
 
                         x.Span("صفحه ").FontSize(9);
 

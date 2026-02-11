@@ -16,8 +16,7 @@ namespace ShopManagement.Infrastructure.EFCore.Mapping
                 .IsRequired();
 
             builder.Property(x => x.UserId)
-                .HasMaxLength(450)
-                .IsRequired(false);
+                .HasDefaultValue(0);
         }
     }
 }

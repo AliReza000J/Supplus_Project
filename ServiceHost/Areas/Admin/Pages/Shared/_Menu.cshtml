@@ -5,35 +5,35 @@
 
 @{
     var currentAccout = AuthHelper.CurrentAccountInfo();
-    var user = await accountApplication.GetAccountBy(currentAccout.Id);
+    var user = await accountApplication.GetAccountBy(currentAccout.Id, CancellationToken.None);
     var photo = user.ProfilePhoto;
 }
 
 <style>
     #sidebar-menu ul li a {
-        transition: all 0.3s ease;
+    transition: all 0.3s ease;
     }
 
-        #sidebar-menu ul li a:hover {
-            background-color: #f0f4f8;
-            color: #007bff;
-        }
+    #sidebar-menu ul li a:hover {
+    background-color: #f0f4f8;
+    color: #007bff;
+    }
 
-            #sidebar-menu ul li a:hover i {
-                color: #007bff;
-            }
+    #sidebar-menu ul li a:hover i {
+    color: #007bff;
+    }
 
     #sidebar-menu i {
-        width: 20px;
-        text-align: center;
-        margin-right: 10px;
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
     }
 
     .user-details {
-        background: #f3f3f3;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 15px;
+    background: #f3f3f3;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
     }
 </style>
 
@@ -64,7 +64,7 @@
                 <li>
                     <a asp-page="/Comments/Index" class="waves-effect">
                         <i class="ion-chatbubble-working"></i>
-                        <span> مدیریت کامنت‌ها </span>
+                        <span> کامنت‌ها </span>
                     </a>
                 </li>
 
@@ -73,21 +73,28 @@
                     <li>
                         <a asp-page="/Inventory/Index" class="waves-effect">
                             <i class="fa fa-archive"></i>
-                            <span> مدیریت انبار </span>
+                            <span> انبار </span>
                         </a>
                     </li>
 
                     <li>
                         <a asp-page="/Shop/Orders/Index" class="waves-effect">
                             <i class="fa fa-shopping-cart"></i>
-                            <span> مدیریت سفارش‌ها </span>
+                            <span> سفارش‌ها </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Tickets/Index" class="waves-effect">
+                            <i class="fa fa-ticket"></i>
+                            <span> تیکت‌ها </span>
                         </a>
                     </li>
 
                     <li class="has_sub">
                         <a class="waves-effect">
                             <i class="fa fa-shopping-bag"></i>
-                            <span> مدیریت فروشگاه </span>
+                            <span> فروشگاه </span>
                             <span class="pull-left"><i class="md md-add"></i></span>
                         </a>
                         <ul class="list-unstyled">
@@ -101,7 +108,7 @@
                     <li class="has_sub">
                         <a class="waves-effect">
                             <i class="ion-pricetag"></i>
-                            <span> مدیریت تخفیف‌ها </span>
+                            <span> تخفیف‌ها </span>
                             <span class="pull-left"><i class="md md-add"></i></span>
                         </a>
                         <ul class="list-unstyled">
@@ -113,7 +120,7 @@
                     <li class="has_sub">
                         <a class="waves-effect">
                             <i class="ion-person"></i>
-                            <span> مدیریت کاربران </span>
+                            <span> کاربران </span>
                             <span class="pull-left"><i class="md md-add"></i></span>
                         </a>
                         <ul class="list-unstyled">
@@ -127,21 +134,28 @@
                     <li>
                         <a asp-page="/Inventory/Index" class="waves-effect">
                             <i class="ion-archive"></i>
-                            <span> مدیریت انبار </span>
+                            <span> انبار </span>
                         </a>
                     </li>
 
                     <li>
                         <a asp-page="/Shop/Orders/Index" class="waves-effect">
                             <i class="fa fa-shopping-cart"></i>
-                            <span> مدیریت سفارش‌ها </span>
+                            <span> سفارش‌ها </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Tickets/Index" class="waves-effect">
+                            <i class="fa fa-ticket"></i>
+                            <span> تیکت‌ها </span>
                         </a>
                     </li>
 
                     <li class="has_sub">
                         <a class="waves-effect">
                             <i class="ion-bag"></i>
-                            <span> مدیریت فروشگاه </span>
+                            <span> فروشگاه </span>
                             <span class="pull-left"><i class="md md-add"></i></span>
                         </a>
                         <ul class="list-unstyled">
@@ -155,7 +169,7 @@
                     <li class="has_sub">
                         <a class="waves-effect">
                             <i class="ion-pricetag"></i>
-                            <span> مدیریت تخفیف‌ها </span>
+                            <span> تخفیف‌ها </span>
                             <span class="pull-left"><i class="md md-add"></i></span>
                         </a>
                         <ul class="list-unstyled">
@@ -169,7 +183,7 @@
                 <li class="has_sub">
                     <a class="waves-effect">
                         <i class="fa fa-newspaper-o"></i>
-                        <span> مدیریت بلاگ </span>
+                        <span> بلاگ </span>
                         <span class="pull-left"><i class="md md-add"></i></span>
                     </a>
                     <ul class="list-unstyled">
@@ -177,6 +191,11 @@
                         <li><a asp-page="/Blog/ArticleCategories/Index"><i class="fa fa-folder-open-o"></i> گروه مقالات</a></li>
                     </ul>
                 </li>
+
+                @if (AuthHelper.IsSuperAdmin() || AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(2))
+                {
+                    <li><a asp-page="/Site/Index"><i class="fa fa-wrench"></i>تنظیمات سایت</a></li>
+                }
 
                 <!-- Logout -->
                 <li>

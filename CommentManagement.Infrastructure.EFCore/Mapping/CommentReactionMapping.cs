@@ -10,8 +10,8 @@ namespace CommnetManagement.Infrastructure.EFCore.Mapping
         {
             builder.ToTable("CommentReactions");
             builder.HasKey(r => r.Id);
-            builder.Property(r => r.UserIdentifier).IsRequired().HasMaxLength(200);
-            builder.HasIndex(r => new { r.CommentId, r.UserIdentifier }).IsUnique();
+            builder.Property(r => r.UserId).IsRequired();
+            builder.HasIndex(r => new { r.CommentId, r.UserId }).IsUnique();
 
         }
 

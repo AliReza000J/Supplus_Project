@@ -15,7 +15,7 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             _accountContext = accountContext;
         }
 
-        public async Task<EditRole> GetDetails(long id)
+        public async Task<EditRole?> GetDetails(long id, CancellationToken cancellation)
         {
             var role = await _accountContext.Roles.Select(x => new EditRole
             {
@@ -23,7 +23,7 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
                 Name = x.Name,
                 MappedPermissions = MapPermissions(x.Permissions)
             }).AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id, cancellation);
 
             role.Permissions = role.MappedPermissions.Select(x => x.Code).ToList();
 
@@ -35,14 +35,14 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             return permissions.Select(x => new PermissionDto(x.Code, x.Name)).ToList();
         }
 
-        public async Task<IEnumerable<RoleViewModel>> ListAsync()
+        public async Task<IEnumerable<RoleViewModel>> ListAsync(CancellationToken cancellation)
         {
             return await _accountContext.Roles.Select(x => new RoleViewModel
             {
                 Id = x.Id,
                 Name = x.Name,
                 CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
-            }).ToListAsync();
+            }).ToListAsync(cancellation);
         }
     }
 }

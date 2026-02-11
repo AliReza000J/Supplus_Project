@@ -111,9 +111,6 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
                     b.Property<DateTime>("AccessTokenExpiry")
                         .HasColumnType("datetime2");
 
-                    b.Property<long>("AccountId")
-                        .HasColumnType("bigint");
-
                     b.Property<bool>("IsRevoked")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -125,6 +122,9 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<DateTime>("RefreshTokenExpiry")
                         .HasColumnType("datetime2");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

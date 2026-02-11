@@ -4,13 +4,13 @@ namespace ShopManagement.Application.Contracts.Cart
 {
     public interface ICartApplication
     {
-        Task<OperationResult> CreateCartAsync(string userId);
-        Task<OperationResult> ClearCartItemsAsync(string cartKey);
-        Task<OperationResult> AddOrIncreaseCartItem(AddToCart command);
-        Task<OperationResult> IncreaseCartItem(IncOrDecItem command);
-        Task<OperationResult> DecreaseCartItem(IncOrDecItem command);
-        Task<OperationResult> UpdateCartItemAsync(UpdateCartItem command);
-        Task<OperationResult> RemoveFromCartAsync(RemoveFromCart command);
-        Task<OperationResult> SyncAnonymousCartToUserAsync(string anonCartKey, long userId);
+        Task<OperationResult> CreateCartAsync(long userId, CancellationToken cancellation);
+        Task<OperationResult> ClearCartItemsAsync(string cartKey, CancellationToken cancellation);
+        Task<OperationResult> AddOrIncreaseCartItem(AddToCart command, CancellationToken cancellation);
+        Task<OperationResult> IncreaseCartItem(IncOrDecItem command, CancellationToken cancellation);
+        Task<OperationResult> DecreaseCartItem(IncOrDecItem command, CancellationToken cancellation);
+        Task<OperationResult> UpdateCartItemAsync(UpdateCartItem command, CancellationToken cancellation);
+        Task<OperationResult> RemoveFromCartAsync(RemoveFromCart command, CancellationToken cancellation);
+        Task<OperationResult> SyncCartAsync(SyncCart command, CancellationToken cancellation);
     }
 }

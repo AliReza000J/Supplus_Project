@@ -10,7 +10,7 @@ namespace ShopManagement.Infrastructure.EFCore.Mapping
         {
             builder.ToTable("Carts");
             builder.HasKey(c => c.Id);
-            builder.Property(c => c.AccountId).IsRequired();
+            builder.Property(c => c.UserId).IsRequired();
             builder.HasMany(c => c.Items).WithOne().OnDelete(DeleteBehavior.Cascade);
         }
     }

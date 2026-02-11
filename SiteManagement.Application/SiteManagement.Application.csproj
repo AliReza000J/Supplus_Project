@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AccountManagement.Domain\AccountManagement.Domain.csproj" />
+    <ProjectReference Include="..\SiteManagement.Application.Contracts\SiteManagement.Application.Contracts.csproj" />
+    <ProjectReference Include="..\SiteManagement.Domain\SiteManagement.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -2,6 +2,7 @@
 using InventoryManagement.Domain.InventoryAgg;
 using ShopManagement.Application.Contracts.Cart;
 using ShopManagement.Domain.CartAgg;
+using System.Text.RegularExpressions;
 
 namespace ShopManagement.Application
 {
@@ -15,14 +16,17 @@ namespace ShopManagement.Application
             _inventoryRepository = inventoryRepository;
         }
 
-        public async Task<OperationResult> AddOrIncreaseCartItem(AddToCart command)
+        public async Task<OperationResult> AddOrIncreaseCartItem(AddToCart command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (command.CartKey == null)
                 return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
 
-            var cart = await _cartRepository.GetByCartKeyAsync(command.CartKey);
+            if (!Regex.IsMatch(command.CartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(command.CartKey, cancellation);
 
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
@@ -33,7 +37,7 @@ namespace ShopManagement.Application
             if (command.Qty <= 0)
                 return op.Failed("تعداد نمی‌تواند صفر یا منفی باشد!");
 
-            var inv = await _inventoryRepository.GetBy(command.ProductId);
+            var inv = await _inventoryRepository.GetBy(command.ProductId, cancellation);
             if (inv == null)
                 return op.Failed("محصول در انبار یافت نشد.");
 
@@ -46,19 +50,22 @@ namespace ShopManagement.Application
 
             cart.AddItem(command.ProductId, command.Qty);
 
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("محصول با موفقیت به سبد خرید شما اضافه شد.");
         }
 
-        public async Task<OperationResult> ClearCartItemsAsync(string cartKey)
+        public async Task<OperationResult> ClearCartItemsAsync(string cartKey, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (cartKey == null)
                 return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
 
-            var cart = await _cartRepository.GetByCartKeyAsync(cartKey);
+            if (!Regex.IsMatch(cartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(cartKey, cancellation);
 
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
@@ -67,42 +74,42 @@ namespace ShopManagement.Application
                 _cartRepository.DeleteCartItem(item);
 
             cart.Clear();
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.SaveChangesAsync(cancellation);
             return op.Succeeded("سبد خرید شما با موفقیت خالی شد");
         }
 
-        public async Task<OperationResult> CreateCartAsync(string userId)
+        public async Task<OperationResult> CreateCartAsync(long userId, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
-            if (string.IsNullOrWhiteSpace(userId))
+            if (userId <= 0)
                 return op.Failed("شناسه کاربر نامعتبر است.");
 
-            if (!long.TryParse(userId, out var accountId))
-                return op.Failed("شناسه کاربر معتبر نیست.");
-
-            bool exists = await _cartRepository.ExistsAsync(x => x.AccountId == accountId);
+            bool exists = await _cartRepository.ExistsAsync(x => x.UserId == userId, cancellation);
             if (exists)
                 return op.Failed("برای این کاربر قبلاً سبد خرید ایجاد شده است.");
 
-            var cartKey = $"user:{accountId}";
+            var cartKey = $"user:{userId}";
 
-            var cart = new Cart(cartKey, accountId);
+            var cart = new Cart(cartKey, userId);
 
             _cartRepository.Create(cart);
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("سبد خرید با موفقیت ایجاد شد.");
         }
 
-        public async Task<OperationResult> DecreaseCartItem(IncOrDecItem command)
+        public async Task<OperationResult> DecreaseCartItem(IncOrDecItem command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (command.CartKey == null)
                 return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
 
-            var cart = await _cartRepository.GetByCartKeyAsync(command.CartKey);
+            if (!Regex.IsMatch(command.CartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(command.CartKey, cancellation);
 
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
@@ -122,22 +129,25 @@ namespace ShopManagement.Application
             else // if (cartItem.Quantity > 1)
             {
                 cart.DecreaseItem(cartItem.ProductId);
-                await _cartRepository.UpdateAsync(cart);
+                await _cartRepository.UpdateAsync(cart, cancellation);
             }
 
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded();
         }
 
-        public async Task<OperationResult> IncreaseCartItem(IncOrDecItem command)
+        public async Task<OperationResult> IncreaseCartItem(IncOrDecItem command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (command.CartKey == null)
                 return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
 
-            var cart = await _cartRepository.GetByCartKeyAsync(command.CartKey);
+            if (!Regex.IsMatch(command.CartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(command.CartKey, cancellation);
 
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
@@ -149,7 +159,7 @@ namespace ShopManagement.Application
             if (cartItem == null)
                 return op.Failed("این محصول در سبد خرید شما وجود ندارد.");
 
-            var inv = await _inventoryRepository.GetBy(command.ProductId);
+            var inv = await _inventoryRepository.GetBy(command.ProductId, cancellation);
             if (inv == null)
                 return op.Failed("محصول در انبار یافت نشد.");
 
@@ -160,20 +170,23 @@ namespace ShopManagement.Application
 
             cart.IncreaseItem(cartItem.ProductId);
 
-            await _cartRepository.UpdateAsync(cart);
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.UpdateAsync(cart, cancellation);
+            await _cartRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded();
         }
 
-        public async Task<OperationResult> RemoveFromCartAsync(RemoveFromCart command)
+        public async Task<OperationResult> RemoveFromCartAsync(RemoveFromCart command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (command.CartKey == null)
                 return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
 
-            var cart = await _cartRepository.GetByCartKeyAsync(command.CartKey);
+            if (!Regex.IsMatch(command.CartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(command.CartKey, cancellation);
 
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
@@ -188,24 +201,71 @@ namespace ShopManagement.Application
             cart.RemoveItem(cartItem.ProductId);
 
             _cartRepository.DeleteCartItem(cartItem);
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("محصول با موفقیت از سبد خرید شما حذف شد.");
         }
 
-        public Task<OperationResult> SyncAnonymousCartToUserAsync(string anonCartKey, long userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<OperationResult> UpdateCartItemAsync(UpdateCartItem command)
+        public async Task<OperationResult> SyncCartAsync(SyncCart command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (command.CartKey == null)
                 return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
 
-            var cart = await _cartRepository.GetByCartKeyAsync(command.CartKey);
+            if (!Regex.IsMatch(command.CartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(command.CartKey, cancellation);
+
+            if (cart == null)
+                return op.Failed("سبد خرید یافت نشد!");
+
+            if (!cart.Items.Any() && command.Items != null && command.Items.Any())
+            {
+                foreach(var item in command.Items)
+                {
+                    if (item.ProductId <= 0)
+                        //return op.Failed("شناسه محصول نامعتبر است.");
+                        continue;
+
+                    if (item.Qty <= 0)
+                        //return op.Failed("تعداد نمی‌تواند صفر یا منفی باشد!");
+                        continue;
+
+                    var inv = await _inventoryRepository.GetBy(item.ProductId, cancellation);
+                    if (inv == null)
+                        //return op.Failed("محصول در انبار یافت نشد.");
+                        continue;
+
+                    var currentStock = inv.CalculateCurrentCount();
+                    var existingItem = cart.Items.FirstOrDefault(x => x.ProductId == item.ProductId);
+                    var requestedTotal = item.Qty + (existingItem?.Quantity ?? 0);
+
+                    if (requestedTotal > currentStock)
+                        item.Qty = (int)currentStock;
+
+                    cart.AddItem(item.ProductId, item.Qty);
+                }
+
+                await _cartRepository.SaveChangesAsync(cancellation);
+                return op.Succeeded("سبد خرید شما با موفقیت به‌هنگام شد.");
+            }
+            // else: syncing is not available, let the cart be unchanged.
+            return op.Warn("سبد خرید به‌هنگام نشد.");
+        }
+
+        public async Task<OperationResult> UpdateCartItemAsync(UpdateCartItem command, CancellationToken cancellation)
+        {
+            var op = new OperationResult();
+
+            if (command.CartKey == null)
+                return op.Failed("کلید سبد خرید نمی‌تواند خالی باشد!");
+
+            if (!Regex.IsMatch(command.CartKey, @"^user:\d+$"))
+                return op.Failed("مقدار کلید سبد خرید نامعتبر است!.");
+
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(command.CartKey, cancellation);
 
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
@@ -220,7 +280,7 @@ namespace ShopManagement.Application
             if (cartItem == null)
                 return op.Failed("این محصول در سبد خرید شما وجود ندارد.");
 
-            var inv = await _inventoryRepository.GetBy(command.ProductId);
+            var inv = await _inventoryRepository.GetBy(command.ProductId, cancellation);
             if (inv == null)
                 return op.Failed("محصول در انبار یافت نشد.");
 
@@ -233,8 +293,8 @@ namespace ShopManagement.Application
 
             cart.UpdateItem(cartItem.ProductId, command.Qty);
 
-            await _cartRepository.UpdateAsync(cart);
-            await _cartRepository.SaveChangesAsync();
+            await _cartRepository.UpdateAsync(cart, cancellation);
+            await _cartRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("تعداد محصول در سبد خرید شما با موفقیت به‌روزرسانی شد.");
         }

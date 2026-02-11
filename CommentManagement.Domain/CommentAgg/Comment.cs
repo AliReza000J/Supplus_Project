@@ -5,9 +5,9 @@ namespace CommentManagement.Domain.CommentAgg
     public class Comment : BaseEntity
     {
         public string Username { get; private set; }
-        public string UserIdentifier { get; set; } = string.Empty;
+        public long UserId { get; set; }
         public string? Message { get; private set; }
-        public long OwnerRecordId { get; private set; }
+        public long RecordId { get; private set; }
         public int Type { get; private set; } // store enum as int for EF mapping
         public int Rate { get; private set; }
         public int LikeCount { get; private set; }
@@ -23,13 +23,13 @@ namespace CommentManagement.Domain.CommentAgg
 
         protected Comment() { }
 
-        public Comment(string username, string userIdentifier, string? message,
+        public Comment(string username, long userId, string? message,
             long ownerRecordId, int type, int rate)
         {
             Username = username;
-            UserIdentifier = userIdentifier;
+            UserId = userId;
             Message = message;
-            OwnerRecordId = ownerRecordId;
+            RecordId = ownerRecordId;
             Type = type;
 
             if (rate != 0)

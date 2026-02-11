@@ -4,19 +4,19 @@ namespace ShopManagement.Application.Contracts.Order
 {
     public interface IOrderApplication
     {
-        Task<(PlaceOrderResult?, OperationResult)> PlaceOrderAsync(CreateOrderCommand command); // create order (user cart)
-        Task<OperationResult> VerifyGatewayPaymentAsync(VerifyGatewayPaymentCommand command);
-        Task<OperationResult> RejectPaymentManuallyAsync(RejectPaymentManually command);
-        Task<OperationResult> ConfirmPaymentManuallyAsync(ConfirmPaymentManually command);
-        Task<OperationResult> ChangeStatusToProcessing(long oederId);
-        Task<OperationResult> ChangeStatusToShipped(ShipCommand command);
-        Task<OperationResult> ChangeStatusToDelivered(long oederId);
-        Task<OrderTrackingSmsDto> GetOrderForTrackingSms(long orderId);
-        Task<List<OrderItemViewModel>> GetItems(long orderId);
-        Task<List<OrderViewModel>> SearchAsync(OrderSearchModel searchModel);
-        Task<OrderViewModel?> GetDetails(long orderId);
+        Task<(PlaceOrderResult?, OperationResult)> PlaceOrderAsync(CreateOrderCommand command, CancellationToken cancellation); // create order (user cart)
+        Task<OperationResult> VerifyGatewayPaymentAsync(VerifyGatewayPaymentCommand command, CancellationToken cancellation);
+        Task<OperationResult> RejectPaymentManuallyAsync(RejectPaymentManually command, CancellationToken cancellation);
+        Task<OperationResult> ConfirmPaymentManuallyAsync(ConfirmPaymentManually command, CancellationToken cancellation);
+        Task<OperationResult> ChangeStatusToProcessing(long oederId, CancellationToken cancellation);
+        Task<OperationResult> ChangeStatusToShipped(ShipCommand command, CancellationToken cancellation);
+        Task<OperationResult> ChangeStatusToDelivered(long oederId, CancellationToken cancellation);
+        Task<OrderTrackingSmsDto> GetOrderForTrackingSms(long orderId, CancellationToken cancellation);
+        Task<List<OrderItemViewModel>> GetItems(long orderId, CancellationToken cancellation);
+        Task<List<OrderViewModel>> SearchAsync(OrderSearchModel searchModel, CancellationToken cancellation);
+        Task<OrderViewModel?> GetDetails(long orderId, CancellationToken cancellation);
 
         List<OrderStatusDto> GetStatuses();
-        Task<bool> UserOwnsOrder(string userId, long orderId);
+        Task<bool> UserOwnsOrder(long userId, long orderId, CancellationToken cancellation);
     }
 }

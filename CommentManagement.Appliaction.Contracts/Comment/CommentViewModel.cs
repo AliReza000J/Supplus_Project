@@ -6,8 +6,8 @@
         public string Username { get; set; }
         //public string? Email { get; set; }
         public string? Message { get; set; }
-        public long OwnerRecordId { get; set; }
-        public string OwnerName { get; set; }
+        public long RecordId { get; set; }
+        public string RecordName { get; set; }
         public int Type { get; set; }
         public bool IsConfirmed { get; set; }
         public bool IsCanceled { get; set; }

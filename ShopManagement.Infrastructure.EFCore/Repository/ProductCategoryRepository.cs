@@ -15,7 +15,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<EditProductCategory?> GetDetails(long id)
+        public async Task<EditProductCategory?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.ProductCategories.Select(x => new EditProductCategory()
             {
@@ -29,10 +29,10 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 PictureTitle = x.PictureTitle,
                 Slug = x.Slug,
                 ParentId = x.ParentId,
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<List<ProductCategoryViewModel>> GetLeafCategories()
+        public async Task<List<ProductCategoryViewModel>> GetLeafCategories(CancellationToken cancellation)
         {
             return await _context.ProductCategories
                 .Where(x => !x.Children.Any())
@@ -42,16 +42,17 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     Name = x.Name,
                 })
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(cancellation);
         }
 
-        public async Task<ProductCategory?> GetWithChildren(long id)
+        public async Task<ProductCategory?> GetWithChildren(long id, CancellationToken cancellation)
         {
             return await _context.ProductCategories
                 .Include(x => x.Children)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id,
+                cancellation);
         }
-        public async Task<List<ProductCategoryViewModel>> GetProductCategories()
+        public async Task<List<ProductCategoryViewModel>> GetProductCategories(CancellationToken cancellation)
         {
             return await _context.ProductCategories
                 .Select(x => new ProductCategoryViewModel
@@ -59,18 +60,18 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     Id = x.Id,
                     Name = x.Name,
                     Parent = x.Parent.Name
-                }).ToListAsync();
+                }).ToListAsync(cancellation);
         }
 
-        public async Task<string?> GetFullSlugById(long id)
+        public async Task<string?> GetFullSlugById(long id, CancellationToken cancellation)
         {
             return await _context.ProductCategories
                 .Where(x => x.Id == id)
                 .Select(x => x.FullSlug)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
         }
 
-        public async Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel)
+        public async Task<List<ProductCategoryViewModel>> Search(ProductCategorySearchModel searchModel, CancellationToken cancellation)
         {
             var query = _context.ProductCategories
                 .Include(x => x.Parent)
@@ -86,7 +87,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             if (!string.IsNullOrWhiteSpace(searchModel.Name))
                 query = query.Where(x => x.Name.Contains(searchModel.Name));
 
-            return await query.OrderByDescending(x => x.Id).ToListAsync();
+            return await query.OrderByDescending(x => x.Id).ToListAsync(cancellation);
         }
     }
 }

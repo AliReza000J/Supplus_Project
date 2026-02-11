@@ -52,11 +52,11 @@ namespace ShopManagement.Application
             _inventoryApplication = inventoryApplication;
         }
 
-        public async Task<OperationResult> ConfirmPaymentManuallyAsync(ConfirmPaymentManually command)
+        public async Task<OperationResult> ConfirmPaymentManuallyAsync(ConfirmPaymentManually command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
-            var order = await _orderRepository.GetWithItemsAsync(command.OrderId);
+            var order = await _orderRepository.GetWithItemsAsync(command.OrderId, cancellation);
             if (order == null) return op.Failed("سفارش یافت نشد.");
 
             if (order.Status != OrderStatus.WaitingForManualVerification)
@@ -64,87 +64,101 @@ namespace ShopManagement.Application
 
             foreach (var orderItem in order.Items)
             {
-                var invId = (await _inventoryRepository.GetBy(orderItem.ProductId)).Id;
+                var invId = (await _inventoryRepository.GetBy(orderItem.ProductId, cancellation))?.Id;
                 var reduceInv = new ReduceInventoryByOrder
                 {
                     Count = orderItem.Quantity,
                     OrderId = order.Id,
-                    Description = $"خرید توسط کاربر {order.AccountId} با شماره سفارش {order.Id} در تاریخ {order.CreationDate.ToFarsiFull().ToPersianNumber()}",
-                    InventoryId = invId,
+                    Description = $"خرید توسط کاربر {order.UserId} با شماره سفارش {order.Id} در تاریخ {order.CreationDate.ToFarsiFull().ToPersianNumber()}",
+                    InventoryId = invId ?? 0,
                     ProductId = orderItem.ProductId,
-                    AccountId = order.AccountId
+                    UserId = order.UserId
                 };
-                await _inventoryApplication.ReduceByOrder(reduceInv);
+                await _inventoryApplication.ReduceByOrder(reduceInv, cancellation);
 
                 if (orderItem.DiscountRate > 0)
                 {
-                    var disc = await _discountRepository.GetByProductId(orderItem.ProductId);
+                    var disc = await _discountRepository.GetByProductId(orderItem.ProductId, cancellation);
                     disc?.ReduceQty(orderItem.DiscountedQty);
-                    await _discountRepository.SaveChangesAsync();
+                    await _discountRepository.SaveChangesAsync(cancellation);
                 }
             }
 
             order.ConfirmManually();
-            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.SaveChangesAsync(cancellation);
 
             // می‌توان Domain Event صادر کرد برای ارسال ایمیل و SMS
             return op.Succeeded("پرداخت کارت به کارت با موفقیت تایید شد.");
         }
 
-        public async Task<OperationResult> RejectPaymentManuallyAsync(RejectPaymentManually command)
+        public async Task<OperationResult> RejectPaymentManuallyAsync(RejectPaymentManually command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
-            var order = await _orderRepository.GetAsync(command.OrderId);
+            var order = await _orderRepository.GetAsync(command.OrderId, cancellation);
             if (order == null)
                 return op.Failed("سفارش یافت نشد");
 
             var finalReason =
-                $"[ReasonCode]: {command.SelectedReason}{Environment.NewLine}" +
-                $"[Description]: {command.ReasonDescription}{Environment.NewLine}" +
-                $"[ActionBy]: Admin (Id: {command.AdminId}){Environment.NewLine}" +
-                $"[AccountId]: {order.AccountId}{Environment.NewLine}" +
-                $"[OrderId]: {order.Id}{Environment.NewLine}" +
-                $"[ActionDate]: {DateTime.Now.ToFarsiFull()}";
+                $"[کد]: {command.SelectedReason}{Environment.NewLine}" +
+                $"[توضیحات]: {command.ReasonDescription}{Environment.NewLine}" +
+                $"[توسط]: Admin (Id: {command.AdminId}){Environment.NewLine}" +
+                $"[شناسه کاربر]: {order.UserId}{Environment.NewLine}" +
+                $"[شناسه سفارش]: {order.Id}{Environment.NewLine}" +
+                $"[تاریخ]: {DateTime.Now.ToFarsiFull()}";
 
             order.Cancel(finalReason);
-            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("سفارش با موفقیت لغو شد.");
         }
 
-        public async Task<(PlaceOrderResult?, OperationResult)> PlaceOrderAsync(CreateOrderCommand command)
+        public async Task<(PlaceOrderResult?, OperationResult)> PlaceOrderAsync(CreateOrderCommand command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
             if (command == null)
                 return (null, op.Failed("سبد خرید خالی است."));
 
-            var acc = await _accountRepository.GetAsync(command.AccountId);
+            var acc = await _accountRepository.GetAsync(command.UserId, cancellation);
             if (acc == null)
-                return (null, op.Failed($"کاربر با آیدی {command.AccountId} یافت نشد."));
+                return (null, op.Failed($"کاربر با آیدی {command.UserId} یافت نشد."));
+            
+            //////////////////
+            if (!acc.IsCompleted())
+                return (null, op.Failed("برای ثبت سفارش باید پروفایل خود را تکمیل نمایید."));
+            //////////////////
 
-            var cartKey = $"user:{command.AccountId}";
-            var cart = await _cartRepository.GetByCartKeyAsync(cartKey);
+            if (string.IsNullOrWhiteSpace(command.ReceiverFullName) &&
+                !string.IsNullOrWhiteSpace(acc.Fullname))
+                command.ReceiverFullName = acc.Fullname;
+            else
+                return (null, op.Failed("نام و نام خانوادگی نمی‌تواند خالی باشد!"));
+
+            if (string.IsNullOrWhiteSpace(command.ReceiverMobile))
+                command.ReceiverMobile = acc.Mobile;
+
+            var cartKey = $"user:{command.UserId}";
+            var cart = await _cartRepository.GetOrCreateByCartKeyAsync(cartKey, cancellation);
             if (cart == null || !cart.Items.Any())
                 return (null, op.Failed("سبد خریدی برای این کاربر یافت نشد."));
 
             var orderItems = new List<OrderItem>();
             foreach (var cartItem in cart.Items)
             {
-                var inv = await _inventoryRepository.GetBy(cartItem.ProductId);
+                var inv = await _inventoryRepository.GetBy(cartItem.ProductId, cancellation);
                 if (inv == null)
                     return (null, op.Failed("این محصول در انبار وجود ندارد."));
 
-                if(inv.CalculateCurrentCount() <= 0)
+                if (inv.CalculateCurrentCount() <= 0)
                     return (null, op.Failed("این محصول ناموجود است."));
 
-                var disc = await _discountRepository.GetByProductId(cartItem.ProductId);
+                var disc = await _discountRepository.GetByProductId(cartItem.ProductId, cancellation);
                 var discRate = disc != null ? disc.DiscountRate : 0;
                 var discQty = disc != null ? disc.ProductCount : 0;
 
-                var productName = await _productRepository.GetProductName(cartItem.ProductId) ?? "";
-                var productPic = await _productRepository.GetProductPic(cartItem.ProductId) ?? "";
+                var productName = await _productRepository.GetProductName(cartItem.ProductId, cancellation) ?? "";
+                var productPic = await _productRepository.GetProductPic(cartItem.ProductId, cancellation) ?? "";
 
                 var orderItem = new OrderItem(cartItem.ProductId,
                     cartItem.Quantity, inv.UnitPrice, discRate,
@@ -153,18 +167,12 @@ namespace ShopManagement.Application
                 orderItems.Add(orderItem);
             }
 
-            if (string.IsNullOrWhiteSpace(command.RecieverFullName))
-                command.RecieverFullName = acc.Fullname;
-
-            if (string.IsNullOrWhiteSpace(command.RecieverMobile))
-                command.RecieverMobile = acc.Mobile;
-
-            var order = new Order(command.AccountId, command.RecieverFullName,
-                    command.RecieverMobile, command.RecieverAddress,
-                    command.RecieverZipCode, command.PayMethod, orderItems);
+            var order = new Order(command.UserId, command.ReceiverFullName,
+                    command.ReceiverMobile, command.ReceiverAddress,
+                    command.ReceiverZipCode, command.PayMethod, orderItems);
 
             _orderRepository.Create(order);
-            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.SaveChangesAsync(cancellation);
 
             if (command.PayMethod == PaymentMethod.CardToCard)
             {
@@ -173,14 +181,14 @@ namespace ShopManagement.Application
                     return (null, op.Failed("لطفاً اطلاعات کارت به کارت (نام کامل صاحب کارت، کد ملی صاحب کارت و تصویر رسید) را وارد کنید."));
                 }
 
-                var receiptPath = $"orders/order_{order.Id}";
-                var receiptPic = fileUploader.Upload(command.PaymentReceiptPic, receiptPath);
+                var receiptPath = $"Orders/order_{order.Id}";
+                var receiptPic = await fileUploader.UploadAsync(command.PaymentReceiptPic, receiptPath, cancellation);
 
                 order.AddCardPaymentInfo(command.CardOwnerName, command.NationalCode, receiptPic);
                 order.StartManualPayment();
 
-                await _cartApplication.ClearCartItemsAsync(cartKey);
-                await _orderRepository.SaveChangesAsync();
+                await _cartApplication.ClearCartItemsAsync(cartKey, cancellation);
+                await _orderRepository.SaveChangesAsync(cancellation);
 
                 return (new PlaceOrderResult { OrderId = order.Id, ShouldRedirect = false, RedirectUrl = null },
                 op.Succeeded("سفارش با موفقیت ثبت شد و در انتظار تایید است"));
@@ -192,7 +200,7 @@ namespace ShopManagement.Application
                 if (trackId > 0)
                 {
                     order.StartGatewayPayment(trackId.ToString());
-                    await _orderRepository.SaveChangesAsync();
+                    await _orderRepository.SaveChangesAsync(cancellation);
 
                     var paymentUrl = $"{_config["ZibalSettings:PaymentPageUrl"]}{trackId}";
 
@@ -209,16 +217,16 @@ namespace ShopManagement.Application
             return (null, op.Failed("روش پرداخت معتبر نیست."));
         }
 
-        public async Task<List<OrderViewModel>> SearchAsync(OrderSearchModel searchModel)
+        public async Task<List<OrderViewModel>> SearchAsync(OrderSearchModel searchModel, CancellationToken cancellation)
         {
-            return await _orderRepository.Search(searchModel);
+            return await _orderRepository.Search(searchModel, cancellation);
         }
 
-        public async Task<OperationResult> VerifyGatewayPaymentAsync(VerifyGatewayPaymentCommand command)
+        public async Task<OperationResult> VerifyGatewayPaymentAsync(VerifyGatewayPaymentCommand command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
-            var order = await _orderRepository.GetWithItemsAsync(command.OrderId);
+            var order = await _orderRepository.GetWithItemsAsync(command.OrderId, cancellation);
             if (order == null) return op.Failed("سفارش یافت نشد.");
 
             if (order.Status == OrderStatus.Paid)
@@ -240,28 +248,28 @@ namespace ShopManagement.Application
 
                     foreach (var orderItem in order.Items)
                     {
-                        var invId = (await _inventoryRepository.GetBy(orderItem.ProductId)).Id;
+                        var invId = (await _inventoryRepository.GetBy(orderItem.ProductId, cancellation))?.Id;
                         var reduceInv = new ReduceInventoryByOrder
                         {
                             Count = orderItem.Quantity,
                             OrderId = order.Id,
-                            Description = $"خرید توسط کاربر {order.AccountId} با شماره سفارش {order.Id} در تاریخ {order.CreationDate.ToFarsiFull().ToPersianNumber()}",
-                            InventoryId = invId,
+                            Description = $"خرید توسط کاربر {order.UserId} با شماره سفارش {order.Id} در تاریخ {order.CreationDate.ToFarsiFull().ToPersianNumber()}",
+                            InventoryId = invId ?? 0,
                             ProductId = orderItem.ProductId,
-                            AccountId = order.AccountId
+                            UserId = order.UserId
                         };
-                        await _inventoryApplication.ReduceByOrder(reduceInv);
+                        await _inventoryApplication.ReduceByOrder(reduceInv, cancellation);
 
                         if (orderItem.DiscountRate > 0)
                         {
-                            var disc = await _discountRepository.GetByProductId(orderItem.ProductId);
+                            var disc = await _discountRepository.GetByProductId(orderItem.ProductId, cancellation);
                             disc?.ReduceQty(orderItem.DiscountedQty);
-                            await _discountRepository.SaveChangesAsync();
+                            await _discountRepository.SaveChangesAsync(cancellation);
                         }
                     }
 
-                    await _cartApplication.ClearCartItemsAsync($"user:{order.AccountId}");
-                    await _orderRepository.SaveChangesAsync();
+                    await _cartApplication.ClearCartItemsAsync($"user:{order.UserId}", cancellation);
+                    await _orderRepository.SaveChangesAsync(cancellation);
 
                 }
 
@@ -271,24 +279,24 @@ namespace ShopManagement.Application
             return op.Failed($"خطا در پرداخت: {message} (کد: {result})");
         }
 
-        public async Task<OperationResult> ChangeStatusToProcessing(long orderId)
+        public async Task<OperationResult> ChangeStatusToProcessing(long orderId, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
-            var order = await _orderRepository.GetAsync(orderId);
+            var order = await _orderRepository.GetAsync(orderId, cancellation);
             if (order == null) return op.Failed("سفارش یافت نشد.");
 
             if (order.Status != OrderStatus.Paid)
                 return op.Failed("وضعیت سفارش برای پردازش نامناسب است.");
 
             order.ProcessOrder();
-            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.SaveChangesAsync(cancellation);
 
             // می‌توان Domain Event صادر کرد برای ارسال ایمیل و SMS
             return op.Succeeded("محصول در حالت آماده‌سازی قرار گرفت.");
         }
 
-        public async Task<OperationResult> ChangeStatusToShipped(ShipCommand command)
+        public async Task<OperationResult> ChangeStatusToShipped(ShipCommand command, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
@@ -298,38 +306,38 @@ namespace ShopManagement.Application
             if (string.IsNullOrWhiteSpace(command.PostTrackingNo))
                 return op.Failed("کد رهگیری پست نمی‌تواند خالی باشد.");
 
-            var order = await _orderRepository.GetAsync(command.OrderId);
+            var order = await _orderRepository.GetAsync(command.OrderId, cancellation);
             if (order == null) return op.Failed("سفارش یافت نشد.");
 
             if (order.Status != OrderStatus.Processing)
                 return op.Failed("وضعیت سفارش برای ارسال نامناسب است.");
 
             order.Ship(command.PostTrackingNo);
-            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("محصول در حالت ارسال شده قرار گرفت.");
         }
 
-        public async Task<OperationResult> ChangeStatusToDelivered(long orderId)
+        public async Task<OperationResult> ChangeStatusToDelivered(long orderId, CancellationToken cancellation)
         {
             var op = new OperationResult();
 
-            var order = await _orderRepository.GetAsync(orderId);
+            var order = await _orderRepository.GetAsync(orderId, cancellation);
             if (order == null) return op.Failed("سفارش یافت نشد.");
 
             if (order.Status != OrderStatus.Shipped)
                 return op.Failed("وضعیت سفارش برای تایید تحویل نامناسب است.");
 
             order.MarkAsDeliverd();
-            await _orderRepository.SaveChangesAsync();
+            await _orderRepository.SaveChangesAsync(cancellation);
 
             // می‌توان Domain Event صادر کرد برای ارسال ایمیل و SMS
             return op.Succeeded("محصول در حالت تحویل داده شده قرار گرفت.");
         }
 
-        public async Task<List<OrderItemViewModel>> GetItems(long orderId)
+        public async Task<List<OrderItemViewModel>> GetItems(long orderId, CancellationToken cancellation)
         {
-            return await _orderRepository.GetItems(orderId);
+            return await _orderRepository.GetItems(orderId, cancellation);
         }
 
         public List<OrderStatusDto> GetStatuses()
@@ -347,9 +355,9 @@ namespace ShopManagement.Application
             };
         }
 
-        public async Task<OrderTrackingSmsDto> GetOrderForTrackingSms(long orderId)
+        public async Task<OrderTrackingSmsDto> GetOrderForTrackingSms(long orderId, CancellationToken cancellation)
         {
-            var order = await _orderRepository.GetAsync(orderId);
+            var order = await _orderRepository.GetAsync(orderId, cancellation);
 
             if (order == null)
                 return null;
@@ -357,19 +365,19 @@ namespace ShopManagement.Application
             return new OrderTrackingSmsDto
             {
                 OrderId = orderId,
-                Mobile = order.RecieverMobile,
+                Mobile = order.ReceiverMobile,
                 PostTrackingNo = order.ShipTrackingNo ?? ""
             };
         }
 
-        public async Task<OrderViewModel?> GetDetails(long orderId)
+        public async Task<OrderViewModel?> GetDetails(long orderId, CancellationToken cancellation)
         {
-            return await _orderRepository.GetDetails(orderId);
+            return await _orderRepository.GetDetails(orderId, cancellation);
         }
 
-        public async Task<bool> UserOwnsOrder(string userId, long orderId)
+        public async Task<bool> UserOwnsOrder(long userId, long orderId, CancellationToken cancellation)
         {
-            return await _orderRepository.UserOwnsOrder(userId, orderId);
+            return await _orderRepository.UserOwnsOrder(userId, orderId, cancellation);
         }
     }
 }

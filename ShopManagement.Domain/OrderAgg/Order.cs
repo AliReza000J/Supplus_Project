@@ -4,13 +4,13 @@ namespace ShopManagement.Domain.OrderAgg
 {
     public class Order : BaseEntity
     {
-        public long AccountId { get; private set; }
+        public long UserId { get; private set; }
         public DateTime LastModifiedDate { get; set; } = DateTime.Now;
         public int PayMethod { get; private set; }
-        public string RecieverFullName { get; private set; }
-        public string RecieverMobile { get; private set; }
-        public string RecieverAddress { get; private set; }
-        public string RecieverZipCode { get; private set; }
+        public string ReceiverFullName { get; private set; }
+        public string ReceiverMobile { get; private set; }
+        public string ReceiverAddress { get; private set; }
+        public string ReceiverZipCode { get; private set; }
         public double TotalAmount { get; private set; }
         public double DiscountAmount { get; private set; }
         public double PayAmount { get; private set; }
@@ -24,23 +24,23 @@ namespace ShopManagement.Domain.OrderAgg
         public List<OrderItem> Items { get; private set; } = new();
         protected Order() { }
 
-        public Order(long accountId, string fullName, string mobile,
-            string address, string recieverZipCode, int payMethod, List<OrderItem> items)
+        public Order(long userId, string fullName, string mobile,
+            string address, string receiverZipCode, int payMethod, List<OrderItem> items)
         {
-            if (accountId <= 0) throw new ArgumentException(nameof(accountId));
+            if (userId <= 0) throw new ArgumentException(nameof(userId));
             if (items == null || !items.Any()) throw new ArgumentException("Order must have items", nameof(items));
 
-            AccountId = accountId;
-            RecieverFullName = fullName;
-            RecieverMobile = mobile;
-            RecieverAddress = address;
+            UserId = userId;
+            ReceiverFullName = fullName;
+            ReceiverMobile = mobile;
+            ReceiverAddress = address;
             PayMethod = payMethod;
             Items = items;
             TotalAmount = Items.Sum(i => i.Total());
             DiscountAmount = Items.Sum(i => i.TotalDiscAmount());
             PayAmount = Items.Sum(i => i.TotalPayAmount());
             Status = OrderStatus.Pending;
-            RecieverZipCode = recieverZipCode;
+            ReceiverZipCode = receiverZipCode;
         }
 
         public void Touch() => LastModifiedDate = DateTime.Now;

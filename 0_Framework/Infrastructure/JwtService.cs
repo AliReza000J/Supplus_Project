@@ -13,11 +13,11 @@ namespace _0_Framework.Infrastructure
         private readonly IConfiguration _config;
         public JwtService(IConfiguration config) => _config = config;
 
-        public string GenerateAccessToken(long accountId, string username, long roleId, IEnumerable<int> permissions, int expireMinutes = 15)
+        public string GenerateAccessToken(long userId, string username, long roleId, IEnumerable<int> permissions, int expireMinutes = 15)
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, accountId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Name, username ?? string.Empty),
                 new Claim(ClaimTypes.Role, roleId.ToString())
             };

@@ -7,9 +7,17 @@ namespace ShopManagement.Application.Contracts.Cart
     {
         public string? CartKey { get; set; }
         public long ProductId { get; set; }
+        public int Qty { get; set; }
+    }
+
+    public class AddToCartDto
+    {
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
+        [Range(1, long.MaxValue, ErrorMessage = ValidationMessages.IsRequired)]
+        public long ProductId { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        [Range(0, 200, ErrorMessage = ValidationMessages.InvalidInput)]
+        [Range(1, 200, ErrorMessage = ValidationMessages.InvalidInput)]
         public int Qty { get; set; }
     }
 }

@@ -4,8 +4,6 @@ $(document).ready(function () {
     initializeSelect2();
 });
 
-
-
 SinglePage.LoadModal = function () {
     var url = window.location.hash.toLowerCase();
     if (!url.startsWith("#showmodal")) {
@@ -192,6 +190,26 @@ function handleAjaxCall(method, url, data) {
     }
 }
 
+document.addEventListener('click', function (e) {
+    const toggle = e.target.closest('.password-toggle');
+    if (!toggle) return;
+
+    const wrapper = toggle.closest('.password-input-wrapper');
+    if (!wrapper) return;
+
+    const input = wrapper.querySelector('input');
+    const icon = toggle.querySelector('i');
+
+    if (!input || !icon) return;
+
+    const isPassword = input.type === 'password';
+
+    input.type = isPassword ? 'text' : 'password';
+
+    icon.classList.toggle('fa-eye', isPassword);
+    icon.classList.toggle('fa-eye-slash', !isPassword);
+});
+
 //jQuery.validator.addMethod("maxFileSize",
 //    function (value, element, params) {
 //        var size = element.files[0].size;
@@ -214,6 +232,27 @@ jQuery.validator.addMethod("maxfilesize", function (value, element, param) {
 
 // Adapter reads the "size" parameter from data-val-maxfilesize-size
 jQuery.validator.unobtrusive.adapters.addSingleVal("maxfilesize", "size");
+
+jQuery.validator.addMethod("passwordvalidation", function (value, element) {
+
+    if (!value) return true;
+
+    if (value.length < 6 || value.length > 20)
+        return false;
+
+    if (!/[A-Z]/.test(value))
+        return false;
+
+    if (!/[a-z]/.test(value))
+        return false;
+
+    if (!/[0-9]/.test(value))
+        return false;
+
+    return true;
+});
+
+jQuery.validator.unobtrusive.adapters.addBool("passwordvalidation");
 
 function handleJsonResponse(result) {
     if (!result)

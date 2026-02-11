@@ -6,7 +6,7 @@ namespace AccountManagement.Domain.RoleAgg
 {
     public interface IRoleRepository : IRepository<long, Role>
     {
-        Task<IEnumerable<RoleViewModel>> ListAsync();
-        Task<EditRole> GetDetails(long id);
+        Task<IEnumerable<RoleViewModel>> ListAsync(CancellationToken cancellation);
+        Task<EditRole?> GetDetails(long id, CancellationToken cancellation);
     }
 }

@@ -4,8 +4,8 @@ namespace ShopManagement.Domain.CartAgg
 {
     public interface ICartRepository: IRepository<long, Cart>
     {
-        Task<Cart?> GetByCartKeyAsync(string cartKey);
-        Task UpdateAsync(Cart cart);
+        Task<Cart?> GetOrCreateByCartKeyAsync(string cartKey, CancellationToken cancellation);
+        Task UpdateAsync(Cart cart, CancellationToken cancellation);
         void DeleteCartItem(CartItem cartItem);
     }
 }

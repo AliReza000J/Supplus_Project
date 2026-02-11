@@ -8,7 +8,7 @@
         public string? Message { get; set; }
         public string CreationDate { get; set; }
         //public long ParentId { get; set; }
-        public long OwnerRecordId { get; set; }
+        public long RecordId { get; set; }
         public int Type { get; set; }
         public int Rate { get; set; }
         public int LikeCount { get; set; }

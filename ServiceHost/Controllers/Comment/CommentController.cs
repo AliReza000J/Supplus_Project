@@ -3,6 +3,7 @@ using CommentManagement.Application.Contracts.Comment;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServiceHost.Filters;
 using System.Security.Claims;
 
 namespace ServiceHost.Controllers
@@ -15,7 +16,7 @@ namespace ServiceHost.Controllers
     /// All operations require JWT authentication.
     /// Each action automatically reads the user ID from the JWT token.
     /// </remarks>
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class CommentController : ControllerBase
     {
@@ -37,6 +38,7 @@ namespace ServiceHost.Controllers
         /// Adds a new comment by the authenticated user.
         /// </summary>
         /// <param name="command">The comment creation DTO.</param>
+        /// <param name="cancellation"></param>
         /// <remarks>
         /// The user ID and username are extracted from the JWT token.
         /// </remarks>
@@ -46,7 +48,8 @@ namespace ServiceHost.Controllers
         /// <response code="401">User is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("add")]
-        public async Task<ActionResult<ApiResponse<object>>> Add([FromBody] AddComment command)
+        [RateLimit(Limit = 5, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<object>>> Add([FromBody] AddComment command, CancellationToken cancellation)
         {
             if (command == null)
                 return BadRequest(ApiResponse<object>.Fail(message: "اطلاعات کامنت ارسال نشده است."));
@@ -56,10 +59,11 @@ namespace ServiceHost.Controllers
                 return Unauthorized(ApiResponse<object>.Fail(message: "کاربر شناسایی نشد."));
 
             var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
+            if (string.IsNullOrEmpty(usernameClaim))
                 return Unauthorized(ApiResponse<object>.Fail(message: "کاربر شناسایی نشد."));
 
-            var op = await _commentApplication.AddAsync(command, userIdClaim, usernameClaim);
+            var userId = long.Parse(userIdClaim);
+            var op = await _commentApplication.AddAsync(command, userId, usernameClaim, cancellation);
             var result = new ApiResponse<object>
             {
                 Success = op.IsSucceeded,
@@ -75,6 +79,7 @@ namespace ServiceHost.Controllers
         /// Edits a comment owned by the authenticated user.
         /// </summary>
         /// <param name="command">The comment edit DTO.</param>
+        /// <param name="cancellation"></param>
         /// <returns>An API response describing the result.</returns>
         /// <remarks>
         /// Only the owner of a comment is allowed to edit it.
@@ -84,7 +89,8 @@ namespace ServiceHost.Controllers
         /// <response code="401">User is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("edit")]
-        public async Task<ActionResult<ApiResponse<object>>> Edit([FromBody] EditComment command)
+        [RateLimit(Limit = 5, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<object>>> Edit([FromBody] EditComment command, CancellationToken cancellation)
         {
             if (command == null)
                 return BadRequest(ApiResponse<object>.Fail(message: "داده‌های ارسالی معتبر نیستند."));
@@ -93,7 +99,8 @@ namespace ServiceHost.Controllers
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized(ApiResponse<object>.Fail(message: "کاربر شناسایی نشد."));
 
-            var op = await _commentApplication.EditAsync(command, userIdClaim);
+            var userId = long.Parse(userIdClaim);
+            var op = await _commentApplication.EditAsync(command, userId, cancellation);
             var result = new ApiResponse<object>
             {
                 Success = op.IsSucceeded,
@@ -109,13 +116,14 @@ namespace ServiceHost.Controllers
         /// Deletes a comment owned by the authenticated user.
         /// </summary>
         /// <param name="commentId">The ID of the comment to delete.</param>
+        /// <param name="cancellation"></param>
         /// <returns>An API response describing the result.</returns>
         /// <response code="200">Comment deleted successfully.</response>
         /// <response code="400">Invalid comment ID.</response>
         /// <response code="401">User is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("delete/{commentId:long}")]
-        public async Task<ActionResult<ApiResponse<object>>> Delete(long commentId)
+        public async Task<ActionResult<ApiResponse<object>>> Delete(long commentId, CancellationToken cancellation)
         {
             if (commentId <= 0)
                 return BadRequest(ApiResponse<object>.Fail(message: "شناسه کامنت نامعتبر است."));
@@ -124,7 +132,8 @@ namespace ServiceHost.Controllers
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized(ApiResponse<object>.Fail(message: "کاربر شناسایی نشد."));
 
-            var op = await _commentApplication.DeleteAsync(commentId, userIdClaim);
+            var userId = long.Parse(userIdClaim);
+            var op = await _commentApplication.DeleteAsync(commentId, userId, cancellation);
             var result = new ApiResponse<object>
             {
                 Success = op.IsSucceeded,
@@ -140,13 +149,15 @@ namespace ServiceHost.Controllers
         /// Adds a "like" to a comment by the authenticated user.
         /// </summary>
         /// <param name="commentId">The target comment ID.</param>
+        /// <param name="cancellation"></param>
         /// <returns>An API response describing the result.</returns>
         /// <response code="200">Like added successfully.</response>
         /// <response code="400">Invalid comment ID.</response>
         /// <response code="401">User is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("like/{commentId:long}")]
-        public async Task<ActionResult<ApiResponse<object>>> Like(long commentId)
+        [RateLimit(Limit = 10, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<object>>> Like(long commentId, CancellationToken cancellation)
         {
             if (commentId <= 0)
                 return BadRequest(ApiResponse<object>.Fail(message: "شناسه کامنت نامعتبر است."));
@@ -155,7 +166,8 @@ namespace ServiceHost.Controllers
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized(ApiResponse<object>.Fail(message: "کاربر شناسایی نشد."));
 
-            var op = await _commentApplication.LikeAsync(commentId, userIdClaim);
+            var userId = long.Parse(userIdClaim);
+            var op = await _commentApplication.LikeAsync(commentId, userId, cancellation);
             var result = new ApiResponse<object>
             {
                 Success = op.IsSucceeded,
@@ -172,13 +184,15 @@ namespace ServiceHost.Controllers
         /// Adds a "dislike" to a comment by the authenticated user.
         /// </summary>
         /// <param name="commentId">The target comment ID.</param>
+        /// <param name="cancellation"></param>
         /// <returns>An API response describing the result.</returns>
         /// <response code="200">Dislike added successfully.</response>
         /// <response code="400">Invalid comment ID.</response>
         /// <response code="401">User is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("dislike/{commentId:long}")]
-        public async Task<ActionResult<ApiResponse<object>>> Dislike(long commentId)
+        [RateLimit(Limit = 10, Seconds = 60)]
+        public async Task<ActionResult<ApiResponse<object>>> Dislike(long commentId, CancellationToken cancellation)
         {
             if (commentId <= 0)
                 return BadRequest(ApiResponse<object>.Fail(message: "شناسه کامنت نامعتبر است."));
@@ -187,7 +201,8 @@ namespace ServiceHost.Controllers
             if (string.IsNullOrEmpty(userIdClaim))
                 return Unauthorized(ApiResponse<object>.Fail(message: "کاربر شناسایی نشد."));
 
-            var op = await _commentApplication.DislikeAsync(commentId, userIdClaim);
+            var userId = long.Parse(userIdClaim);
+            var op = await _commentApplication.DislikeAsync(commentId, userId, cancellation);
             var result = new ApiResponse<object>
             {
                 Success = op.IsSucceeded,

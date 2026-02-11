@@ -11,7 +11,7 @@
 }
 <div class="row">
     <div class="col-md-12">
-        <h3>مشاهده کامنت @Model.Comment.Username برای <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول") @Model.Comment?.OwnerName</strong></h3>
+        <h3>مشاهده کامنت @Model.Comment.Username برای <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول") @Model.Comment?.RecordName</strong></h3>
         <hr />
         <dl class="row">
             <dt class="col-md-2">کاربر</dt>
@@ -24,7 +24,7 @@
                 </dt>
             }
             <dt class="col-md-2">نام <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول")</strong></dt>
-            <dt class="col-md-10"> @Model.Comment?.OwnerName</dt>
+            <dt class="col-md-10"> @Model.Comment?.RecordName</dt>
             <dt class="col-md-2">امتیاز</dt>
             <dt class="col-md-10">@Model.Comment?.Rate.ToString().ToPersianNumber()</dt>
             <dt class="col-md-2">تاریخ</dt>
@@ -51,7 +51,6 @@
             <textarea readonly class="form-control" rows="6">@Model.Comment?.Message</textarea>
         </div>
 
-        @* نمایش پاسخ ادمین در صورت وجود *@
         @if (!string.IsNullOrWhiteSpace(Model.Comment?.Reply))
         {
             <div class="row">

@@ -5,10 +5,10 @@ namespace ShopManagement.Domain.UserProductInteractionAgg
     public class UserFavoriteProduct: BaseEntity
     {
         public long ProductId { get; set; }
-        public string UserId { get; set; }
+        public long UserId { get; set; }
 
         protected UserFavoriteProduct() { }
-        public UserFavoriteProduct(string userId, long productId)
+        public UserFavoriteProduct(long userId, long productId)
         {
             UserId = userId;
             ProductId = productId;

@@ -5,11 +5,11 @@ namespace ShopManagement.Application.Contracts.Slide
 {
     public interface ISlideApplication
     {
-        Task<OperationResult> Create(CreateSlide command);
-        Task<OperationResult> Edit(EditSlide command);
-        Task<OperationResult> Remove(long id);
-        Task<OperationResult> Restore(long id);
-        Task<EditSlide?> GetDetails(long id);
-        Task<List<SlideViewModel>> GetList();
+        Task<OperationResult> Create(CreateSlide command, CancellationToken cancellation);
+        Task<OperationResult> Edit(EditSlide command, CancellationToken cancellation);
+        Task<OperationResult> Remove(long id, CancellationToken cancellation);
+        Task<OperationResult> Restore(long id, CancellationToken cancellation);
+        Task<EditSlide?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<SlideViewModel>> GetList(CancellationToken cancellation);
     }
 }

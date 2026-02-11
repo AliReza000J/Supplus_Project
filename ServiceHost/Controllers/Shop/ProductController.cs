@@ -5,13 +5,13 @@ using AccountManagement.Application.Contracts.Account;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServiceHost.Filters;
 using ShopManagement.Application.Contracts.Product;
 using System.Security.Claims;
-using System.Threading;
 
 namespace ServiceHost.Controllers.Shop
 {
-    [Route("shop/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class ProductController : ControllerBase
     {
@@ -57,7 +57,7 @@ namespace ServiceHost.Controllers.Shop
                 return BadRequest(ApiResponse<ProductQueryModel>
                     .Fail(message: "آدرس محصول ناقص است."));
 
-            long? userId = null;
+            long userId = 0;
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
             if (long.TryParse(idClaim, out var parsedId))
                 userId = parsedId;
@@ -69,12 +69,12 @@ namespace ServiceHost.Controllers.Shop
             var categoryPath = string.Join('/', segments.Take(segments.Length - 1));
 
             // Fetch product by slug
-            var product = await _productQuery.GetProductDetails(productSlug, idClaim, cancellationToken);
+            var product = await _productQuery.GetProductDetails(productSlug, parsedId, cancellationToken);
             if (product == null)
                 return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "محصول یافت نشد."));
 
             // Validate category path matches the product's category
-            var category = await _productCategoryQuery.GetCategoryByFullSlug(categoryPath);
+            var category = await _productCategoryQuery.GetCategoryByFullSlug(categoryPath, cancellationToken);
             if (category == null || product.CategorySlug != category.Slug)
                 return NotFound(ApiResponse<ProductQueryModel>
                     .Fail(message: "محصول با مسیر گروه محصول موردنظر مطابقت ندارد."));
@@ -91,7 +91,7 @@ namespace ServiceHost.Controllers.Shop
             {
                 var now = DateTime.UtcNow;
 
-                var op = await _productApplication.IncrementProductViewCountAsync(productId, userId.ToString());
+                var op = await _productApplication.IncreaseProductViewCountAsync(productId, userId, cancellationToken);
                 if (op.IsSucceeded)
                 {
                     Response.Cookies.Append(
@@ -133,20 +133,21 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">Returned when the product does not exist.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("favorite/{productId}")]
+        [RateLimit(Limit = 3, Seconds = 60)]
         public async Task<ActionResult<ApiResponse<object>>> AddToFavorite(long productId, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var nameIdentifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrWhiteSpace(userId))
+            if (string.IsNullOrWhiteSpace(nameIdentifier))
                 return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربر یافت نشد."));
 
-            if (!long.TryParse(userId, out var accountId))
-                return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
+            if (!long.TryParse(nameIdentifier, out var userId))
+                return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
 
             if (!await _productQuery.Exists(productId, cancellationToken))
                 return NotFound(ApiResponse<object>.Fail("محصول یافت نشد."));
 
-            var op = await _productApplication.AddFavoriteAsync(userId, productId);
+            var op = await _productApplication.AddFavoriteAsync(userId, productId, cancellationToken);
 
             var result = new ApiResponse<object>
             {
@@ -181,20 +182,21 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="404">Returned when the product does not exist.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("favorite/{productId}")]
+        [RateLimit(Limit = 3, Seconds = 60)]
         public async Task<ActionResult<ApiResponse<object>>> DeleteFavorite(long productId, CancellationToken cancellationToken)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var nameIdentifier = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
-            if (string.IsNullOrWhiteSpace(userId))
+            if (string.IsNullOrWhiteSpace(nameIdentifier))
                 return Unauthorized(ApiResponse<AccountViewModel>.Fail("شناسه کاربر یافت نشد."));
 
-            if (!long.TryParse(userId, out var accountId))
-                return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {accountId} نامعتبر است."));
+            if (!long.TryParse(nameIdentifier, out var userId))
+                return Unauthorized(ApiResponse<AccountViewModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
 
             if (!await _productQuery.Exists(productId, cancellationToken))
                 return NotFound(ApiResponse<object>.Fail("محصول یافت نشد."));
 
-            var op = await _productApplication.DeleteFavoriteAsync(userId, productId);
+            var op = await _productApplication.DeleteFavoriteAsync(userId, productId, cancellationToken);
 
             var result = new ApiResponse<object>
             {
@@ -246,6 +248,7 @@ namespace ServiceHost.Controllers.Shop
         /// <response code="400">Search value is empty.</response>
         [AllowAnonymous]
         [HttpGet("search")]
+        [RateLimit(Limit = 30, Seconds = 60)]
         public async Task<ActionResult<ApiResponse<PagedResult<ProductQueryModel>>>> Search(
             string value, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
         {

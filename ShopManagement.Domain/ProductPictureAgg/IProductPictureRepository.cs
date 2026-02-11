@@ -5,8 +5,8 @@ namespace ShopManagement.Domain.ProductPictureAgg
 {
     public interface IProductPictureRepository : IRepository<long, ProductPicture>
     {
-        Task<EditProductPicture?> GetDetails(long id);
-        Task<ProductPicture?> GetWithProductAndCategory(long id);
-        Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel);
+        Task<EditProductPicture?> GetDetails(long id, CancellationToken cancellation);
+        Task<ProductPicture?> GetWithProductAndCategory(long id, CancellationToken cancellation);
+        Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel, CancellationToken cancellation);
     }
 }

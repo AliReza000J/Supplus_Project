@@ -1,14 +1,21 @@
 ﻿using _0_Framework.Application;
 using AccountManagement.Application.Contracts.Account;
+using AccountManagement.Domain.RoleAgg;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using ServiceHost.Filters;
+using SiteManagement.Application;
 
 namespace ServiceHost.Areas.Admin.Pages
 {
+    [RateLimit(Limit = 10, Seconds = 300)]
     public class LoginModel : PageModel
     {
         [TempData]
         public string LoginMessage { get; set; }
+
+        [TempData]
+        public string Logo { get; set; }
 
         [TempData]
         public string RegisterMessage { get; set; }
@@ -16,27 +23,31 @@ namespace ServiceHost.Areas.Admin.Pages
 
         private readonly IAccountApplication _accountApplication;
         private readonly IAuthHelper _authHelper;
+        private readonly GetLogoFromSetting _getLogoCommand;
 
-        public LoginModel(IAccountApplication accountApplication, IAuthHelper authHelper)
+        public LoginModel(IAccountApplication accountApplication, IAuthHelper authHelper, GetLogoFromSetting getLogoCommand)
         {
             _accountApplication = accountApplication;
             _authHelper = authHelper;
+            _getLogoCommand = getLogoCommand;
         }
 
-        public IActionResult OnGet()
+        public async Task<IActionResult> OnGet()
         {
             if (_authHelper.IsAuthenticated())
                 return RedirectToPage("/Index", new { area = "Admin" });
 
+            Logo = await _getLogoCommand.Execute(CancellationToken.None);
+
             return Page();
         }
 
-        public async Task<IActionResult> OnPostLoginAsync(Login command)
+        public async Task<IActionResult> OnPostLoginAsync(Login command, CancellationToken cancellation)
         {
-            var roleId = await _accountApplication.GetRoleIdByUsername(command.Username);
-            if (roleId != 5)
+            var roleId = await _accountApplication.GetRoleIdByUsername(command.Username, cancellation);
+            if (roleId != Roles.Customer)
             {
-                var result = await _accountApplication.Login(command);
+                var result = await _accountApplication.Login(command, cancellation);
                 if (result.IsSucceeded)
                 {
                     TempData["Toast.Success"] = result.IsSucceeded;
@@ -51,9 +62,9 @@ namespace ServiceHost.Areas.Admin.Pages
             return RedirectToPage("AccessDenied");
         }
 
-        public async Task<IActionResult> OnGetLogout()
+        public async Task<IActionResult> OnGetLogout(CancellationToken cancellation = default)
         {
-            await _accountApplication.Logout();
+            await _accountApplication.Logout(cancellation);
             return RedirectToPage("/Login");
         }
 

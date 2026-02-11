@@ -30,10 +30,6 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
-                    b.Property<long?>("AccountId")
-                        .IsRequired()
-                        .HasColumnType("bigint");
-
                     b.Property<string>("CartKey")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -43,6 +39,10 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<DateTime>("LastUpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<long?>("UserId")
+                        .IsRequired()
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -88,9 +88,6 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
-                    b.Property<long>("AccountId")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("CancellationReason")
                         .HasColumnType("nvarchar(max)");
 
@@ -121,21 +118,24 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<string>("PaymentRefId")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RecieverAddress")
+                    b.Property<string>("ReceiverAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RecieverFullName")
+                    b.Property<string>("ReceiverFullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("RecieverMobile")
+                    b.Property<string>("ReceiverMobile")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
 
-                    b.Property<string>("RecieverZipCode")
+                    b.Property<string>("ReceiverZipCode")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("ShipTrackingNo")
                         .HasColumnType("nvarchar(max)");
@@ -145,6 +145,9 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -455,9 +458,10 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<long>("ProductId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("UserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<long>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
 
                     b.HasKey("Id");
 
@@ -478,10 +482,8 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                     b.Property<long>("ProductId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

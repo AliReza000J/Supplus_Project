@@ -20,9 +20,9 @@ namespace ServiceHost.Areas.Admin.Pages.Accounts.Role
         }
 
         [NeedsPermission(AccountPermissions.ListRoles)]
-        public async Task OnGet()
+        public async Task OnGet(CancellationToken cancellation)
         {
-            Roles = (await _roleApplication.ListAsync()).ToList();
+            Roles = (await _roleApplication.ListAsync(cancellation)).ToList();
         }
     }
 }

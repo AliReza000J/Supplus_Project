@@ -13,7 +13,7 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
 {
     public class EditModel : PageModel
     {
-        public EditProduct Command;
+        public EditProduct? Command;
         public SelectList ProductCategories;
 
         private readonly IProductApplication _productApplication;
@@ -28,20 +28,20 @@ namespace ServiceHost.Areas.Admin.Pages.Shop.Products
         }
 
         [NeedsPermission(ShopPermissions.EditProduct)]
-        public async Task OnGet(long id)
+        public async Task OnGet(long id, CancellationToken cancellation)
         {
-            Command = await _productApplication.GetDetails(id);
-            Command.Categories = await _productCategoryApplication.GetLeafCategories();
-            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(), "Id", "Name");
+            Command = await _productApplication.GetDetails(id, cancellation);
+            Command.Categories = await _productCategoryApplication.GetLeafCategories(cancellation);
+            ProductCategories = new SelectList(await _productCategoryApplication.GetLeafCategories(cancellation), "Id", "Name");
         }
 
         [NeedsPermission(ShopPermissions.EditProduct)]
-        public async Task<IActionResult> OnPost(EditProduct command)
+        public async Task<IActionResult> OnPost(EditProduct command, CancellationToken cancellation)
         {
             if (!ModelState.IsValid)
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
-            var result = await _productApplication.Edit(command);
+            var result = await _productApplication.Edit(command, cancellation);
             _cacheService.Remove($"product:base:{command.Slug}");
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;

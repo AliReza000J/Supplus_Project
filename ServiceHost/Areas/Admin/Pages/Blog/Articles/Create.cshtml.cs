@@ -20,14 +20,14 @@ namespace ServiceHost.Areas.Admin.Pages.Blog.Articles
             _articleCategoryApplication = articleCategoryApplication;
         }
 
-        public async Task OnGet()
+        public async Task OnGet(CancellationToken cancellation)
         {
-            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(), "Id", "Name");
+            ArticleCategories = new SelectList(await _articleCategoryApplication.GetArticleCategories(cancellation), "Id", "Name");
         }
 
-        public async Task<IActionResult> OnPost(CreateArticle command)
+        public async Task<IActionResult> OnPost(CreateArticle command, CancellationToken cancellation)
         {
-            var result = await _articleApplication.Create(command);
+            var result = await _articleApplication.Create(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return RedirectToPage("./Index");

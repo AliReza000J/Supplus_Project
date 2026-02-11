@@ -26,42 +26,42 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         }
 
         [NeedsPermission(InventoryPermissions.ListInventory)]
-        public async Task OnGet(InventorySearchModel searchModel)
+        public async Task OnGet(InventorySearchModel searchModel, CancellationToken cancellation)
         {
-            Products = new SelectList(await _productApplication.GetProducts(), "Id", "Name");
-            Inventory = await _inventoryApplication.Search(searchModel);
+            Products = new SelectList(await _productApplication.GetProducts(cancellation), "Id", "Name");
+            Inventory = await _inventoryApplication.Search(searchModel, cancellation);
         }
 
         [NeedsPermission(InventoryPermissions.CreateInventory)]
-        public async Task<IActionResult> OnGetCreate()
+        public async Task<IActionResult> OnGetCreate(CancellationToken cancellation)
         {
             var command = new CreateInventory
             {
-                Products = await _productApplication.GetProducts()
+                Products = await _productApplication.GetProducts(cancellation)
             };
             return Partial("./Create", command);
         }
 
         [NeedsPermission(InventoryPermissions.CreateInventory)]
-        public async Task<JsonResult> OnPostCreate(CreateInventory command)
+        public async Task<JsonResult> OnPostCreate(CreateInventory command, CancellationToken cancellation)
         {
-            var result = await _inventoryApplication.Create(command);
+            var result = await _inventoryApplication.Create(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
-        public async Task<IActionResult> OnGetEdit(long id)
+        public async Task<IActionResult> OnGetEdit(long id, CancellationToken cancellation)
         {
-            var inventory = await _inventoryApplication.GetDetails(id);
-            inventory.Products = await _productApplication.GetProducts();
+            var inventory = await _inventoryApplication.GetDetails(id, cancellation);
+            inventory.Products = await _productApplication.GetProducts(cancellation);
             return Partial("Edit", inventory);
         }
 
         [NeedsPermission(InventoryPermissions.EditInventory)]
-        public async Task<JsonResult> OnPostEdit(EditInventory command)
+        public async Task<JsonResult> OnPostEdit(EditInventory command, CancellationToken cancellation)
         {
-            var result = await _inventoryApplication.Edit(command);
+            var result = await _inventoryApplication.Edit(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
@@ -77,9 +77,9 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         }
 
         [NeedsPermission(InventoryPermissions.Increase)]
-        public async Task<JsonResult> OnPostIncrease(IncreaseInventory command)
+        public async Task<JsonResult> OnPostIncrease(IncreaseInventory command, CancellationToken cancellation)
         {
-            var result = await _inventoryApplication.Increase(command);
+            var result = await _inventoryApplication.Increase(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
@@ -95,18 +95,18 @@ namespace ServiceHost.Areas.Admin.Pages.Inventory
         }
 
         [NeedsPermission(InventoryPermissions.Reduce)]
-        public async Task<JsonResult> OnPostReduce(ReduceInventory command)
+        public async Task<JsonResult> OnPostReduce(ReduceInventory command, CancellationToken cancellation)
         {
-            var result = await _inventoryApplication.ReduceByAdmin(command);
+            var result = await _inventoryApplication.ReduceByAdmin(command, cancellation);
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
             return new JsonResult(result);
         }
 
         [NeedsPermission(InventoryPermissions.OperationLog)]
-        public async Task<IActionResult> OnGetLog(long id)
+        public async Task<IActionResult> OnGetLog(long id, CancellationToken cancellation)
         {
-            var log = await _inventoryApplication.GetOperationLog(id);
+            var log = await _inventoryApplication.GetOperationLog(id, cancellation);
             return Partial("OperationLog", log);
         }
     }

@@ -4,11 +4,11 @@ namespace ShopManagement.Application.Contracts.ProductPicture
 {
     public interface IProductPictureApplication
     {
-        Task<OperationResult> Create(CreateProductPicture command);
-        Task<OperationResult> Edit(EditProductPicture command);
-        Task<OperationResult> Remove(long id);
-        Task<OperationResult> Restore(long id);
-        Task<EditProductPicture?> GetDetails(long id);
-        Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel);
+        Task<OperationResult> Create(CreateProductPicture command, CancellationToken cancellation);
+        Task<OperationResult> Edit(EditProductPicture command, CancellationToken cancellation);
+        Task<OperationResult> Remove(long id, CancellationToken cancellation);
+        Task<OperationResult> Restore(long id, CancellationToken cancellation);
+        Task<EditProductPicture?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel, CancellationToken cancellation);
     }
 }

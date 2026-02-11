@@ -14,17 +14,17 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<OrderViewModel?> GetDetails(long orderId)
+        public async Task<OrderViewModel?> GetDetails(long orderId, CancellationToken cancellation)
         {
             return await _context.Orders
                 .Where(x => x.Id == orderId)
                 .Select(x => new OrderViewModel
                 {
                     Id = x.Id,
-                    AccountId = x.AccountId,
+                    UserId = x.UserId,
                     DiscountAmount = x.DiscountAmount,
-                    RecieverFullName = x.RecieverFullName,
-                    RecieverMobile = x.RecieverMobile,
+                    ReceiverFullName = x.ReceiverFullName,
+                    ReceiverMobile = x.ReceiverMobile,
                     PostTrackingNumber = x.ShipTrackingNo ?? "",
                     PaymentMethod = PaymentMethod.GetMethodByCode(x.PayMethod),
                     PaymentMethodInt = x.PayMethod,
@@ -39,8 +39,8 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     PaymentReceiptPic = x.PaymentReceiptPic,
                     CanellationReason = x.CancellationReason,
                     LastModifiedDate = x.LastModifiedDate.ToFarsiFull(),
-                    RecieverAddress = x.RecieverAddress,
-                    RecieverZipCode = x.RecieverZipCode,
+                    ReceiverAddress = x.ReceiverAddress,
+                    ReceiverZipCode = x.ReceiverZipCode,
 
                     Items = x.Items.Select(i => new OrderItemViewModel
                     {
@@ -57,13 +57,13 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                         DiscountedQty = i.DiscountedQty
                     }).ToList()
                 })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
         }
 
-        public async Task<List<OrderItemViewModel>> GetItems(long orderId)
+        public async Task<List<OrderItemViewModel>> GetItems(long orderId, CancellationToken cancellation)
         {
-            var products = await _context.Products.Select(x => new { x.Id, x.Name, x.Picture }).ToListAsync();
-            var order = await _context.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == orderId);
+            var products = await _context.Products.Select(x => new { x.Id, x.Name, x.Picture }).ToListAsync(cancellation);
+            var order = await _context.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == orderId, cancellation);
             if (order == null)
                 return new List<OrderItemViewModel>();
 
@@ -91,31 +91,59 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             return items;
         }
 
-        public async Task<Order?> GetWithItemsAsync(long orderId)
+        public async Task<Order?> GetWithItemsAsync(long orderId, CancellationToken cancellation)
         {
             return await _context.Orders
                 .Include(x => x.Items)
                 .Where(x => x.Id == orderId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellation);
         }
 
-        public async Task<bool> HasThisUserBoughtProduct(long userId, long productId)
+        public async Task<bool> HasThisUserBoughtProduct(long userId, long productId, CancellationToken cancellation)
         {
             return await _context.Orders
                 .AnyAsync(o =>
-                    o.AccountId == userId &&
-                    o.Items.Any(i => i.ProductId == productId));
+                    o.UserId == userId &&
+                    o.Items.Any(i => i.ProductId == productId), cancellation);
         }
 
-        public async Task<List<OrderViewModel>> Search(OrderSearchModel searchModel)
+        public async Task<List<OrderViewModel>> Search(OrderSearchModel searchModel, CancellationToken cancellation)
         {
-            var query = _context.Orders
+            var query = _context.Orders.AsQueryable();
+
+
+            if (searchModel.UserId > 0) query = query.Where(x => x.UserId == searchModel.UserId);
+
+            if (searchModel.PaymentMethod == 1 || searchModel.PaymentMethod == 2)
+                query = query.Where(x => x.PayMethod == searchModel.PaymentMethod);
+
+            if (!string.IsNullOrWhiteSpace(searchModel.Mobile))
+                query = query.Where(x => x.ReceiverMobile == searchModel.Mobile);
+
+            if (searchModel.Status >= 0 && searchModel.Status != null)
+                query = query.Where(x => x.Status == searchModel.Status);
+            else
+                query = query.Where(x => x.Status >= OrderStatus.WaitingForManualVerification);
+
+            if (!string.IsNullOrWhiteSpace(searchModel.FromDate))
+            {
+                var start = searchModel.FromDate.ToGeorgianDateTime();
+                query = query.Where(x => x.CreationDate > start);
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchModel.ToDate))
+            {
+                var end = searchModel.ToDate.ToGeorgianDateTime();
+                query = query.Where(x => x.CreationDate < end);
+            }
+            var orders = await query
+                .OrderByDescending(x => x.Id)
                 .Select(x => new OrderViewModel
                 {
                     Id = x.Id,
-                    AccountId = x.AccountId,
-                    RecieverFullName = x.RecieverFullName,
-                    RecieverMobile = x.RecieverMobile,
+                    UserId = x.UserId,
+                    ReceiverFullName = x.ReceiverFullName,
+                    ReceiverMobile = x.ReceiverMobile,
                     PaymentMethod = PaymentMethod.GetMethodByCode(x.PayMethod),
                     PaymentMethodInt = x.PayMethod,
                     PayAmount = x.PayAmount,
@@ -123,43 +151,19 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     StatusTitle = OrderStatus.GetStatusTitleByCode(x.Status),
                     CreationDate = x.CreationDate.ToFarsiFull(),
                     RefNumber = x.PaymentRefId,
-                });
-
-            if (searchModel.AccountId > 0) query = query.Where(x => x.AccountId == searchModel.AccountId);
-
-            if (searchModel.PaymentMethod == 1 || searchModel.PaymentMethod == 2)
-                query = query.Where(x => x.PaymentMethodInt == searchModel.PaymentMethod);
-
-            if (!string.IsNullOrWhiteSpace(searchModel.Mobile))
-                query = query.Where(x => x.RecieverMobile == searchModel.Mobile);
-
-            if (searchModel.Status >= 0 && searchModel.Status != null)
-                query = query.Where(x => x.Status == searchModel.Status);
-
-            if (!string.IsNullOrWhiteSpace(searchModel.FromDate))
-            {
-                var start = searchModel.FromDate.ToGeorgianDateTime();
-                query = query.Where(x => x.CreationDate.ToGeorgianDateTime() > start);
-            }
-
-            if (!string.IsNullOrWhiteSpace(searchModel.ToDate))
-            {
-                var end = searchModel.ToDate.ToGeorgianDateTime();
-                query = query.Where(x => x.CreationDate.ToGeorgianDateTime() < end);
-            }
-
-            var orders = await query.OrderByDescending(x => x.Id).ToListAsync();
+                })
+                .ToListAsync(cancellation);
 
             return orders;
         }
 
-        public async Task<bool> UserOwnsOrder(string userId, long orderId)
+        public async Task<bool> UserOwnsOrder(long userId, long orderId, CancellationToken cancellation)
         {
-            if (!long.TryParse(userId, out var accountId))
+            if (userId <= 0)
                 return false;
 
             return await _context.Orders
-                .AnyAsync(o => o.Id == orderId && o.AccountId == accountId);
+                .AnyAsync(o => o.Id == orderId && o.UserId == userId, cancellation);
         }
     }
 }

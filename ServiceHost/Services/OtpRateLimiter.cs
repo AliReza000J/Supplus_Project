@@ -8,7 +8,7 @@ namespace ServiceHost.Services
         private readonly IMemoryCache _cache;
 
         private const int MaxAttempts = 3;
-        private static readonly TimeSpan Window = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan Window = TimeSpan.FromMinutes(10);
 
         public OtpRateLimiter(IMemoryCache cache)
         {

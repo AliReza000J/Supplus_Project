@@ -2,22 +2,19 @@
 
 namespace ShopManagement.Domain.UserProductInteractionAgg
 {
-    public class ProductView: BaseEntity
+    public class ProductView : BaseEntity
     {
         public long ProductId { get; set; }
-        public string? UserId { get; set; }
+        public long UserId { get; set; }
 
         protected ProductView()
         {
-            
+
         }
-        public ProductView(long productId, string? userId)
+        public ProductView(long productId, long userId)
         {
             ProductId = productId;
-            if(string.IsNullOrWhiteSpace(userId))
-                UserId = "-";
-            else
-                UserId = userId;
+            UserId = userId;
         }
     }
 }

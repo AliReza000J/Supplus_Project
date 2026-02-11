@@ -18,21 +18,22 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
             _shopContext = shopContext;
         }
 
-        public async Task<EditColleagueDiscount> GetDetails(long id)
+        public async Task<EditColleagueDiscount?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _discountContext.ColleagueDiscounts.Select(x => new EditColleagueDiscount
             {
                 Id = x.Id,
                 DiscountRate = x.DiscountRate,
                 ProductId = x.ProductId
-            }).FirstOrDefaultAsync(x => x.Id == id);
+            }).FirstOrDefaultAsync(x => x.Id == id,
+            cancellation);
         }
 
-        public async Task<List<ColleagueDiscountViewModel>> Search(ColleagueDiscountSearchModel searchModel)
+        public async Task<List<ColleagueDiscountViewModel>> Search(ColleagueDiscountSearchModel searchModel, CancellationToken cancellation)
         {
             var products = await _shopContext.Products
                 .Select(x => new { x.Id, x.Name })
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             var query = _discountContext.ColleagueDiscounts
                 .Select(x => new ColleagueDiscountViewModel
@@ -49,7 +50,7 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
 
             var discounts = await query
                 .OrderByDescending(x => x.Id)
-                .ToListAsync();
+                .ToListAsync(cancellation);
 
             discounts.ForEach(d =>
                 d.Product = products.FirstOrDefault(p => p.Id == d.ProductId)?.Name

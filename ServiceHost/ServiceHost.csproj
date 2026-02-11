@@ -37,6 +37,7 @@
 		<ProjectReference Include="..\DiscountManagement.Infrastructure\DiscountManagement.Configuration.csproj" />
 		<ProjectReference Include="..\InventoryManagement.Configuration\InventoryManagement.Configuration.csproj" />
 		<ProjectReference Include="..\ShopManagement.Configuration\ShopManagement.Configuration.csproj" />
+		<ProjectReference Include="..\SiteManagement.Configuration\SiteManagement.Configuration.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

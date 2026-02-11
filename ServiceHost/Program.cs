@@ -11,10 +11,10 @@ using Hangfire;
 using InventoryManagement.Configuration;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Polly;
-using QuestPDF.Drawing;
 using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Events;
@@ -23,6 +23,7 @@ using ServiceHost.Filters;
 using ServiceHost.Middleware;
 using ServiceHost.Services;
 using ShopManagement.Configuration;
+using SiteManagement.Configuration;
 using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -44,6 +45,10 @@ builder.Services.AddHttpClient("SmsIr", client =>
         handledEventsAllowedBeforeBreaking: 5,
         durationOfBreak: TimeSpan.FromMinutes(2)));
 
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 5 * 1024 * 1024; // 5MB
+});
 
 builder.Services.AddHttpContextAccessor();
 
@@ -81,8 +86,8 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-
 ShopManagementBootstrapper.Configure(builder.Services, connectionString);
+SiteManagementBootstrapper.Configure(builder.Services, connectionString);
 DiscountManagementBootstrapper.Configure(builder.Services, connectionString);
 InventoryManagementBootstrapper.Configure(builder.Services, connectionString);
 BlogManagementBootstrapper.Configure(builder.Services, connectionString);
@@ -104,22 +109,7 @@ builder.Services.AddHangfire(config =>
 
 builder.Services.AddHangfireServer();
 
-
 QuestPDF.Settings.License = LicenseType.Community;
-
-var fontPath = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "AdminTheme", "fonts", "IranianSans.ttf"); if (File.Exists(fontPath))
-    
-    if (File.Exists(fontPath))
-    {
-        using var fontStream = File.OpenRead(fontPath);
-        FontManager.RegisterFont(fontStream);
-        // برای اطمینان در کنسول چاپ میکنیم
-        Console.WriteLine("--- IranianSans Font Registered Successfully ---");
-    }
-    else
-    {
-        Console.WriteLine($"--- FONT NOT FOUND AT: {fontPath} ---");
-    }
 
 // Add services to the container.
 builder.Services.AddTransient<IFileUploader, FileUploader>();
@@ -142,7 +132,6 @@ builder.Services.AddHostedService<TokenCleanupBackgroundService>();
 builder.Services.AddScoped<PostTrackingSmsJob>();
 
 builder.Services.AddRazorPages();
-//builder.Services.AddControllers();
 
 builder.Services.AddControllers(options =>
 {
@@ -164,6 +153,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("ApiCors", policy =>
+//    {
+//        policy
+//            .WithOrigins("https://pharmaplus.ir")
+//            .AllowAnyMethod()
+//            .AllowAnyHeader()
+//            .AllowCredentials();
+//    });
+//});
+
 builder.Services.AddScoped<CustomJwtEvents>();
 
 // Auth
@@ -179,7 +180,7 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.Name = "PharmaPlusShopAuth";
     options.Cookie.HttpOnly = true;
     options.ExpireTimeSpan = TimeSpan.FromDays(3);
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SameSite = SameSiteMode.Strict;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 })
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -208,7 +209,7 @@ builder.Services.AddAuthorization(options =>
             Roles.GetRoleBy(2)
             ));
 
-    options.AddPolicy("Seller", policy =>
+    options.AddPolicy("Support", policy =>
         policy.RequireRole(
             Roles.GetRoleBy(1),
             Roles.GetRoleBy(2),
@@ -230,19 +231,15 @@ builder.Services.AddRazorPages()
     {
         //
         options.Conventions.AuthorizeAreaFolder("Admin", "/Accounts", "AdminOnly");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Site", "AdminOnly");
         //
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Shop", "Seller");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Inventory", "Seller");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Discounts", "Seller");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Shop", "Support");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Inventory", "Support");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Discounts", "Support");
         //
         options.Conventions.AuthorizeAreaFolder("Admin", "/Comments", "ContentUploader");
         options.Conventions.AuthorizeAreaFolder("Admin", "/Blog", "ContentUploader");
     });
-//.AddRazorPagesOptions(options =>
-//{
-//    options.Conventions.AddPageRoute("/Admin/AccessDenied", "AccessDenied");
-//});
-
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -272,16 +269,24 @@ builder.Services.AddSwaggerGen(c =>
     // OperationFilter for adding common responses (401/403) or examples (see below)
     c.OperationFilter<SwaggerDefaultResponsesOperationFilter>();
     c.OperationFilter<AddAuthRequirementOperationFilter>();
-
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
 
 var app = builder.Build();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
+
 app.UseRouting();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("AllowAll");
+}
+else
+{
+    app.UseWhen(ctx => ctx.Request.Path.StartsWithSegments("/api"),
+        appBuilder => appBuilder.UseCors("ApiCors"));
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -292,10 +297,23 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseStaticFiles();
 app.UseCookiePolicy();
-app.UseCors("AllowAll");
-app.UseHangfireDashboard("/hangfire");
+
+app.UseMiddleware<OrderImagesAuthorizationMiddleware>();
+
+app.UseStaticFiles();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHangfireDashboard("/hangfire");
+}
+else
+{
+    app.UseHangfireDashboard("/admin/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() }
+    });
+}
 
 app.MapControllers();
 app.MapRazorPages();

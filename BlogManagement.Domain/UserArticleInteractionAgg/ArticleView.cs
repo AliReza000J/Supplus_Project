@@ -5,19 +5,16 @@ namespace BlogManagement.Domain.UserArticleInteractionAgg
     public class ArticleView : BaseEntity
     {
         public long ArticleId { get; set; }
-        public string? UserId { get; set; }
+        public long UserId { get; set; }
 
         protected ArticleView()
         {
-            
+
         }
-        public ArticleView(long articleId, string? userId)
+        public ArticleView(long articleId, long userId)
         {
             ArticleId = articleId;
-            if(string.IsNullOrWhiteSpace(userId))
-                UserId = "-";
-            else
-                UserId = userId;
+            UserId = userId;
         }
     }
 }

@@ -4,10 +4,10 @@ namespace BlogManagement.Application.Contracts.ArticleCategory
 {
     public interface IArticleCategoryApplication
     {
-        Task<OperationResult> Create(CreateArticleCategory command);
-        Task<OperationResult> Edit(EditArticleCategory command);
-        Task<EditArticleCategory> GetDetails(long id);
-        Task<List<ArticleCategoryViewModel>> GetArticleCategories();
-        Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel);
+        Task<OperationResult> Create(CreateArticleCategory command, CancellationToken cancellation);
+        Task<OperationResult> Edit(EditArticleCategory command, CancellationToken cancellation);
+        Task<EditArticleCategory?> GetDetails(long id, CancellationToken cancellation);
+        Task<List<ArticleCategoryViewModel>> GetArticleCategories(CancellationToken cancellation);
+        Task<List<ArticleCategoryViewModel>> Search(ArticleCategorySearchModel searchModel, CancellationToken cancellation);
     }                                      
 }

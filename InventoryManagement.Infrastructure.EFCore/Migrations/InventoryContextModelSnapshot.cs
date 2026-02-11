@@ -64,7 +64,6 @@ namespace InventoryManagement.Infrastructure.EFCore.Migrations
                                 .HasColumnType("bigint");
 
                             b1.Property<string>("Description")
-                                .IsRequired()
                                 .HasMaxLength(1000)
                                 .HasColumnType("nvarchar(1000)");
 

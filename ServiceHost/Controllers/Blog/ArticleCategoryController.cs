@@ -12,7 +12,7 @@ namespace ServiceHost.Controllers.Blog
     /// This controller provides access to article category information,
     /// including listing all categories and retrieving individual categories by slug.
     /// </remarks>
-    [Route("blog/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class ArticleCategoryController : ControllerBase
     {

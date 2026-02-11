@@ -2,13 +2,13 @@
 {
     public interface IAuthHelper
     {
-        Task SignIn(AuthViewModel account);
+        Task SignIn(AuthViewModel account, bool rememberMe);
         bool IsAuthenticated();
         bool IsSuperAdmin();
         Task SignOut();
         string CurrentAccountRole();
         //string CurrentAccountMobile();
-        long CurrentAccountId();
+        long CurrentUserId();
         List<int> GetPermissions();
         AuthViewModel CurrentAccountInfo();
     }

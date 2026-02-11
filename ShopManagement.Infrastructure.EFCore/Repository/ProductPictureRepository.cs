@@ -15,7 +15,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public async Task<EditProductPicture?> GetDetails(long id)
+        public async Task<EditProductPicture?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.ProductPictures
                 .Select(x => new EditProductPicture
@@ -24,18 +24,18 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
                     ProductId = x.ProductId,
-                }).FirstOrDefaultAsync(x => x.Id == id);
+                }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<ProductPicture?> GetWithProductAndCategory(long id)
+        public async Task<ProductPicture?> GetWithProductAndCategory(long id, CancellationToken cancellation)
         {
             return await _context.ProductPictures
                 .Include(x => x.Product)
                 .ThenInclude(x => x.Category)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
-        public async Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel)
+        public async Task<List<ProductPictureViewModel>> Search(ProductPictureSearchModel searchModel, CancellationToken cancellation)
         {
             var query = _context.ProductPictures
                 .Include(x => x.Product)
@@ -52,7 +52,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             if (searchModel.ProductId != 0)
                 query = query.Where(x => x.ProductId == searchModel.ProductId);
 
-            return await query.OrderByDescending(x => x.Id).ToListAsync();
+            return await query.OrderByDescending(x => x.Id).ToListAsync(cancellation);
         }
     }
 }

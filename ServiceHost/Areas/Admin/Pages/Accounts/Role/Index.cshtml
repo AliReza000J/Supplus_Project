@@ -44,7 +44,7 @@
                                         <td>@item.Name</td>
                                         <td>@item.CreationDate</td>
                                         <td>
-                                            @if(item.Id != 1)
+                                            @if (item.Id != 1)
                                             {
                                                 <a Permission="AccountPermissions.EditRole"
                                                    class="btn btn-warning waves-effect waves-light m-b-5" asp-page="Edit" asp-route-id="@item.Id">
@@ -68,8 +68,10 @@
     <script src="~/adminTheme/assets/datatables/dataTables.bootstrap.js"></script>
 
     <script type="text/javascript">
-        $(document).ready(function() {
-            $('#datatable').dataTable();
+        $(document).ready(function () {
+            $('#datatable').dataTable({
+                order: [[0, 'desc']]
+            });
         });
     </script>
 }
