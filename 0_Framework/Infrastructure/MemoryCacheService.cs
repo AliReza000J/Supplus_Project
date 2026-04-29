@@ -22,36 +22,32 @@ namespace _0_Framework.Application
             Func<Task<T>> factory,
             TimeSpan? absoluteExpiration = null,
             TimeSpan? slidingExpiration = null,
-            long? size = null)
+            long? size = null,
+            CancellationToken cancellationToken = default)
         {
             if (_cache.TryGetValue(key, out T cachedValue))
             {
-                _logger.LogInformation("CACHE MISS → {0}", key);
+                _logger.LogInformation("CACHE HIT → {0}", key);
                 return cachedValue;
             }
 
-            _logger.LogInformation("CACHE MISS → {0}", key);
+            var myLock = _locks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
 
-            var myLock = _locks.GetOrAdd(key, k => new SemaphoreSlim(1, 1));
-
-            await myLock.WaitAsync();
+            await myLock.WaitAsync(cancellationToken);
             try
             {
                 if (_cache.TryGetValue(key, out cachedValue))
                     return cachedValue;
 
+                _logger.LogInformation("CACHE MISS → {0}. Fetching from source...", key);
                 T value = await factory();
 
-                var options = new MemoryCacheEntryOptions();
-
-                if (absoluteExpiration != null)
-                    options.AbsoluteExpirationRelativeToNow = absoluteExpiration;
-
-                if (slidingExpiration != null)
-                    options.SlidingExpiration = slidingExpiration;
-
-                if (size != null)
-                    options.SetSize(size.Value);
+                var options = new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = absoluteExpiration ?? TimeSpan.FromMinutes(20),
+                    SlidingExpiration = slidingExpiration,
+                    Size = size ?? 1
+                };
 
                 _cache.Set(key, value, options);
 
@@ -60,7 +56,7 @@ namespace _0_Framework.Application
             finally
             {
                 myLock.Release();
-                _locks.TryRemove(key, out _);
+                //_locks.TryRemove(key, out _);
             }
         }
 

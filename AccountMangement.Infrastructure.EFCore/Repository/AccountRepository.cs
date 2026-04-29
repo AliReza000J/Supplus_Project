@@ -1,9 +1,8 @@
 ﻿using _0_Framework.Application;
 using _0_Framework.Infrastructure;
-using AccountManagement.Application.Contracts.Account;
+using AccountManagement.Application.Contracts.Account.ApplicationDTOs;
 using AccountManagement.Domain.AccountAgg;
 using Microsoft.EntityFrameworkCore;
-
 
 namespace AccountManagement.Infrastructure.EFCore.Repository
 {
@@ -21,7 +20,7 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             return await _context.Accounts.Select(x => new EditAccount
             {
                 Id = x.Id,
-                Fullname = x.Fullname,
+                Fullname = x.Fullname ?? "تکمیل نشده",
                 Mobile = x.Mobile,
                 RoleId = x.RoleId,
                 Username = x.Username,
@@ -53,15 +52,14 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
                 RoleId = x.RoleId,
                 Username = x.Username,
                 IsActive = x.IsActive,
-                CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
+                CreationDate = x.CreationDate.ToFarsi()
             });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Username))
                 query = query.Where(x => x.Username.Contains(searchModel.Username));
 
             if (!string.IsNullOrWhiteSpace(searchModel.Mobile))
-                query = query.Where(x => x.Mobile.Contains(searchModel.Mobile)
-                || x.Mobile.Contains(searchModel.Mobile.ToEnglishNumber()));
+                query = query.Where(x => x.Mobile.Contains(searchModel.Mobile));
 
             if (searchModel.RoleId > 0)
                 query = query.Where(x => x.RoleId == searchModel.RoleId);
@@ -72,22 +70,38 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             return await query.OrderByDescending(x => x.Id).ToListAsync(cancellation);
         }
 
-        public async Task<bool> ExistsAsync(string username, string mobile, CancellationToken cancellation)
-        {
-            return await _context.Accounts
-                .Where(x => x.IsActive)
-                .AnyAsync(x => x.Username == username || x.Mobile == mobile, cancellation);
-        }
-
         public async Task<Account?> GetByUsernameAsync(string username, CancellationToken cancellation)
         {
             return await _context.Accounts.FirstOrDefaultAsync(x => x.Username == username, cancellation);
         }
 
-        public async Task<Account?> GetAccountByMobile(string mobile, CancellationToken cancellation)
+        public async Task<Account?> GetByMobileAsync(string mobile, CancellationToken cancellation)
         {
             return await _context.Accounts
                 .FirstOrDefaultAsync(x => x.Mobile == mobile, cancellation);
+        }
+
+        public async Task<Account?> GetByEmailAsync(string email, CancellationToken cancellation)
+        {
+            return await _context.Accounts
+                .FirstOrDefaultAsync(x => x.Email.ToLower() == email.ToLower(), cancellation);
+        }
+
+        public async Task UpdatePasswordAsync(long userId, string hashedPassword, CancellationToken ct = default)
+        {
+            var account = await _context.Accounts.FirstOrDefaultAsync(x => x.Id == userId, ct);
+
+            if (account == null)
+                return;
+
+            account.ChangePassword(hashedPassword);
+            await Task.CompletedTask;
+        }
+
+        public async Task<Account?> GetByUsernameOrMobileAsync(string usernameOrMobile, CancellationToken cancellation)
+        {
+            return await _context.Accounts
+                .FirstOrDefaultAsync(x => x.Mobile == usernameOrMobile || x.Username == usernameOrMobile, cancellation);
         }
     }
 }

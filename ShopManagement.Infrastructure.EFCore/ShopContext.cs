@@ -23,7 +23,6 @@ namespace ShopManagement.Infrastructure.EFCore
         public DbSet<ProductView> ProductViews { get; set; }
         public DbSet<UserFavoriteProduct> UserFavoriteProducts { get; set; }
 
-
         public ShopContext(DbContextOptions<ShopContext> options): base(options)
         {
             

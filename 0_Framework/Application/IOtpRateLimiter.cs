@@ -4,5 +4,4 @@
     {
         bool CanSend(string mobile);
     }
-
 }

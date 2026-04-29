@@ -41,6 +41,9 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     LastModifiedDate = x.LastModifiedDate.ToFarsiFull(),
                     ReceiverAddress = x.ReceiverAddress,
                     ReceiverZipCode = x.ReceiverZipCode,
+                    CouponCode = x.CouponCode,
+                    AppliedCouponId = x.AppliedCouponId,
+                    OrderCouponAmount = x.OrderCouponAmount,
 
                     Items = x.Items.Select(i => new OrderItemViewModel
                     {
@@ -111,7 +114,6 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
         {
             var query = _context.Orders.AsQueryable();
 
-
             if (searchModel.UserId > 0) query = query.Where(x => x.UserId == searchModel.UserId);
 
             if (searchModel.PaymentMethod == 1 || searchModel.PaymentMethod == 2)
@@ -127,13 +129,13 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
 
             if (!string.IsNullOrWhiteSpace(searchModel.FromDate))
             {
-                var start = searchModel.FromDate.ToGeorgianDateTime();
+                var start = searchModel.FromDate.ToGregorianDateTime();
                 query = query.Where(x => x.CreationDate > start);
             }
 
             if (!string.IsNullOrWhiteSpace(searchModel.ToDate))
             {
-                var end = searchModel.ToDate.ToGeorgianDateTime();
+                var end = searchModel.ToDate.ToGregorianDateTime();
                 query = query.Where(x => x.CreationDate < end);
             }
             var orders = await query

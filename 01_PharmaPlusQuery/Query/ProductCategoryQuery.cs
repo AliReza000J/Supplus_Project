@@ -2,6 +2,7 @@
 using _01_PharmaPlusQuery.Contracts.DTOs;
 using _01_PharmaPlusQuery.Contracts.Product;
 using _01_PharmaPlusQuery.Contracts.ProductCategory;
+using DiscountManagement.Domain.DiscountAgg;
 using DiscountManagement.Infrastructure.EFCore;
 using InventoryMangement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -22,23 +23,6 @@ namespace _01_PharmaPlusQuery.Query
             _inventoryContext = inventoryContext;
             _discountContext = discountContext;
         }
-
-
-
-        //public async Task<List<ProductCategoryQueryModel>> GetProductCategories()
-        //{
-        //    return await _shopContext.ProductCategories
-        //        .Select(x => new ProductCategoryQueryModel
-        //        {
-        //            Id = x.Id,
-        //            Name = x.Name,
-        //            Picture = x.Picture,
-        //            PictureAlt = x.PictureAlt,
-        //            PictureTitle = x.PictureTitle,
-        //            Slug = x.Slug,
-        //            ProductsCount = x.Products.Count
-        //        }).AsNoTracking().ToListAsync();
-        //}
 
         public async Task<List<ProductCategoryQueryModel>> GetAll(CancellationToken cancellation)
         {
@@ -72,156 +56,8 @@ namespace _01_PharmaPlusQuery.Query
 
             return BuildTree(null); // root-level categories
         }
-        //public async Task<List<ProductCategoryQueryModel>> GetLeafProductCategories()
-        //{
-        //    return await _shopContext.ProductCategories
-        //        .Where(x => !x.Children.Any())
-        //        .Select(x => new ProductCategoryQueryModel
-        //        {
-        //            Id = x.Id,
-        //            Name = x.Name,
-        //            Picture = x.Picture,
-        //            PictureAlt = x.PictureAlt,
-        //            PictureTitle = x.PictureTitle,
-        //            Slug = x.Slug,
-        //            ProductsCount = x.Products.Count
-        //        })
-        //        .AsNoTracking()
-        //        .ToListAsync();
-        //}
-        //public async Task<ProductCategoryQueryModel> GetLeafProductCategoryWithProductsBy(string slug) //leaves
-        //{
-        //    var inventory = await _inventoryContext.Inventory
-        //        .Select(x => new { x.ProductId, x.UnitPrice })
-        //        .AsNoTracking()
-        //        .ToListAsync();
 
-        //    var discounts = await _discountContext.CustomerDiscounts
-        //        .Where(x => x.StartDate < DateTime.Now && x.EndDate > DateTime.Now)
-        //        .Select(x => new { x.ProductId, x.DiscountRate, x.EndDate })
-        //        .AsNoTracking()
-        //        .ToListAsync();
-
-        //    var category = await _shopContext.ProductCategories
-        //        .Where(x => !x.Children.Any())
-        //        .Include(x => x.Products)
-        //        .ThenInclude(x => x.Category)
-        //        .AsNoTracking()
-        //        .Select(x => new ProductCategoryQueryModel
-        //        {
-        //            Id = x.Id,
-        //            Name = x.Name,
-        //            Description = x.Description,
-        //            MetaDescription = x.MetaDescription,
-        //            Keywords = x.Keywords,
-        //            Slug = x.Slug,
-        //            Picture = x.Picture,
-        //            PictureAlt = x.PictureAlt,
-        //            PictureTitle = x.PictureTitle,
-        //            Products = x.Products.Select(p => new ProductQueryModel
-        //            {
-        //                Id = p.Id,
-        //                Category = p.Category.Name,
-        //                Name = p.Name,
-        //                Picture = p.Picture,
-        //                PictureAlt = p.PictureAlt,
-        //                PictureTitle = p.PictureTitle,
-        //                Slug = p.Slug,
-        //            }).ToList(),
-        //            ProductsCount = x.Products.Count,
-        //        })
-        //        .FirstOrDefaultAsync(x => x.Slug == slug);
-
-        //    if (category == null)
-        //        return null;
-
-        //    foreach (var product in category.Products)
-        //    {
-        //        var productInventory = inventory.FirstOrDefault(x => x.ProductId == product.Id);
-        //        if (productInventory == null)
-        //            continue;
-
-        //        var price = productInventory.UnitPrice;
-        //        product.Price = price.ToMoney();
-
-        //        var discount = discounts.FirstOrDefault(x => x.ProductId == product.Id);
-        //        if (discount != null && discount.DiscountRate > 0)
-        //        {
-        //            var rate = discount.DiscountRate;
-        //            product.DiscountRate = rate;
-        //            product.DiscountExpireDate = discount.EndDate.ToDiscountFormat();
-        //            product.HasDiscount = true;
-        //            var discountAmount = Math.Round((price * rate) / 100);
-        //            product.PriceWithDiscount = (price - discountAmount).ToMoney();
-        //        }
-        //    }
-
-        //    return category;
-        //}
-
-        //public async Task<List<ProductCategoryQueryModel>> GetProductCategoriesWithProducts()
-        //{
-        //    var inventory = await _inventoryContext.Inventory
-        //        .Select(x => new { x.ProductId, x.UnitPrice })
-        //        .AsNoTracking()
-        //        .ToListAsync();
-
-        //    var discounts = await _discountContext.CustomerDiscounts
-        //        .Where(x => x.StartDate < DateTime.Now && x.EndDate > DateTime.Now)
-        //        .Select(x => new { x.ProductId, x.DiscountRate })
-        //        .AsNoTracking()
-        //        .ToListAsync();
-
-        //    var categories = await _shopContext.ProductCategories
-        //        .Include(x => x.Products)
-        //        .ThenInclude(x => x.Category)
-        //        .AsNoTracking()
-        //        .Select(x => new ProductCategoryQueryModel
-        //        {
-        //            Id = x.Id,
-        //            Name = x.Name,
-        //            Slug = x.Slug,
-
-        //            Products = x.Products.Select(p => new ProductQueryModel
-        //            {
-        //                Id = p.Id,
-        //                Category = p.Category.Name,
-        //                Name = p.Name,
-        //                Picture = p.Picture,
-        //                PictureAlt = p.PictureAlt,
-        //                PictureTitle = p.PictureTitle,
-        //                Slug = p.Slug
-        //            }).ToList()
-        //        })
-        //        .ToListAsync();
-
-        //    foreach (var category in categories)
-        //    {
-        //        foreach (var product in category.Products)
-        //        {
-        //            var inventoryRecord = inventory.FirstOrDefault(x => x.ProductId == product.Id);
-        //            if (inventoryRecord == null)
-        //                continue;
-
-        //            var price = inventoryRecord.UnitPrice;
-        //            product.Price = price.ToMoney();
-
-        //            var discount = discounts.FirstOrDefault(x => x.ProductId == product.Id);
-        //            if (discount != null && discount.DiscountRate > 0)
-        //            {
-        //                var rate = discount.DiscountRate;
-        //                product.DiscountRate = rate;
-        //                product.HasDiscount = true;
-        //                var discountAmount = Math.Round((price * rate) / 100);
-        //                product.PriceWithDiscount = (price - discountAmount).ToMoney();
-        //            }
-        //        }
-        //    }
-
-        //    return categories;
-        //}
-
-        public async Task<ProductCategoryQueryModel> GetCategoryByFullSlug(string fullSlug, CancellationToken cancellation)
+        public async Task<ProductCategoryQueryModel?> GetCategoryByFullSlug(string fullSlug, CancellationToken cancellation)
         {
             var now = DateTime.Now;
 
@@ -240,10 +76,12 @@ namespace _01_PharmaPlusQuery.Query
             .Select(x => new ProductInventoryDto { ProductId = x.ProductId, UnitPrice = x.UnitPrice })
             .ToListAsync(cancellation);
 
-            var discounts = await _discountContext.CustomerDiscounts
-                .Where(x => x.StartDate < now && x.EndDate > now)
-                .Select(x => new ProductDiscountDto { ProductId = x.ProductId, DiscountRate = x.DiscountRate, EndDate = x.EndDate })
-                .ToListAsync(cancellation);
+            var activeDiscounts = await _discountContext.Discounts
+            .Include(x => x.Targets)
+            .Where(x => x.IsActive && x.Type == (Discount.DiscountType)1 
+            && x.ApplyType == (Discount.DiscountApplyType)1) // 1: Automatic, 1: OnProduct
+            .Where(x => x.StartDate < now && x.EndDate > now)
+            .ToListAsync(cancellation);
 
             var result = new ProductCategoryQueryModel
             {
@@ -266,7 +104,7 @@ namespace _01_PharmaPlusQuery.Query
             if (!category.Children.Any())
             {
                 result.Products = category.Products
-                    .Select(p => MapProductWithPrice(p, inventory, discounts))
+                    .Select(p => MapProductWithPrice(p, inventory, activeDiscounts))
                     .OrderByDescending(p => p.Id)
                     .ToList();
 
@@ -276,13 +114,16 @@ namespace _01_PharmaPlusQuery.Query
             {
                 foreach (var child in category.Children)
                 {
-                    var childProducts = await _shopContext.Products
+                    var childProductsRaw = await _shopContext.Products
                         .Where(p => p.CategoryId == child.Id)
                         .OrderByDescending(p => p.Id)
                         .Take(10)
                         .AsNoTracking()
-                        .Select(p => MapProductWithPrice(p, inventory, discounts))
                         .ToListAsync(cancellation);
+
+                    var childProducts = childProductsRaw
+                        .Select(p => MapProductWithPrice(p, inventory, activeDiscounts))
+                        .ToList();
 
                     result.Children.Add(new ProductCategoryQueryModel
                     {
@@ -306,11 +147,13 @@ namespace _01_PharmaPlusQuery.Query
 
         private static ProductQueryModel MapProductWithPrice(Product p,
             List<ProductInventoryDto> inventory,
-            List<ProductDiscountDto> discounts)
+            List<Discount> activeDiscounts)
         {
             var product = new ProductQueryModel
             {
                 Id = p.Id,
+                CategoryId = p.CategoryId,
+                Brand = p.Brand,
                 Name = p.Name,
                 Slug = p.Slug,
                 Picture = p.Picture,
@@ -323,17 +166,32 @@ namespace _01_PharmaPlusQuery.Query
             if (inv != null)
             {
                 var price = inv.UnitPrice;
-                product.Price = price.ToMoney().ToPersianNumber();
+                product.Price = price.ToMoney();
+                product.IsInStock = inv.InStock;
 
-                var discount = discounts.FirstOrDefault(x => x.ProductId == p.Id);
-                if (discount != null && discount.DiscountRate > 0)
+                var bestDiscount = activeDiscounts
+                    .Where(d => d.Targets.Any(t =>
+                        t.TargetType == (DiscountTarget.DiscountTargetType)4 || // اعمال به همه
+                        (t.TargetType == (DiscountTarget.DiscountTargetType)1 && t.ProductId == p.Id) || // تخفیف محصولی
+                        (t.TargetType == (DiscountTarget.DiscountTargetType)3 && t.CategoryId == p.CategoryId) || // تخفیف دسته‌بندی
+                        (t.TargetType == (DiscountTarget.DiscountTargetType)2 && !string.IsNullOrEmpty(p.Brand) && t.BrandName?.ToLower() == p.Brand.ToLower()) // تخفیف برندی
+                    ))
+                    .OrderByDescending(x => x.Percentage)
+                    .FirstOrDefault();
+
+                if (bestDiscount != null)
                 {
-                    var rate = discount.DiscountRate;
+                    var rate = bestDiscount.Percentage;
                     var discountAmount = Math.Round(price * rate / 100);
                     product.HasDiscount = true;
                     product.DiscountRate = rate;
-                    product.DiscountExpireDate = discount.EndDate.ToFarsi().ToPersianNumber();
-                    product.PriceWithDiscount = (price - discountAmount).ToMoney().ToPersianNumber();
+                    product.DiscountExpireDate = bestDiscount.EndDate?.ToFarsi() ?? "";
+                    product.PriceWithDiscount = (price - discountAmount).ToMoney();
+                }
+                else
+                {
+                    product.PriceWithDiscount = product.Price;
+                    product.HasDiscount = false;
                 }
             }
 

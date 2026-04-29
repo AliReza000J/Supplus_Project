@@ -7,11 +7,21 @@ namespace ShopManagement.Application.Contracts.Order
     {
         public long OrderId { get; set; }
 
-        [Required(ErrorMessage =ValidationMessages.IsRequired)]
-        [RegularExpression(@"^\d+$", ErrorMessage = "کد رهگیری باید فقط شامل اعداد باشد.")]
-        public string PostTrackingNo { get; set; }
-
+        private string _postTrackingNo;
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        public string Mobile { get; set; }
+        [RegularExpression(@"^\d+$", ErrorMessage = "کد رهگیری باید فقط شامل اعداد باشد.")]
+        public string PostTrackingNo
+        {
+            get => _postTrackingNo;
+            set => _postTrackingNo = value?.ToEnglishNumber();
+        }
+
+        private string _mobile;
+        [Required(ErrorMessage = ValidationMessages.IsRequired)]
+        public string Mobile
+        {
+            get => _mobile;
+            set => _mobile = value?.ToEnglishNumber();
+        }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using _0_Framework.Domain;
+using _0_Framework.Application;
 using AccountManagement.Domain.RoleAgg;
-using System.Reflection;
 
 namespace AccountManagement.Domain.AccountAgg
 {
@@ -19,14 +19,16 @@ namespace AccountManagement.Domain.AccountAgg
         // Navigation
         public Role? Role { get; private set; }
 
-        // --- Constructor for creation ---
+        // --- EF Core Constructor ---
+        protected Account() { }
+
+        // --- Constructor for Full Creation (Admin Panel) ---
         public Account(string fullname, string username, string mobile, string? email, string password, long roleId, string profilePhoto)
         {
             Fullname = fullname;
-            Username = username;
+            Username = username.ToLower();
             Mobile = mobile;
-            if (!string.IsNullOrWhiteSpace(email))
-                Email = email;
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.ToLower();
             Password = password;
             RoleId = roleId;
             ProfilePhoto = profilePhoto;
@@ -34,53 +36,118 @@ namespace AccountManagement.Domain.AccountAgg
             IsProfileCompleted = true;
         }
 
-        public Account(string mobile, string photo)
+        // --- Constructor for Quick Creation (Store API - OTP) ---
+        public Account(string mobile, string defaultPhoto, long customerRoleId = 5)
         {
-            Fullname = null;
             Mobile = mobile;
-            Username = mobile;
+
+            string mobileStr = Mobile;
+            string last4Digits = mobileStr.Length >= 4 ? mobileStr.Substring(mobileStr.Length - 4) : mobileStr;
+            Username = $"user{last4Digits}";
+
+            Fullname = null;
             Password = null;
+            Email = null;
             IsProfileCompleted = false;
             IsActive = true;
-            RoleId = Roles.Customer;
-            ProfilePhoto = photo;
+            RoleId = customerRoleId;
+            ProfilePhoto = defaultPhoto;
         }
 
-        // --- Behaviors (methods) ---
-        public void Edit(string fullname, string username,
-            string? email, string mobile, long roleId, string profilePhoto)
+
+        // --- Behaviors (Methods) ---
+
+        public void EditFullInfo(string fullname, string username, string? email, string mobile, long roleId, string profilePhoto)
         {
-            Fullname = fullname;
-            Username = username;
+            if (Id == 1 || this.Username.ToLower() == "admin")
+            {
+                Fullname = "admin";
+                Username = "admin";
+                RoleId = 1;
+            }
+            else
+            {
+                Fullname = fullname;
+                Username = username.ToLower();
+                RoleId = roleId;
+            }
+
             Mobile = mobile;
-            if (!string.IsNullOrWhiteSpace(email))
-                Email = email;
-            RoleId = roleId;
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.ToLower();
+
             if (!string.IsNullOrWhiteSpace(profilePhoto))
                 ProfilePhoto = profilePhoto;
         }
 
-        public void CompleteProfile(string fullname,
-            string username, string? email, string password,
-            string profilePhoto)
+        public void UpdatePersonalProfileAndMobile(string fullname, string username, string mobile, string? email, string profilePhoto)
         {
-            Fullname = fullname;
-            Username = username;
-            if (!string.IsNullOrWhiteSpace(email))
-                Email = email;
-            Password = password;
+            if (Id == 1 || this.Username.ToLower() == "admin")
+            {
+                Fullname = "admin";
+                Username = "admin";
+            }
+            else
+            {
+                Fullname = fullname;
+                Username = username.ToLower();
+            }
+
+            Mobile = mobile;
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.ToLower();
+
             if (!string.IsNullOrWhiteSpace(profilePhoto))
                 ProfilePhoto = profilePhoto;
+
+        }
+
+        public void UpdateProfileInfo(string fullname, string username, string? email, string profilePhoto)
+        {
+            if (Id == 1 || this.Username.ToLower() == "admin")
+            {
+                Fullname = "admin";
+                Username = "admin";
+            }
+            else
+            {
+                Fullname = fullname;
+                Username = username.ToLower();
+            }
+
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.ToLower();
+
+            if (!string.IsNullOrWhiteSpace(profilePhoto))
+                ProfilePhoto = profilePhoto;
+
             IsProfileCompleted = true;
         }
+
+        public void UpdateSuperAdmin(string email, string mobile)
+        {
+            Email = email.ToLower();
+            Mobile = mobile;
+        }
+
 
         public void ChangePassword(string newPassword)
         {
             Password = newPassword;
         }
 
+        public void ChangeMobile(string newMobile)
+        {
+            Mobile = newMobile;
+        }
+
         public void Activate() => IsActive = true;
-        public void Deactivate() => IsActive = false;
+
+        public void Deactivate()
+        {
+            if (Id == 1 || Username.ToLower() == "admin")
+                return;
+
+            IsActive = false;
+        }
+
         public bool IsCompleted() => IsProfileCompleted;
     }
 }

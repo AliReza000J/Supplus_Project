@@ -88,6 +88,9 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
+                    b.Property<long?>("AppliedCouponId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("CancellationReason")
                         .HasColumnType("nvarchar(max)");
 
@@ -95,6 +98,9 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CardOwnerNationalCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CouponCode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreationDate")
@@ -105,6 +111,11 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<DateTime>("LastModifiedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<double>("OrderCouponAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0.0);
 
                     b.Property<double>("PayAmount")
                         .HasColumnType("float");
@@ -164,6 +175,9 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
 
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<long>("DiscountId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("DiscountRate")
                         .HasColumnType("int");

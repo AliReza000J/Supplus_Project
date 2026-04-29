@@ -1,0 +1,48 @@
+﻿@using _0_Framework.Application
+@model List<ShopManagement.Application.Contracts.Order.OrderItemViewModel>
+@{
+}
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h4 class="modal-title">آیتم های سفارش</h4>
+</div>
+
+<div class="modal-body">
+    <table class="table table-striped table-bordered centered-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>تصویر محصول</th>
+                <th>نام محصول</th>
+                <th>تعداد</th>
+                <th>قیمت واحد</th>
+                <th>درصد تخفیف</th>
+                <th>تعداد محصول تخفیف‌دار</th>
+                <th>مبلغ کل تخفیف</th>
+                <th>مبلغ کل قابل پرداخت</th>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Id.ToString().ToPersianNumber()</td>
+                    <td><img src="~/Pictures/@item.ProductPicture" style="width: 70px; height: 70px" /></td>
+                    <td class="message-cell">
+                        @(item.ProductName.Length > 30 ? item.ProductName.Substring(0, 30) + "..." : item.ProductName)
+                        <span class="full-message">@item.ProductName</span>
+                    </td>
+                    <td>@item.Qty.ToString().ToPersianNumber()</td>
+                    <td>@item.UnitPrice.ToMoney().ToPersianNumber()</td>
+                    <td>@item.DiscountRate.ToMoney().ToPersianNumber()%</td>
+                    <td>@item.DiscountedQty.ToString().ToPersianNumber()</td>
+                    <td>@item.TotalDiscountAmount.ToMoney().ToPersianNumber()</td>
+                    <td>@item.TotalPriceWithDiscount.ToMoney().ToPersianNumber()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-default waves-effect" data-dismiss="modal">بستن</button>
+</div>

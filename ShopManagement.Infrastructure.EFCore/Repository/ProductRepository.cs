@@ -35,6 +35,14 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             }).FirstOrDefaultAsync(x => x.Id == id, cancellation);
         }
 
+        public async Task<List<string>?> GetDistinctBrands(CancellationToken cancellationToken)
+        {
+            return await _context.Products
+                .Select(x => x.Brand)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<string?> GetProductName(long prodcutId, CancellationToken cancellation)
         {
             return await _context.Products
@@ -79,7 +87,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     Brand = x.Brand,
                     ViewCount = x.ViewCount,
                     Picture = x.Picture,
-                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
+                    CreationDate = x.CreationDate.ToFarsi()
                 });
 
             if (!string.IsNullOrWhiteSpace(searchModel.Name))

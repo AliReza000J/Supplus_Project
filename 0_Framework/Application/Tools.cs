@@ -4,11 +4,10 @@ namespace _0_Framework.Application
 {
     public static class Tools
     {
-        public static string[] MonthNames =
-            {"فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"};
+        private static readonly string[] MonthNames = { "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند" };
 
-        public static string[] DayNames = {"شنبه", "یکشنبه", "دو شنبه", "سه شنبه", "چهار شنبه", "پنج شنبه", "جمعه"};
-        public static string[] DayNamesG = {"یکشنبه", "دو شنبه", "سه شنبه", "چهار شنبه", "پنج شنبه", "جمعه", "شنبه"};
+        private static readonly string[] DayNames = { "شنبه", "یکشنبه", "دو شنبه", "سه شنبه", "چهار شنبه", "پنج شنبه", "جمعه" };
+        private static readonly string[] DayNamesG = { "یکشنبه", "دو شنبه", "سه شنبه", "چهار شنبه", "پنج شنبه", "جمعه", "شنبه" };
 
 
         public static string ToFarsi(this DateTime? date)
@@ -31,7 +30,7 @@ namespace _0_Framework.Application
             var pc = new PersianCalendar();
             return $"{pc.GetYear(date)}/{pc.GetMonth(date):00}/{pc.GetDayOfMonth(date):00}";
         }
-        
+
         public static string ToDiscountFormat(this DateTime date)
         {
             if (date == new DateTime()) return "";
@@ -64,23 +63,47 @@ namespace _0_Framework.Application
                 $"{pc.GetYear(date)}/{pc.GetMonth(date):00}/{pc.GetDayOfMonth(date):00} {date.Hour:00}:{date.Minute:00}:{date.Second:00}";
         }
 
-        private static readonly string[] Pn = {"۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"};
-        private static readonly string[] En = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        //private static readonly string[] Pn = { "۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹" };
+        //private static readonly string[] En = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
-        public static string ToEnglishNumber(this string cash)
+        public static string ToEnglishNumber(this string input)
         {
-            //var cash = strNum;
-            for (var i = 0; i < 10; i++)
-                cash = cash.Replace(Pn[i], En[i]);
-            return cash;
+            if (string.IsNullOrWhiteSpace(input)) return input;
+
+            string[] persian = { "۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹" };
+            string[] arabic = { "٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩" };
+
+            for (int i = 0; i <= 9; i++)
+            {
+                input = input.Replace(persian[i], i.ToString())
+                             .Replace(arabic[i], i.ToString());
+            }
+            return input;
         }
 
-        public static string ToPersianNumber(this string chash)
+        public static string ToPersianNumber(this string input)
         {
-            //var chash = intNum.ToString();
-            for (var i = 0; i < 10; i++)
-                chash = chash.Replace(En[i], Pn[i]);
-            return chash;
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            string[] persian = { "۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹" };
+
+            var result = new System.Text.StringBuilder(input.Length);
+
+            foreach (char c in input)
+            {
+                if (c >= '0' && c <= '9')
+                {
+                    int index = c - '0';
+                    result.Append(persian[index]);
+                }
+                else
+                {
+                    result.Append(c);
+                }
+            }
+
+            return result.ToString();
         }
 
         public static DateTime? FromFarsiDate(this string InDate)
@@ -105,7 +128,7 @@ namespace _0_Framework.Application
         }
 
 
-        public static DateTime ToGeorgianDateTime(this string persianDate)
+        public static DateTime ToGregorianDateTime(this string persianDate)
         {
             persianDate = persianDate.ToEnglishNumber();
             var year = Convert.ToInt32(persianDate.Substring(0, 4));

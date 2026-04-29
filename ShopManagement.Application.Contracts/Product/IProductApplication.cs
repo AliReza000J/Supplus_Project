@@ -12,5 +12,6 @@ namespace ShopManagement.Application.Contracts.Product
         Task<EditProduct?> GetDetails(long id, CancellationToken cancellation);
         Task<List<ProductViewModel>> GetProducts(CancellationToken cancellation);
         Task<List<ProductViewModel>> Search(ProductSearchModel searchModel, CancellationToken cancellation);
+        Task<List<string>?> GetDistinctBrands(CancellationToken cancellationToken);
     }
 }

@@ -1,23 +1,13 @@
-﻿using _0_Framework.Application;
-using System.ComponentModel.DataAnnotations;
-
-namespace ShopManagement.Application.Contracts.Cart
+﻿namespace ShopManagement.Application.Contracts.Cart
 {
-    public class AddToCart
+    /// <summary>
+    /// Represents the command to add or increase the quantity of an item in the cart. Inherits from AddToCartDto.
+    /// </summary>
+    public class AddToCart : AddToCartDto
     {
+        /// <summary>
+        /// The unique key identifying the user's cart.
+        /// </summary>
         public string? CartKey { get; set; }
-        public long ProductId { get; set; }
-        public int Qty { get; set; }
-    }
-
-    public class AddToCartDto
-    {
-        [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        [Range(1, long.MaxValue, ErrorMessage = ValidationMessages.IsRequired)]
-        public long ProductId { get; set; }
-
-        [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        [Range(1, 200, ErrorMessage = ValidationMessages.InvalidInput)]
-        public int Qty { get; set; }
     }
 }

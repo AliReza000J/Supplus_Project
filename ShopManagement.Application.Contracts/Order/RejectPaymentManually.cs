@@ -12,7 +12,7 @@ namespace ShopManagement.Application.Contracts.Order
         public string? SelectedReason { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        [MaxLength(80, ErrorMessage = ValidationMessages.MaxLenght)]
+        [MaxLength(80, ErrorMessage = ValidationMessages.MaxLength)]
         public string? ReasonDescription { get; set; }
 
         [Range(1, 999, ErrorMessage = ValidationMessages.IsRequired)]

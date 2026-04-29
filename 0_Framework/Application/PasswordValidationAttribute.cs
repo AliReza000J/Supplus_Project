@@ -8,7 +8,8 @@ namespace _0_Framework.Application
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            if (value == null) return ValidationResult.Success;
+            if (value == null || string.IsNullOrWhiteSpace(value.ToString()))
+                return ValidationResult.Success;
 
             string password = value.ToString();
 

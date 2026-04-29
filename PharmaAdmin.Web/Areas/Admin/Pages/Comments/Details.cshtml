@@ -1,0 +1,99 @@
+﻿@page "{id:long}"
+@using _0_Framework.Application
+@model PharmaAdmin.Web.Areas.Admin.Pages.Comments.DetailsModel
+@{
+    Layout = "Shared/_AdminLayout";
+    ViewData["Title"] = "مشاهده کامنت";
+    var model = Model.Comment;
+    bool canReply = model != null && model.IsConfirmed && !model.IsCanceled;
+    bool canConfirm = model != null && !model.IsConfirmed && !model.IsCanceled;
+    bool canCancel = model != null && model.IsConfirmed && !model.IsCanceled;
+}
+<div class="row">
+    <div class="col-md-12">
+        <h3>مشاهده کامنت @Model.Comment.Username.ToPersianNumber() برای <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول") @Model.Comment?.RecordName</strong></h3>
+        <hr />
+        <dl class="row">
+            <dt class="col-md-2">کاربر</dt>
+            <dt class="col-md-10">@Model.Comment?.Username.ToPersianNumber()</dt>
+            @if (Model.Comment?.Type == 1)
+            {
+                <dt class="col-md-2">خریدار بوده است؟</dt>
+                <dt class="col-md-10">
+                    @(Model.Comment.IsBuyer ? "بله" : "خیر")
+                </dt>
+            }
+            <dt class="col-md-2">نام <strong>@(Model.Comment?.Type == 2 ? "مقاله" : "محصول")</strong></dt>
+            <dt class="col-md-10"> @Model.Comment?.RecordName</dt>
+            <dt class="col-md-2">امتیاز</dt>
+            <dt class="col-md-10">@Model.Comment?.Rate.ToString().ToPersianNumber()</dt>
+            <dt class="col-md-2">تاریخ</dt>
+            <dt class="col-md-10">@Model.Comment?.CommentDate.ToPersianNumber()</dt>
+            <dt class="col-md-2">وضعیت</dt>
+            <dt class="col-md-10">
+                @if (Model.Comment.IsCanceled)
+                {
+                    <span class="badge badge-danger">کنسل شده</span>
+                }
+                else if (Model.Comment.IsConfirmed)
+                {
+                    <span class="badge badge-success">تأیید شده</span>
+                }
+                else
+                {
+                    <span class="badge badge-warning">در انتظار</span>
+                }
+            </dt>
+        </dl>
+
+        <div class="form-group">
+            <label>متن کاربر</label>
+            <textarea readonly class="form-control" rows="6">@Model.Comment?.Message</textarea>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Comment?.Reply))
+        {
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group no-margin">
+                        <div class="alert alert-info">
+                            <strong>پاسخ ادمین:</strong>
+                            <p>@Model.Comment.Reply</p>
+                            <small class="text-muted">(@Model.Comment.ReplyDate)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (canReply)
+        {
+            <hr />
+            <form method="post" asp-page-handler="Reply" class="form-inline" id="replyForm">
+                <input type="hidden" asp-for="Comment.Id" />
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group no-margin">
+                            <textarea class="form-control autogrow" asp-for="Comment.Reply" id="Reply"
+                                      style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 140px; width: 780px"
+                                      placeholder="پاسخ ادمین..."></textarea>
+                            <span asp-validation-for="Comment.Reply" class="error"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-left">
+                        <button type="submit" class="btn btn-primary">@(string.IsNullOrWhiteSpace(Model.Comment.Reply) ? "ارسال پاسخ" : "ویرایش پاسخ")</button>
+                    </div>
+                </div>
+            </form>
+        }
+
+        <hr />
+        <div class="btn-group">
+            <a asp-page="./Index" class="btn btn-secondary ml-2">بازگشت</a>
+        </div>
+
+        <hr />
+
+    </div>
+</div>
+

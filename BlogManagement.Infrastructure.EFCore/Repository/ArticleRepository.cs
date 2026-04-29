@@ -27,7 +27,7 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 MetaDescription = x.MetaDescription,
                 PictureAlt = x.PictureAlt,
                 PictureTitle = x.PictureTitle,
-                PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                PublishDate = x.PublishDate.ToFarsi(),
                 ShortDescription = x.ShortDescription,
                 Slug = x.Slug,
                 Title = x.Title,
@@ -48,7 +48,7 @@ namespace BlogManagement.Infrastructure.EFCore.Repository
                 CategoryId = x.CategoryId,
                 Category = x.Category.Name,
                 Picture = x.Picture,
-                PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                PublishDate = x.PublishDate.ToFarsi(),
                 ShortDescription = x.ShortDescription,
                 Title = x.Title,
                 ViewCount = x.ViewCount

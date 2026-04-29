@@ -1,0 +1,417 @@
+﻿@page "{id:long}"
+@using ShopManagement.Domain.OrderAgg
+@using _0_Framework.Application
+@model PharmaAdmin.Web.Areas.Admin.Pages.Shop.Orders.DetailsModel
+
+@{
+    Layout = "Shared/_AdminLayout";
+    ViewData["title"] = $"جزئیات سفارش با شناسه {Model.Order.Id.ToString().ToPersianNumber()}#";
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <h3 class="page-title pull-right">@ViewData["title"]</h3>
+        <a asp-page="./Index" class="btn btn-default pull-left">بازگشت</a>
+    </div>
+</div>
+
+<hr />
+
+<!-- اطلاعات اصلی سفارش -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-info panel-border">
+            <div class="panel-heading"><h3 class="panel-title">جزئیات سفارش</h3></div>
+            <div class="panel-body">
+                <p><strong>تاریخ ثبت:</strong> @Model.Order.CreationDate?.ToPersianNumber()</p>
+                <p><strong>روش پرداخت:</strong> @Model.Order.PaymentMethod</p>
+                <p><strong>وضعیت فعلی سفارش:</strong> <span class="label label-info">@Model.Order.StatusTitle</span></p>
+                @if (Model.Order.AppliedCouponId > 0)
+                {
+                    <p>
+                        <strong>کد تخفیف:</strong>
+                        <span class="label label-success">@(string.IsNullOrEmpty(Model.Order.CouponCode) ? "-" : Model.Order.CouponCode.ToPersianNumber())</span>
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">خلاصه مالی</h3></div>
+            <div class="panel-body">
+                <p><strong>جمع کل (قبل از تخفیف):</strong> @Model.Order.TotalAmount.ToMoney().ToPersianNumber() تومان</p>
+
+                @{
+                    var itemDiscounts = Model.Order.DiscountAmount;
+                }
+
+                @if (itemDiscounts > 0)
+                {
+                    <p class="text-danger">
+                        <strong>مجموع تخفیف محصولات:</strong>
+                        <span>@itemDiscounts.ToMoney().ToPersianNumber() -</span>
+                    </p>
+                }
+
+                @if (Model.Order.OrderCouponAmount > 0)
+                {
+                    <p class="text-danger">
+                        <strong>تخفیف کد تخفیف (کوپن):</strong>
+                        <span>@Model.Order.OrderCouponAmount.ToMoney().ToPersianNumber() -</span>
+                    </p>
+                }
+
+                <hr />
+                <h4 class="text-success">
+                    <strong>مبلغ نهایی پرداختی:</strong>
+                    <span class="pull-left">@Model.Order.PayAmount.ToMoney().ToPersianNumber() تومان</span>
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Order.ReceiverFullName))
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-info">
+                <div class="panel-heading">
+                    <h3 class="panel-title">اطلاعات گیرنده سفارش</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+
+                        <!-- نام گیرنده -->
+                        <div class="col-md-6">
+                            <p>
+                                <strong>نام گیرنده:</strong>
+                                @Model.Order.ReceiverFullName
+                            </p>
+                        </div>
+
+                        <!-- موبایل گیرنده -->
+                        <div class="col-md-6">
+                            <p>
+                                <strong>موبایل گیرنده:</strong>
+                                <i class="fa fa-phone text-success m-l-5"></i>
+                                <a href="tel:@Model.Order.ReceiverMobile"
+                                   style="direction:ltr; display:inline-block">
+                                    @Model.Order.ReceiverMobile?.ToPersianNumber()
+                                </a>
+                            </p>
+                        </div>
+
+                        <!-- آدرس -->
+                        <div class="col-md-12 m-t-10">
+                            <p>
+                                <strong>آدرس گیرنده:</strong>
+                                <i class="fa fa-map-marker text-danger m-l-5"></i>
+                                <span id="receiverAddress">
+                                    @Model.Order.ReceiverAddress
+                                </span>
+
+                                <button type="button"
+                                        class="btn btn-xs btn-default m-l-10"
+                                        onclick="copyReceiverAddress()">
+                                    <i class="fa fa-copy"></i>
+                                    کپی آدرس
+                                </button>
+                            </p>
+                        </div>
+
+                        <!-- کد پستی -->
+                        <div class="col-md-4 m-t-10">
+                            <p>
+                                <strong>کد پستی:</strong>
+                                @Model.Order.ReceiverZipCode?.ToPersianNumber()
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+<!-- اطلاعات کارت به کارت -->
+@if (Model.Order.PaymentMethodInt == PaymentMethod.CardToCard)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-warning">
+                <div class="panel-heading">
+                    <h3 class="panel-title">اطلاعات پرداخت کارت به کارت</h3>
+                </div>
+                <div class="panel-body">
+                    <p><strong>نام صاحب کارت:</strong> @Model.Order.CardOwnerFullname</p>
+                    <p><strong>کد ملی:</strong> @Model.Order.CardOwnerNationalCode?.ToPersianNumber()</p>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Order.PaymentReceiptPic))
+                    {
+                        <p><strong>تصویر فیش:</strong></p>
+                        <img src="~/Pictures/@Model.Order.PaymentReceiptPic"
+                             class="img-thumbnail"
+                             style="max-width:300px" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Order.Status == OrderStatus.Cancelled)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-danger">
+                <div class="panel-heading">
+                    <h3 class="panel-title">اطلاعات و دلیل لغو سفارش</h3>
+                </div>
+                <div class="panel-body">
+                    <ul class="list-group">
+                        @foreach (var line in Model.Order.CanellationReason.Split(Environment.NewLine))
+                        {
+                            var parts = line.Split(':', 2);
+                            <li class="list-group-item">
+                                <strong>@parts[0]</strong>: @parts[1]
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Order.Status == OrderStatus.Delivered)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    <h3 class="panel-title">شماره پیگیری پست</h3>
+                </div>
+                <div class="panel-body">
+                    <p>
+                        @Model.Order.PostTrackingNumber.ToPersianNumber()
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- اکشن‌ها -->
+@if (Model.Order.Status <= OrderStatus.Shipped)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">اقدامات مدیریتی</h3>
+                </div>
+                <div class="panel-body">
+
+                    <!-- تایید / رد پرداخت -->
+                    @if (Model.Order.PaymentMethodInt == PaymentMethod.CardToCard &&
+                   Model.Order.Status == OrderStatus.WaitingForManualVerification)
+                    {
+                        <form method="post"
+                              asp-page-handler="ConfirmPayment"
+                              class="m-t-10">
+                            <input type="hidden" asp-for="ConfirmPayment.OrderId" />
+                            <button class="btn btn-success btn-block">
+                                تایید پرداخت
+                            </button>
+                        </form>
+
+                        <form method="post" asp-page-handler="RejectPayment"
+                              class="m-t-10">
+                            <input type="hidden" asp-for="RejectPayment.OrderId" />
+
+                            <div class="form-group">
+                                <label>دلیل اصلی</label>
+                                <select asp-for="RejectPayment.SelectedReason"
+                                        class="form-control">
+                                    <option value="">انتخاب دلیل</option>
+                                    <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
+                                    <option value="INVALID_RECEIPT">رسید نامعتبر</option>
+                                    <option value="WRONG_AMOUNT">مبلغ اشتباه</option>
+                                </select>
+                                <span asp-validation-for="RejectPayment.SelectedReason"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>دلیل رد پرداخت</label>
+                                <textarea asp-for="RejectPayment.ReasonDescription"
+                                          class="form-control"
+                                          rows="3"></textarea>
+                                <span asp-validation-for="RejectPayment.ReasonDescription"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <button class="btn btn-danger btn-block">
+                                رد پرداخت
+                            </button>
+                        </form>
+                    }
+
+                    <!-- تغییر به در حال پردازش -->
+                    @if (Model.Order.Status == OrderStatus.Paid)
+                    {
+                        <form method="post"
+                              asp-page-handler="Proccessing"
+                              class="m-t-10">
+                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                            <button class="btn btn-warning">
+                                تغییر وضعیت به «در حال پردازش»
+                            </button>
+                        </form>
+
+                        <form method="post" asp-page-handler="RejectPayment"
+                              class="m-t-10">
+                            <input type="hidden" asp-for="RejectPayment.OrderId" />
+
+                            <div class="form-group">
+                                <label>دلیل اصلی</label>
+                                <select asp-for="RejectPayment.SelectedReason"
+                                        class="form-control">
+                                    <option value="">انتخاب دلیل</option>
+                                    <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
+                                </select>
+                                <span asp-validation-for="RejectPayment.SelectedReason"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>دلیل رد پرداخت</label>
+                                <textarea asp-for="RejectPayment.ReasonDescription"
+                                          class="form-control"
+                                          rows="3"></textarea>
+                                <span asp-validation-for="RejectPayment.ReasonDescription"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <button class="btn btn-danger btn-block">
+                                رد پرداخت
+                            </button>
+                        </form>
+                    }
+
+                    <!-- ارسال سفارش -->
+                    @if (Model.Order.Status == OrderStatus.Processing)
+                    {
+                        <form method="post"
+                              asp-page-handler="Ship"
+                              class="m-t-10">
+                            <input type="hidden" asp-for="Ship.OrderId" />
+                            <input type="hidden" asp-for="Ship.Mobile" />
+
+                            <div class="form-group">
+                                <label>کد رهگیری پستی</label>
+                                <input asp-for="Ship.PostTrackingNo"
+                                       class="form-control"
+                                       placeholder="مثال: 1234567890" />
+                                <span asp-validation-for="Ship.PostTrackingNo"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <button class="btn btn-primary">
+                                ثبت ارسال سفارش
+                            </button>
+                        </form>
+
+                        <form method="post" asp-page-handler="RejectPayment"
+                              class="m-t-10">
+                            <input type="hidden" asp-for="RejectPayment.OrderId" />
+
+                            <div class="form-group">
+                                <label>دلیل اصلی</label>
+                                <select asp-for="RejectPayment.SelectedReason"
+                                        class="form-control">
+                                    <option value="">انتخاب دلیل</option>
+                                    <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
+                                </select>
+                                <span asp-validation-for="RejectPayment.SelectedReason"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>دلیل رد پرداخت</label>
+                                <textarea asp-for="RejectPayment.ReasonDescription"
+                                          class="form-control"
+                                          rows="3"></textarea>
+                                <span asp-validation-for="RejectPayment.ReasonDescription"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <button class="btn btn-danger btn-block">
+                                رد پرداخت
+                            </button>
+                        </form>
+                    }
+
+                    <!-- تحویل شده -->
+                    @if (Model.Order.Status == OrderStatus.Shipped)
+                    {
+                        <form method="post"
+                              asp-page-handler="Delivered"
+                              class="m-t-10">
+                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                            <button class="btn btn-success">
+                                ثبت تحویل به مشتری
+                            </button>
+                        </form>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Order.PostTrackingNumber))
+                        {
+                            <form method="post"
+                                  asp-page-handler="ResendTrackingSms"
+                                  class="m-t-10">
+
+                                <input type="hidden" name="orderId" value="@Model.Order.Id" />
+
+                                <button class="btn btn-warning m-t-10"
+                                        onclick="return confirm('آیا از ارسال مجدد پیامک کد رهگیری مطمئن هستید؟')">
+                                    ارسال مجدد پیامک کد رهگیری
+                                </button>
+                            </form>
+                        }
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        function copyReceiverAddress() {
+            var text = document.getElementById("receiverAddress").innerText;
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function () {
+                    alert("آدرس با موفقیت کپی شد");
+                });
+            } else {
+                var tempInput = document.createElement("textarea");
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+                alert("آدرس با موفقیت کپی شد");
+            }
+        }
+    </script>
+
+}

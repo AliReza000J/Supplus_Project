@@ -35,13 +35,13 @@ namespace SiteManagement.Infrastructure.EFCore.Repository
                 {
                     Id = t.Id,
                     AdminReply = t.AdminReply,
-                    CreationDate = t.CreationDate.ToFarsi().ToPersianNumber(),
+                    CreationDate = t.CreationDate.ToFarsi(),
                     IsAnswered = t.IsAnswered,
                     Message = t.Message,
                     Subject = t.Subject,
                     TrackingCode = t.TrackingCode,
                     AdminReplyDate = t.AnsweredAt != null
-                        ? t.AnsweredAt.ToFarsi().ToPersianNumber()
+                        ? t.AnsweredAt.ToFarsi()
                         : null,
                     UserId = t.UserId
                 })

@@ -7,6 +7,7 @@ namespace ShopManagement.Domain.ProductAgg
     {
         Task<string?> GetProductName(long prodcutId, CancellationToken cancellation);
         Task<string?> GetProductPic(long prodcutId, CancellationToken cancellation);
+        Task<List<string>?> GetDistinctBrands(CancellationToken cancellationToken);
         Task<EditProduct?> GetDetails(long id, CancellationToken cancellation);
         Task<Product?> GetProductWithCategory(long id, CancellationToken cancellation);
         Task<List<ProductViewModel>> GetProducts(CancellationToken cancellation);

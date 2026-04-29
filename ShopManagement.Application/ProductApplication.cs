@@ -139,5 +139,10 @@ namespace ShopManagement.Application
 
             return op.Succeeded("محصول با موفقیت از لیست علاقه‌مندی شما حذف شد.");
         }
+
+        public async Task<List<string>?> GetDistinctBrands(CancellationToken cancellationToken)
+        {
+            return await _productRepository.GetDistinctBrands(cancellationToken);
+        }
     }
 }

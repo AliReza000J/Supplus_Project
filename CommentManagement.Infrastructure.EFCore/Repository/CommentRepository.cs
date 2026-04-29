@@ -34,14 +34,14 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                     Type = c.Type,
                     IsConfirmed = c.IsConfirmed,
                     IsCanceled = c.IsCanceled,
-                    CommentDate = c.CreationDate.ToFarsi().ToPersianNumber(),
+                    CommentDate = c.CreationDate.ToFarsi(),
                     Rate = c.Rate,
                     LikeCount = c.LikeCount,
                     DislikeCount = c.DislikeCount,
                     Reply = c.AdminReply,
                     IsBuyer = c.IsBuyer ?? false,
-                    LastModified = c.LastModified.ToFarsi().ToPersianNumber(),
-                    ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi().ToPersianNumber() : null
+                    LastModified = c.LastModified.ToFarsi(),
+                    ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi() : null
                 });
 
             if (searchModel != null)
@@ -127,14 +127,14 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
                 Type = c.Type,
                 IsConfirmed = c.IsConfirmed,
                 IsCanceled = c.IsCanceled,
-                CommentDate = c.CreationDate.ToFarsi().ToPersianNumber(),
+                CommentDate = c.CreationDate.ToFarsi(),
                 Rate = c.Rate,
                 LikeCount = c.LikeCount,
                 DislikeCount = c.DislikeCount,
                 Reply = c.AdminReply,
                 IsBuyer = c.IsBuyer ?? false,
-                LastModified = c.LastModified.ToFarsi().ToPersianNumber(),
-                ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi().ToPersianNumber() : null
+                LastModified = c.LastModified.ToFarsi(),
+                ReplyDate = c.AdminReplyDate.HasValue ? c.AdminReplyDate.Value.ToFarsi() : null
             };
 
             if (c.Type == (int)CommentType.Product)

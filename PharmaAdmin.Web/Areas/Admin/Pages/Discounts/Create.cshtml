@@ -1,0 +1,173 @@
+﻿@page
+@model PharmaAdmin.Web.Areas.Admin.Pages.Discounts.CreateModel
+@{
+    Layout = "Shared/_AdminLayout";
+    ViewData["title"] = "تعریف تخفیف";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">@ViewData["title"]</h3></div>
+            <div class="panel-body">
+                <form method="post">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="Command.Title" class="control-label"></label>
+                                <input type="text" class="form-control" asp-for="Command.Title">
+                                <span asp-validation-for="Command.Title" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                <label asp-for="Command.Percentage" class="control-label">درصد تخفیف</label>
+                                <input type="number" class="form-control" asp-for="Command.Percentage">
+                                <span asp-validation-for="Command.Percentage" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.Type" class="control-label">نوع تخفیف</label>
+                                <select class="form-control" asp-for="Command.Type" id="DiscountType">
+                                    <option value="1">خودکار (بدون کد)</option>
+                                    <option value="2">کوپنی (با کد اختصاصی)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="CouponCodeDiv" class="col-md-3" style="display:none;">
+                            <div class="form-group">
+                                <label asp-for="Command.CouponCode" class="control-label">کد کوپن</label>
+                                <input type="text" class="form-control" asp-for="Command.CouponCode">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="m-t-20 m-b-10 text-primary">قوانین و محدودیت‌های سفارش</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.MinOrderAmount" class="control-label">حداقل مبلغ سفارش (تومان)</label>
+                                <input type="number" class="form-control" asp-for="Command.MinOrderAmount">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.MaxDiscountQuantity" class="control-label">سقف تعداد محصول در سبد</label>
+                                <input type="number" class="form-control" asp-for="Command.MaxDiscountQuantity">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.MaxUsageCount" class="control-label">ظرفیت کل استفاده (تعداد نفرات)</label>
+                                <input type="number" class="form-control" asp-for="Command.MaxUsageCount">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.UsageLimitPerUser" class="control-label">سقف استفاده برای هر کاربر</label>
+                                <input type="number" class="form-control" asp-for="Command.UsageLimitPerUser">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="m-t-20 m-b-10 text-primary">زمان‌بندی و فعال‌سازی</h4>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="Command.StartDate" class="control-label">تاریخ شروع (اختیاری)</label>
+                                <input class="form-control persianDateInput" asp-for="Command.StartDate">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label asp-for="Command.EndDate" class="control-label">تاریخ پایان (اختیاری)</label>
+                                <input class="form-control persianDateInput" asp-for="Command.EndDate">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="m-t-20 m-b-10 text-primary">هدف‌های تخفیف (Targets)</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label asp-for="Command.ApplyType" class="control-label">نحوه اعمال</label>
+                                <select class="form-control" asp-for="Command.ApplyType" id="ApplyType">
+                                    <option value="1">روی کالا/دسته/برند خاص</option>
+                                    <option value="2">روی کل سفارش</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="TargetsDiv" class="col-md-9">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label>محصولات</label>
+                                    <select class="form-control select2-init" multiple asp-for="Command.ProductIds" asp-items="Model.Products"></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>دسته‌بندی‌ها</label>
+                                    <select class="form-control select2-init" multiple asp-for="Command.CategoryIds" asp-items="Model.Categories"></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>برندها</label>
+                                    <select class="form-control select2-init" multiple asp-for="Command.BrandNames">
+                                        @foreach(var brand in Model.Brands) { <option value="@brand">@brand</option> }
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row m-t-30">
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-success btn-lg waves-effect waves-light">ذخیره و انتشار تخفیف</button>
+                            <a asp-page="./Index" class="btn btn-default btn-lg waves-effect">بازگشت</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            function handleDiscountType() {
+                var type = $('#DiscountType').val();
+                if (type == "2") { // Coupon
+                    $('#CouponCodeDiv').show();
+                } else { // Automatic
+                    $('#CouponCodeDiv').hide();
+                }
+            }
+
+            function handleApplyType() {
+                var applyType = $('#ApplyType').val();
+                if (applyType == "1") { // OnProduct
+                    $('#TargetsDiv').show();
+                } else { // OnOrder
+                    $('#TargetsDiv').hide();
+                }
+            }
+
+            handleDiscountType();
+            handleApplyType();
+
+            $('#DiscountType').change(function () {
+                handleDiscountType();
+            });
+
+            $('#ApplyType').change(function () {
+                handleApplyType();
+            });
+
+            if ($.isFunction($.fn.select2)) {
+                $('.select2-init').select2({
+                    placeholder: "انتخاب کنید...",
+                    width: '100%'
+                });
+            }
+        });
+    </script>
+}

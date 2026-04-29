@@ -7,6 +7,7 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public long Id { get; set; }
         public string Name { get; set; }
 
+        public long CategoryId { get; set; }
         public string CategoryName { get; set; }
         public string CategoryFullSlug { get; set; }
         public string CategorySlug { get; set; }
@@ -31,7 +32,7 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public int DiscountRate { get; set; }
         public bool HasDiscount { get; set; }
         public int DiscountedQty { get; set; } = 0;
-        public string DiscountExpireDate { get; set; }
+        public string? DiscountExpireDate { get; set; }
 
         public bool IsInStock { get; set; }
         public long InStockQty { get; set; } = 0;
@@ -39,13 +40,17 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public int CommentCount { get; set; }
         public float AvgRate { get; set; }
         public int RateCount { get; set; }
+        public string? CommentCountStr { get; set; }
+        public string? AvgRateStr { get; set; }
+        public string? RateCountStr { get; set; }
+
 
         public int ViewCount { get; set; }
-        public string? RecentViewsLabel { get; set; } = null;
+        public string? ViewsLabel { get; set; } = null;
 
-        public DateTime? UserFavedDate { get; set; } = null;
-        public string? UserFavedDateStr { get; set; } = null;
-        public bool CurrentUserFaved { get; set; }
+        public DateTime? CurrentUserFavedDate { get; set; } = null;
+        public string? CurrentUserFavedDateStr { get; set; } = null;
+        public bool IsCurrentUserFaved { get; set; }
 
         public List<CommentQueryModel> Comments { get; set; }
         public List<ProductPictureQueryModel> Pictures { get; set; }

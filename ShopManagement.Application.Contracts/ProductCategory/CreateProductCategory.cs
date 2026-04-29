@@ -6,8 +6,14 @@ namespace ShopManagement.Application.Contracts.ProductCategory
 {
     public class CreateProductCategory
     {
+        private string _name;
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        public string Name { get; set; }
+        [MaxLength(250, ErrorMessage = ValidationMessages.MaxLength)]
+        public string Name
+        {
+            get => _name;
+            set => _name = value.ToEnglishNumber();
+        }
 
         public string Description { get; set; }
 
@@ -17,15 +23,19 @@ namespace ShopManagement.Application.Contracts.ProductCategory
         public IFormFile Picture { get; set; }
         
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
+        [MaxLength(255, ErrorMessage = ValidationMessages.MaxLength)]
         public string PictureAlt { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
+        [MaxLength(500, ErrorMessage = ValidationMessages.MaxLength)]
         public string PictureTitle { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
+        [MaxLength(80, ErrorMessage = ValidationMessages.MaxLength)]
         public string Keywords { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
+        [MaxLength(150, ErrorMessage = ValidationMessages.MaxLength)]
         public string MetaDescription { get; set; }
 
         [Required(ErrorMessage = ValidationMessages.IsRequired)]

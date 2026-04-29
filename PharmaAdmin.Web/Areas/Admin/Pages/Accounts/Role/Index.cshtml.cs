@@ -1,0 +1,28 @@
+using _0_Framework.Infrastructure;
+using AccountManagement.Application.Contracts.Role;
+using AccountManagement.Configuration.Permissions;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace PharmaAdmin.Web.Areas.Admin.Pages.Accounts.Role
+{
+    public class IndexModel : PageModel
+    {
+        [TempData]
+        public string Message { get; set; }
+        public List<RoleViewModel> Roles;
+
+        private readonly IRoleApplication _roleApplication;
+
+        public IndexModel(IRoleApplication roleApplication)
+        {
+            _roleApplication = roleApplication;
+        }
+
+        [NeedsPermission(AccountPermissions.ListRoles)]
+        public async Task OnGet(CancellationToken cancellation)
+        {
+            Roles = (await _roleApplication.ListAsync(cancellation)).ToList();
+        }
+    }
+}

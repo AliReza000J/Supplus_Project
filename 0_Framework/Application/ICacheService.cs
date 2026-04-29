@@ -7,7 +7,8 @@
             Func<Task<T>> factory,
             TimeSpan? absoluteExpiration = null,
             TimeSpan? slidingExpiration = null,
-            long? size = null);
+            long? size = null,
+            CancellationToken cancellationToken = default);
 
         void Remove(string key);
     }

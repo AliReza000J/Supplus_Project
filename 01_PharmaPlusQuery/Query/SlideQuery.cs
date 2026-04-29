@@ -1,4 +1,5 @@
 ﻿using _01_PharmaPlusQuery.Contracts.Slide;
+using _0_Framework.Application;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Infrastructure.EFCore;
 

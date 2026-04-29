@@ -5,5 +5,6 @@
         public long OrderId { get; set; }
         public bool ShouldRedirect { get; set; }
         public string? RedirectUrl { get; set; }
+        public string? DiscountMessage { get; set; }
     }
 }

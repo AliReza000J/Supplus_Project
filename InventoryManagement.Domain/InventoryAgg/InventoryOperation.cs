@@ -1,4 +1,6 @@
-﻿namespace InventoryManagement.Domain.InventoryAgg
+﻿using _0_Framework.Application;
+
+namespace InventoryManagement.Domain.InventoryAgg
 {
     public class InventoryOperation
     {

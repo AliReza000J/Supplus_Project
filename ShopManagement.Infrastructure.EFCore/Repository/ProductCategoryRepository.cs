@@ -80,7 +80,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                     Id = x.Id,
                     Picture = x.Picture,
                     Name = x.Name,
-                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber(),
+                    CreationDate = x.CreationDate.ToFarsi(),
                     Parent = x.Parent != null ? x.Parent.Name : "—"
                 });
 

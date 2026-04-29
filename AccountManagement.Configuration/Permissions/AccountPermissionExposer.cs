@@ -15,8 +15,9 @@ namespace AccountManagement.Configuration.Permissions
                         new PermissionDto(AccountPermissions.SearchAccounts, "جستجو کاربران"),
                         new PermissionDto(AccountPermissions.CreateAccount, "ایجاد کاربر"),
                         new PermissionDto(AccountPermissions.EditAccount, "ویرایش کاربر"),
-                        new PermissionDto(AccountPermissions.DeleteAccount, "غیرفعال‌سازی کاربر"),
+                        new PermissionDto(AccountPermissions.DeactivateAccount, "غیرفعال‌سازی کاربر"),
                         new PermissionDto(AccountPermissions.ActivateAccount, "فعال‌سازی کاربر"),
+                        new PermissionDto(AccountPermissions.ResetPassword, "بازنشانی رمز عبور‌ کاربر"),
                     }
                 },
                 {

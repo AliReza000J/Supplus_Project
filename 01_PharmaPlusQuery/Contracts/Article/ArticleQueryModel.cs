@@ -1,9 +1,4 @@
 ﻿using _01_LampshadeQuery.Contracts.Comment;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace _01_PharmaPlusQuery.Contracts.Article
 {
@@ -27,8 +22,12 @@ namespace _01_PharmaPlusQuery.Contracts.Article
         public string CategorySlug { get; set; }
         public List<CommentQueryModel> Comments { get; set; }
         public float AvgRate { get; set; }
+        public string? AvgRateStr { get; set; }
         public int CommentCount { get; set; }
+        public string? CommentCountStr { get; set; }
         public int RateCount { get; set; }
+        public string? RateCountStr { get; set; }
         public int ViewCount { get; set; }
+        public string? ViewsLabel { get; set; }
     }
 }

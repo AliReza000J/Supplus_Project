@@ -17,6 +17,8 @@ namespace ShopManagement.Infrastructure.EFCore.Mapping
             builder.Property(o => o.ReceiverAddress).IsRequired();
             builder.Property(o => o.ReceiverZipCode).IsRequired().HasMaxLength(10);
             builder.Property(o => o.TotalAmount).HasColumnType("decimal(18,2)");
+            builder.Property(x => x.AppliedCouponId).IsRequired(false);
+            builder.Property(x => x.OrderCouponAmount).HasDefaultValue(0);
             builder.HasMany(o => o.Items).WithOne(o=>o.Order)
                 .HasForeignKey(o=>o.OrderId).OnDelete(DeleteBehavior.Cascade);
         }

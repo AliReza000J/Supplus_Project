@@ -22,6 +22,12 @@
         public string? TotalAmountDisplay { get; set; }
         public double DiscountAmount { get; set; }
         public string? DiscountAmountDisplay { get; set; }
+
+        public string? CouponCode { get; set; }
+        public long? AppliedCouponId { get; set; }
+        public double OrderCouponAmount { get; set; }
+        public string? OrderCouponAmountDisplay { get; set; }
+
         public double PayAmount { get; set; }
         public string? PayAmountDisplay { get; set; }
 

@@ -4,6 +4,7 @@ using AccountManagement.Infrastructure.EFCore;
 using InventoryManagement.Application.Contracts.Inventory;
 using InventoryManagement.Domain.InventoryAgg;
 using Microsoft.EntityFrameworkCore;
+using ShopManagement.Domain.ProductAgg;
 using ShopManagement.Infrastructure.EFCore;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +31,13 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
                 .FirstOrDefaultAsync(x => x.ProductId == productId, cancellation);
         }
 
+        public async Task<List<Inventory>> GetByProductIds(List<long> productIds, CancellationToken cancellation)
+        {
+            return await _inventoryContext.Inventory
+                .Where(x => productIds.Contains(x.ProductId))
+                .ToListAsync(cancellation);
+        }
+
         public async Task<EditInventory?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _inventoryContext.Inventory.Select(x => new EditInventory
@@ -54,14 +62,14 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
                 CurrentCount = x.CurrentCount,
                 Description = x.Description,
                 Operation = x.Operation,
-                OperationDate = x.OperationDate.ToFarsi().ToPersianNumber(),
+                OperationDate = x.OperationDate.ToFarsi(),
                 OperatorId = x.OperatorId,
                 OrderId = x.OrderId
             }).OrderByDescending(x => x.Id).ToList();
 
             foreach (var operation in operations)
             {
-                operation.Operator = accounts.FirstOrDefault(x => x.Id == operation.OperatorId)?.Fullname ?? "نامشخص";
+                operation.OperatorName = accounts.FirstOrDefault(x => x.Id == operation.OperatorId)?.Fullname ?? "نامشخص";
             }
 
             return operations;
@@ -79,7 +87,7 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
                 UnitPrice = x.UnitPrice,
                 InStock = x.InStock,
                 ProductId = x.ProductId,
-                CreationDate = x.CreationDate.ToFarsi().ToPersianNumber()
+                CreationDate = x.CreationDate.ToFarsi()
             });
 
             if (searchModel.ProductId > 0)

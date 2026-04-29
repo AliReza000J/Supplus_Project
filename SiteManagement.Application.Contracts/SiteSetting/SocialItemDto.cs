@@ -7,6 +7,7 @@ namespace SiteManagement.Application.Contracts.SiteSetting
     {
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string? PlatformName { get; set; }
+
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string? LinkOrId { get; set; }
     }

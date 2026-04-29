@@ -64,7 +64,7 @@ namespace CommentManagement.Application
 
             if (await _commentRepository.HasUserCommented
                 (userId, command.Type, command.RecordId, cancellation))
-                return op.Failed($"شما قبلا نظر خود را ثبت کرده‌اید و امکان ثبت نظر مجدد در این صفحه برایتان وجود ندارد.");
+                return op.Failed($"شما قبلا نظر خود را ثبت کرده‌اید و امکان ثبت نظر مجدد در این صفحه برایتان وجود ندارد. در صورت نیاز نظر قبلی خود را ویرایش کنید.");
 
             var comment = new Comment(
                 username,

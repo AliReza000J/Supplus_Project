@@ -8,8 +8,13 @@ namespace SiteManagement.Application.Contracts.SiteSetting
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         public string? Owner { get; set; }
 
+        private string? _number;
         [Required(ErrorMessage = ValidationMessages.IsRequired)]
         [RegularExpression(@"^\d{16}$", ErrorMessage = ValidationMessages.InvalidInput)]
-        public string? Number { get; set; }
+        public string? Number
+        {
+            get => _number;
+            set => _number = value?.ToEnglishNumber();
+        }
     }
 }

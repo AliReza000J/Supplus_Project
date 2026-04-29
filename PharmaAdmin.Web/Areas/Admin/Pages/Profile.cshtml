@@ -1,0 +1,117 @@
+﻿@page
+@model PharmaAdmin.Web.Areas.Admin.Pages.ProfileModel
+@{
+    ViewData["Title"] = "پروفایل کاربری";
+}
+
+<div class="container-fluid">
+    @if (!string.IsNullOrWhiteSpace(Model.Message))
+    {
+        <div class="alert alert-info">@Model.Message</div>
+    }
+
+    @if (Model.IsSuperAdmin)
+    {
+        <form method="post" asp-page-handler="EditSuperAdmin">
+            <div class="panel panel-primary">
+                <div class="panel-heading"><h3 class="panel-title">ویرایش پروفایل سوپر ادمین</h3></div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label asp-for="EditSuperAdminCommand.Email">ایمیل (الزامی برای بازیابی رمز)</label>
+                            <input asp-for="EditSuperAdminCommand.Email" type="email" class="form-control" />
+                            <span asp-validation-for="EditSuperAdminCommand.Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EditSuperAdminCommand.Mobile">شماره موبایل (اعداد انگلیسی)</label>
+                            <input asp-for="EditSuperAdminCommand.Mobile" class="form-control en-number" />
+                            <span asp-validation-for="EditSuperAdminCommand.Mobile" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 15px;">
+                        <div class="col-md-6">
+                            <label asp-for="EditSuperAdminCommand.Password">رمز عبور جدید (در صورت عدم تغییر، خالی بگذارید)</label>
+                            <input asp-for="EditSuperAdminCommand.Password" type="password" class="form-control" />
+                            <span asp-validation-for="EditSuperAdminCommand.Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EditSuperAdminCommand.RePassword">تکرار رمز عبور جدید</label>
+                            <input asp-for="EditSuperAdminCommand.RePassword" type="password" class="form-control" />
+                            <span asp-validation-for="EditSuperAdminCommand.RePassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <hr />
+                    <button type="submit" class="btn btn-primary">ذخیره تغییرات سوپر ادمین</button>
+                </div>
+            </div>
+        </form>
+    }
+    else
+    {
+        <form method="post" asp-page-handler="EditPersonal" enctype="multipart/form-data">
+            <div class="panel panel-default">
+                <div class="panel-heading"><h3 class="panel-title">اطلاعات پایه</h3></div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label asp-for="EditCommand.Fullname">نام کامل</label>
+                            <input asp-for="EditCommand.Fullname" class="form-control" />
+                            <span asp-validation-for="EditCommand.Fullname" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EditCommand.Username">نام کاربری</label>
+                            <input asp-for="EditCommand.Username" class="form-control" />
+                            <span asp-validation-for="EditCommand.Username" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 15px;">
+                        <div class="col-md-4">
+                            <label asp-for="EditCommand.Email">ایمیل</label>
+                            <input asp-for="EditCommand.Email" type="email" class="form-control" />
+                            <span asp-validation-for="EditCommand.Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EditCommand.Mobile">شماره موبایل (اعداد انگلیسی)</label>
+                            <input asp-for="EditCommand.Mobile" class="form-control en-number" />
+                            <span asp-validation-for="EditCommand.Mobile" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="EditCommand.ProfilePhoto">عکس پروفایل</label>
+                            <input type="file" asp-for="EditCommand.ProfilePhoto" class="form-control" accept="image/*" />
+                            <span asp-validation-for="EditCommand.ProfilePhoto" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <hr />
+                    <button type="submit" class="btn btn-success">ذخیره اطلاعات پایه</button>
+                </div>
+            </div>
+        </form>
+
+        <form method="post" asp-page-handler="ChangePassword">
+            <div class="panel panel-default">
+                <div class="panel-heading"><h3 class="panel-title">تغییر رمز عبور</h3></div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label asp-for="PasswordCommand.CurrentPassword"></label>
+                            <input asp-for="PasswordCommand.CurrentPassword" type="password" class="form-control" />
+                            <span asp-validation-for="PasswordCommand.CurrentPassword" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="PasswordCommand.Password"></label>
+                            <input asp-for="PasswordCommand.Password" type="password" class="form-control" />
+                            <span asp-validation-for="PasswordCommand.Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="PasswordCommand.RePassword"></label>
+                            <input asp-for="PasswordCommand.RePassword" type="password" class="form-control" />
+                            <span asp-validation-for="PasswordCommand.RePassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <hr />
+                    <button type="submit" class="btn btn-warning">تغییر رمز عبور</button>
+                </div>
+            </div>
+        </form>
+    }
+</div>

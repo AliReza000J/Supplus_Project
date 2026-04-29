@@ -1,6 +1,6 @@
 ﻿using _0_Framework.Application;
 using AccountManagement.Domain.AccountAgg;
-using DiscountManagement.Domain.CustomerDiscountAgg;
+using DiscountManagement.Application.Contracts.Discount;
 using InventoryManagement.Application.Contracts.Inventory;
 using InventoryManagement.Domain.InventoryAgg;
 using Microsoft.Extensions.Configuration;
@@ -19,30 +19,29 @@ namespace ShopManagement.Application
         private readonly ICartRepository _cartRepository;
         private readonly ICartApplication _cartApplication;
         private readonly IInventoryRepository _inventoryRepository;
-        private readonly ICustomerDiscountRepository _discountRepository;
         private readonly IProductRepository _productRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly IFileUploader fileUploader;
         private readonly IZibalService _zibalService;
         private readonly IConfiguration _config;
         private readonly IInventoryApplication _inventoryApplication;
+        private readonly IDiscountApplication _discountApplication;
 
         public OrderApplication(IAccountRepository accountRepository,
             ICartRepository cartRepository,
             IInventoryRepository inventoryRepository,
-            ICustomerDiscountRepository discountRepository,
             IProductRepository productRepository,
             IOrderRepository orderRepository,
             ICartApplication cartApplication,
             IFileUploader fileUploader,
             IZibalService zibalService,
             IConfiguration config,
-            IInventoryApplication inventoryApplication)
+            IInventoryApplication inventoryApplication,
+            IDiscountApplication discountApplication)
         {
             _accountRepository = accountRepository;
             _cartRepository = cartRepository;
             _inventoryRepository = inventoryRepository;
-            _discountRepository = discountRepository;
             _productRepository = productRepository;
             _orderRepository = orderRepository;
             _cartApplication = cartApplication;
@@ -50,6 +49,7 @@ namespace ShopManagement.Application
             _zibalService = zibalService;
             _config = config;
             _inventoryApplication = inventoryApplication;
+            _discountApplication = discountApplication;
         }
 
         public async Task<OperationResult> ConfirmPaymentManuallyAsync(ConfirmPaymentManually command, CancellationToken cancellation)
@@ -62,32 +62,11 @@ namespace ShopManagement.Application
             if (order.Status != OrderStatus.WaitingForManualVerification)
                 return op.Failed("وضعیت سفارش برای تایید کارت به کارت نامعتبر است.");
 
-            foreach (var orderItem in order.Items)
-            {
-                var invId = (await _inventoryRepository.GetBy(orderItem.ProductId, cancellation))?.Id;
-                var reduceInv = new ReduceInventoryByOrder
-                {
-                    Count = orderItem.Quantity,
-                    OrderId = order.Id,
-                    Description = $"خرید توسط کاربر {order.UserId} با شماره سفارش {order.Id} در تاریخ {order.CreationDate.ToFarsiFull().ToPersianNumber()}",
-                    InventoryId = invId ?? 0,
-                    ProductId = orderItem.ProductId,
-                    UserId = order.UserId
-                };
-                await _inventoryApplication.ReduceByOrder(reduceInv, cancellation);
-
-                if (orderItem.DiscountRate > 0)
-                {
-                    var disc = await _discountRepository.GetByProductId(orderItem.ProductId, cancellation);
-                    disc?.ReduceQty(orderItem.DiscountedQty);
-                    await _discountRepository.SaveChangesAsync(cancellation);
-                }
-            }
+            await ReduceInventory(order, cancellation);
 
             order.ConfirmManually();
             await _orderRepository.SaveChangesAsync(cancellation);
 
-            // می‌توان Domain Event صادر کرد برای ارسال ایمیل و SMS
             return op.Succeeded("پرداخت کارت به کارت با موفقیت تایید شد.");
         }
 
@@ -103,8 +82,8 @@ namespace ShopManagement.Application
                 $"[کد]: {command.SelectedReason}{Environment.NewLine}" +
                 $"[توضیحات]: {command.ReasonDescription}{Environment.NewLine}" +
                 $"[توسط]: Admin (Id: {command.AdminId}){Environment.NewLine}" +
-                $"[شناسه کاربر]: {order.UserId}{Environment.NewLine}" +
-                $"[شناسه سفارش]: {order.Id}{Environment.NewLine}" +
+                $"[شناسه کاربر]: {order.UserId.ToString()}{Environment.NewLine}" +
+                $"[شناسه سفارش]: {order.Id.ToString()}{Environment.NewLine}" +
                 $"[تاریخ]: {DateTime.Now.ToFarsiFull()}";
 
             order.Cancel(finalReason);
@@ -116,63 +95,81 @@ namespace ShopManagement.Application
         public async Task<(PlaceOrderResult?, OperationResult)> PlaceOrderAsync(CreateOrderCommand command, CancellationToken cancellation)
         {
             var op = new OperationResult();
-
-            if (command == null)
-                return (null, op.Failed("سبد خرید خالی است."));
+            if (command == null) return (null, op.Failed("سبد خرید خالی است."));
 
             var acc = await _accountRepository.GetAsync(command.UserId, cancellation);
-            if (acc == null)
-                return (null, op.Failed($"کاربر با آیدی {command.UserId} یافت نشد."));
-            
-            //////////////////
-            if (!acc.IsCompleted())
-                return (null, op.Failed("برای ثبت سفارش باید پروفایل خود را تکمیل نمایید."));
-            //////////////////
+            if (acc == null) return (null, op.Failed("کاربر یافت نشد."));
 
-            if (string.IsNullOrWhiteSpace(command.ReceiverFullName) &&
-                !string.IsNullOrWhiteSpace(acc.Fullname))
-                command.ReceiverFullName = acc.Fullname;
-            else
-                return (null, op.Failed("نام و نام خانوادگی نمی‌تواند خالی باشد!"));
+            if (!acc.IsCompleted()) return (null, op.Failed("لطفاً ابتدا پروفایل خود را تکمیل کنید."));
+
+            if (string.IsNullOrWhiteSpace(command.ReceiverFullName))
+            {
+                if (!string.IsNullOrWhiteSpace(acc.Fullname))
+                    command.ReceiverFullName = acc.Fullname;
+                else
+                    return (null, op.Failed("نام و نام خانوادگی گیرنده نمی‌تواند خالی باشد."));
+            }
 
             if (string.IsNullOrWhiteSpace(command.ReceiverMobile))
                 command.ReceiverMobile = acc.Mobile;
 
+            command.ReceiverMobile = command.ReceiverMobile;
+
             var cartKey = $"user:{command.UserId}";
             var cart = await _cartRepository.GetOrCreateByCartKeyAsync(cartKey, cancellation);
-            if (cart == null || !cart.Items.Any())
-                return (null, op.Failed("سبد خریدی برای این کاربر یافت نشد."));
+            if (cart == null || !cart.Items.Any()) return (null, op.Failed("سبد خرید شما خالی است."));
+
+            var discountModel = new DiscountCalculationModel { UserId = command.UserId, CouponCode = command.CouponCode };
+            var enrichedItems = new List<(CartItem Item, Inventory Inventory, Product Product)>();
+
+            foreach (var item in cart.Items)
+            {
+                var inv = await _inventoryRepository.GetBy(item.ProductId, cancellation);
+                if (inv == null || inv.CalculateCurrentCount() < item.Quantity)
+                    return (null, op.Failed($"موجودی محصول {item.ProductId} کافی نیست."));
+
+                var product = await _productRepository.GetProductWithCategory(item.ProductId, cancellation);
+                if (product == null) return (null, op.Failed($"محصول {item.ProductId} یافت نشد!"));
+                enrichedItems.Add((item, inv, product));
+
+                discountModel.Items.Add(new CartItemForDiscount
+                {
+                    ProductId = item.ProductId,
+                    UnitPrice = inv.UnitPrice,
+                    Quantity = item.Quantity,
+                    CategoryId = product.CategoryId,
+                    Brand = product.Brand
+                });
+            }
+
+            var discountResult = await _discountApplication.CalculateDiscountsAsync(discountModel, cancellation);
 
             var orderItems = new List<OrderItem>();
-            foreach (var cartItem in cart.Items)
+            foreach (var data in enrichedItems)
             {
-                var inv = await _inventoryRepository.GetBy(cartItem.ProductId, cancellation);
-                if (inv == null)
-                    return (null, op.Failed("این محصول در انبار وجود ندارد."));
+                var discInfo = discountResult.Items.First(x => x.ProductId == data.Item.ProductId);
 
-                if (inv.CalculateCurrentCount() <= 0)
-                    return (null, op.Failed("این محصول ناموجود است."));
-
-                var disc = await _discountRepository.GetByProductId(cartItem.ProductId, cancellation);
-                var discRate = disc != null ? disc.DiscountRate : 0;
-                var discQty = disc != null ? disc.ProductCount : 0;
-
-                var productName = await _productRepository.GetProductName(cartItem.ProductId, cancellation) ?? "";
-                var productPic = await _productRepository.GetProductPic(cartItem.ProductId, cancellation) ?? "";
-
-                var orderItem = new OrderItem(cartItem.ProductId,
-                    cartItem.Quantity, inv.UnitPrice, discRate,
-                    productName, discQty, productPic);
+                var orderItem = new OrderItem(data.Item.ProductId, data.Item.Quantity,
+                    data.Inventory.UnitPrice, discInfo.DiscountRate,
+                    data.Product.Name, discInfo.DiscountedQty, discInfo.DiscountId, data.Product.Picture);
 
                 orderItems.Add(orderItem);
             }
 
-            var order = new Order(command.UserId, command.ReceiverFullName,
-                    command.ReceiverMobile, command.ReceiverAddress,
-                    command.ReceiverZipCode, command.PayMethod, orderItems);
+            var order = new Order(command.UserId, command.ReceiverFullName, command.ReceiverMobile,
+                command.ReceiverAddress, command.ReceiverZipCode, command.PayMethod, orderItems);
+
+            if (discountResult.AppliedCouponId > 0 && !string.IsNullOrEmpty(discountResult.CouponCode))
+                order.ApplyOrderCoupon(discountResult.AppliedCouponId.Value, discountResult.CouponCode, discountResult.OrderCouponAmount);
 
             _orderRepository.Create(order);
             await _orderRepository.SaveChangesAsync(cancellation);
+
+            var result = new PlaceOrderResult
+            {
+                OrderId = order.Id,
+                DiscountMessage = discountResult.DiscountMessage
+            };
 
             if (command.PayMethod == PaymentMethod.CardToCard)
             {
@@ -190,8 +187,12 @@ namespace ShopManagement.Application
                 await _cartApplication.ClearCartItemsAsync(cartKey, cancellation);
                 await _orderRepository.SaveChangesAsync(cancellation);
 
-                return (new PlaceOrderResult { OrderId = order.Id, ShouldRedirect = false, RedirectUrl = null },
+                result.ShouldRedirect = false;
+                result.RedirectUrl = null;
+
+                return (result,
                 op.Succeeded("سفارش با موفقیت ثبت شد و در انتظار تایید است"));
+                //op.Succeeded("سفارش با موفقیت ثبت شد و در انتظار تایید است " + discountResult.DiscountMessage));
             }
             else if (command.PayMethod == PaymentMethod.Gateway)
             {
@@ -204,12 +205,11 @@ namespace ShopManagement.Application
 
                     var paymentUrl = $"{_config["ZibalSettings:PaymentPageUrl"]}{trackId}";
 
-                    return (new PlaceOrderResult
-                    {
-                        OrderId = order.Id,
-                        ShouldRedirect = true,
-                        RedirectUrl = paymentUrl
-                    }, op.Succeeded("در حال انتقال به درگاه پرداخت..."));
+                    result.ShouldRedirect = true;
+                    result.RedirectUrl = paymentUrl;
+
+                    return (result,
+                        op.Succeeded("در حال انتقال به درگاه..."));
                 }
                 return (null, op.Failed($"خطا در اتصال به درگاه: {message}"));
             }
@@ -246,27 +246,7 @@ namespace ShopManagement.Application
 
                     order.MarkAsPaid(refNumber.ToString());
 
-                    foreach (var orderItem in order.Items)
-                    {
-                        var invId = (await _inventoryRepository.GetBy(orderItem.ProductId, cancellation))?.Id;
-                        var reduceInv = new ReduceInventoryByOrder
-                        {
-                            Count = orderItem.Quantity,
-                            OrderId = order.Id,
-                            Description = $"خرید توسط کاربر {order.UserId} با شماره سفارش {order.Id} در تاریخ {order.CreationDate.ToFarsiFull().ToPersianNumber()}",
-                            InventoryId = invId ?? 0,
-                            ProductId = orderItem.ProductId,
-                            UserId = order.UserId
-                        };
-                        await _inventoryApplication.ReduceByOrder(reduceInv, cancellation);
-
-                        if (orderItem.DiscountRate > 0)
-                        {
-                            var disc = await _discountRepository.GetByProductId(orderItem.ProductId, cancellation);
-                            disc?.ReduceQty(orderItem.DiscountedQty);
-                            await _discountRepository.SaveChangesAsync(cancellation);
-                        }
-                    }
+                    await ReduceInventory(order, cancellation);
 
                     await _cartApplication.ClearCartItemsAsync($"user:{order.UserId}", cancellation);
                     await _orderRepository.SaveChangesAsync(cancellation);
@@ -368,6 +348,39 @@ namespace ShopManagement.Application
                 Mobile = order.ReceiverMobile,
                 PostTrackingNo = order.ShipTrackingNo ?? ""
             };
+        }
+
+        private async Task ReduceInventory(Order order, CancellationToken cancellation)
+        {
+            var productIds = order.Items.Select(x => x.ProductId).ToList();
+            var inventories = await _inventoryRepository.GetByProductIds(productIds, cancellation);
+
+            foreach (var orderItem in order.Items)
+            {
+                var inventory = inventories.FirstOrDefault(x => x.ProductId == orderItem.ProductId);
+
+                var reduceInv = new ReduceInventoryByOrder
+                {
+                    Count = orderItem.Quantity,
+                    OrderId = order.Id,
+                    Description = $"تایید نهایی سفارش #{order.Id.ToString()} - کاربر #{order.UserId.ToString()}",
+                    InventoryId = inventory?.Id ?? 0,
+                    ProductId = orderItem.ProductId,
+                    UserId = order.UserId
+                };
+
+                await _inventoryApplication.ReduceByOrder(reduceInv, cancellation);
+
+                if (orderItem.DiscountId > 0)
+                {
+                    await _discountApplication.IncreaseUsage(orderItem.DiscountId, order.UserId, cancellation);
+                }
+            }
+
+            if (order.AppliedCouponId.HasValue)
+            {
+                await _discountApplication.IncreaseUsage(order.AppliedCouponId.Value, order.UserId, cancellation);
+            }
         }
 
         public async Task<OrderViewModel?> GetDetails(long orderId, CancellationToken cancellation)

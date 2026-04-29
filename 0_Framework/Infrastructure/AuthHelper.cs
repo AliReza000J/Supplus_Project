@@ -24,7 +24,6 @@ namespace _0_Framework.Infrastructure
             {
                 new("UserId", account.Id.ToString()),
                 new("RoleId", account.RoleId.ToString()),
-                new(ClaimTypes.Name, account.Fullname ?? string.Empty),
                 new("Username", account.Username ?? string.Empty),
             };
 
@@ -79,7 +78,6 @@ namespace _0_Framework.Infrastructure
         {
             var http = _contextAccessor.HttpContext;
             if (http?.User == null || !http.User.Identity.IsAuthenticated) return string.Empty;
-            //var claim = http.User.Claims.FirstOrDefault(x => x.Type == "RoleId" || x.Type == ClaimTypes.Role);
             var claim = http.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Role);
             return claim?.Value ?? string.Empty;
         }
@@ -136,6 +134,23 @@ namespace _0_Framework.Infrastructure
             var username = user.Claims.FirstOrDefault(x => x.Type == "Username")?.Value ?? string.Empty;
 
             if (username == "admin" && roleId == 1 && id == 1)
+                return true;
+
+            return false;
+        }
+
+        public bool IsAdmin()
+        {
+            var http = _contextAccessor.HttpContext;
+            if (http?.User == null || !http.User.Identity.IsAuthenticated) return false;
+
+            var user = http.User;
+            var id = CurrentUserId();
+            var roleIdClaim = user.Claims.FirstOrDefault(x => x.Type == "RoleId");
+            long roleId = 0;
+            if (roleIdClaim != null) _ = long.TryParse(roleIdClaim.Value, out roleId);
+
+            if (roleId == 1 || roleId == 2)
                 return true;
 
             return false;

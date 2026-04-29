@@ -22,7 +22,7 @@ namespace DiscountManagement.Infrastructure.EFCore.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
-            modelBuilder.Entity("DiscountManagement.Domain.ColleagueDiscountAgg.ColleagueDiscount", b =>
+            modelBuilder.Entity("DiscountManagement.Domain.DiscountAgg.Discount", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,24 +30,95 @@ namespace DiscountManagement.Infrastructure.EFCore.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
 
+                    b.Property<int>("ApplyType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DiscountRate")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsRemoved")
+                    b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<long>("ProductId")
-                        .HasColumnType("bigint");
+                    b.Property<int?>("MaxDiscountQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxUsageCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MinOrderAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Percentage")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UsageLimitPerUser")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ColleagueDiscounts", (string)null);
+                    b.ToTable("Discounts", (string)null);
                 });
 
-            modelBuilder.Entity("DiscountManagement.Domain.CustomerDiscountAgg.CustomerDiscount", b =>
+            modelBuilder.Entity("DiscountManagement.Domain.DiscountAgg.DiscountTarget", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<string>("BrandName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<long?>("CategoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("DiscountId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ProductId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("DiscountId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("DiscountTargets", (string)null);
+                });
+
+            modelBuilder.Entity("DiscountManagement.Domain.DiscountAgg.DiscountUserUsage", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -58,29 +129,45 @@ namespace DiscountManagement.Infrastructure.EFCore.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DiscountRate")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("EndDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ProductCount")
-                        .HasColumnType("int");
-
-                    b.Property<long>("ProductId")
+                    b.Property<long?>("DiscountId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<int>("UsedCount")
+                        .HasColumnType("int");
 
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("datetime2");
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.ToTable("CustomerDiscounts", (string)null);
+                    b.HasIndex("DiscountId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DiscountUserUsages", (string)null);
+                });
+
+            modelBuilder.Entity("DiscountManagement.Domain.DiscountAgg.DiscountTarget", b =>
+                {
+                    b.HasOne("DiscountManagement.Domain.DiscountAgg.Discount", null)
+                        .WithMany("Targets")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("DiscountManagement.Domain.DiscountAgg.DiscountUserUsage", b =>
+                {
+                    b.HasOne("DiscountManagement.Domain.DiscountAgg.Discount", null)
+                        .WithMany("Usages")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("DiscountManagement.Domain.DiscountAgg.Discount", b =>
+                {
+                    b.Navigation("Targets");
+
+                    b.Navigation("Usages");
                 });
 #pragma warning restore 612, 618
         }

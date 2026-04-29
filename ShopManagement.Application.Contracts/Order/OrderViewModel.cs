@@ -22,6 +22,9 @@
 
         public double TotalAmount { get; set; }
         public double DiscountAmount { get; set; }
+        public long? AppliedCouponId { get; set; }
+        public string? CouponCode { get; set; }
+        public double OrderCouponAmount { get; set; }
         public double PayAmount { get; set; }
 
         public string? CardOwnerNationalCode { get; set; }

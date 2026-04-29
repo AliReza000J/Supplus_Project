@@ -1,4 +1,5 @@
 ﻿using _0_Framework.Domain;
+using _0_Framework.Application;
 using ShopManagement.Domain.ProductAgg;
 
 namespace ShopManagement.Domain.ProductCategoryAgg

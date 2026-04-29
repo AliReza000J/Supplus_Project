@@ -43,7 +43,7 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 {
                     Id = x.Id,
                     Product = x.Product.Name,
-                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber(),
+                    CreationDate = x.CreationDate.ToFarsi(),
                     Picture = x.Picture,
                     ProductId = x.ProductId,
                     IsRemoved = x.IsRemoved

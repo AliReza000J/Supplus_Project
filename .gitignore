@@ -8,10 +8,10 @@
 *.vspx
 
 # Build results
-bin/
-obj/
-Debug/
-Release/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
 x64/
 x86/
 build/
@@ -55,6 +55,9 @@ appsettings.*.json
 
 !appsettings.*.example.json  
 
+
+# --- EF Core Factories ---
+*ContextDesignFactory.cs
 
 wwwroot/
 

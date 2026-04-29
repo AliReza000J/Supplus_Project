@@ -1,9 +1,18 @@
-﻿namespace CommentManagement.Application.Contracts.Comment
+﻿using _0_Framework.Application;
+
+namespace CommentManagement.Application.Contracts.Comment
 {
     public class CommentSearchModel
     {
         public int? Type { get; set; } // Product, Article
-        public string? Username { get; set; }
+
+        private string? _username;
+        public string? Username
+        {
+            get => _username;
+            set => _username = value?.ToEnglishNumber();
+        }
+
         public long? RecordId { get; set; }
         public bool? IsConfirmed { get; set; }
         public bool? IsCanceled { get; set; }

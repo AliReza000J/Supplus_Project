@@ -31,7 +31,7 @@ namespace BlogManagement.Application
             var categorySlug = await _articleCategoryRepository.GetSlugBy(command.CategoryId, cancellation);
             var path = $"ArticleCategories/{categorySlug}/Articles/{slug}";
             var pictureName = await _fileUploader.UploadAsync(command.Picture, path, cancellation);
-            var publishDate = command.PublishDate.ToGeorgianDateTime();
+            var publishDate = command.PublishDate.ToGregorianDateTime();
 
             var article = new Article(command.Title, command.ShortDescription, command.Body, pictureName,
                 command.PictureAlt, command.PictureTitle, publishDate, slug, command.Keywords, command.MetaDescription,
@@ -63,7 +63,7 @@ namespace BlogManagement.Application
                 pictureName = await _fileUploader.UploadAsync(command.Picture, path, cancellation);
             }
 
-            var publishDate = command.PublishDate.ToGeorgianDateTime();
+            var publishDate = command.PublishDate.ToGregorianDateTime();
 
             article.Edit(command.Title, command.ShortDescription, command.Body, pictureName,
                 command.PictureAlt, command.PictureTitle, publishDate, slug, command.Keywords, command.MetaDescription,

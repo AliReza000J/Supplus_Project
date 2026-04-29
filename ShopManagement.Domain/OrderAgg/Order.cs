@@ -1,4 +1,5 @@
 ﻿using _0_Framework.Domain;
+using _0_Framework.Application;
 
 namespace ShopManagement.Domain.OrderAgg
 {
@@ -7,13 +8,20 @@ namespace ShopManagement.Domain.OrderAgg
         public long UserId { get; private set; }
         public DateTime LastModifiedDate { get; set; } = DateTime.Now;
         public int PayMethod { get; private set; }
+
         public string ReceiverFullName { get; private set; }
         public string ReceiverMobile { get; private set; }
         public string ReceiverAddress { get; private set; }
         public string ReceiverZipCode { get; private set; }
+
         public double TotalAmount { get; private set; }
         public double DiscountAmount { get; private set; }
         public double PayAmount { get; private set; }
+
+        public string? CouponCode { get; set; }
+        public long? AppliedCouponId { get; private set; }
+        public double OrderCouponAmount { get; private set; }
+
         public int Status { get; private set; }
         public string? ShipTrackingNo { get; private set; }
         public string? CancellationReason { get; private set; }
@@ -111,5 +119,12 @@ namespace ShopManagement.Domain.OrderAgg
             PaymentReceiptPic = receiptPic;
         }
 
+        public void ApplyOrderCoupon(long couponId, string couponCode, double discountAmount)
+        {
+            this.AppliedCouponId = couponId;
+            this.CouponCode = couponCode;
+            this.OrderCouponAmount = discountAmount;
+            this.PayAmount -= discountAmount;
+        }
     }
 }

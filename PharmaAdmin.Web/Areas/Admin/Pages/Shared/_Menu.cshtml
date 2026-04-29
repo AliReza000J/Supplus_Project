@@ -1,0 +1,217 @@
+﻿@using AccountManagement.Domain.RoleAgg
+@using _0_Framework.Infrastructure
+@inject _0_Framework.Application.IAuthHelper AuthHelper;
+@inject AccountManagement.Application.Contracts.Account.IAccountApplication accountApplication;
+
+@{
+    var currentAccout = AuthHelper.CurrentAccountInfo();
+    var user = await accountApplication.GetAccountDetails(currentAccout.Id, CancellationToken.None);
+    var photo = user.ProfilePhoto;
+}
+
+<style>
+    #sidebar-menu ul li a {
+        transition: all 0.3s ease;
+    }
+
+        #sidebar-menu ul li a:hover {
+            background-color: #f0f4f8;
+            color: #007bff;
+        }
+
+            #sidebar-menu ul li a:hover i {
+                color: #007bff;
+            }
+
+    #sidebar-menu i {
+        width: 20px;
+        text-align: center;
+        margin-right: 10px;
+    }
+
+    .user-details {
+        background: #f3f3f3;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+</style>
+
+<div class="left side-menu">
+    <div class="sidebar-inner slimscrollleft">
+        <a asp-page="/Profile" style="text-decoration: none; color: inherit;">
+            <div class="user-details">
+                <div class="pull-right">
+                    <img src="~/Pictures/@photo" alt="" class="thumb-md img-circle">
+                </div>
+                <div class="user-info">
+                    <div class="dropdown">
+                        <p class="dropdown-toggle" aria-expanded="false" style="cursor: pointer;">@currentAccout.Fullname</p>
+                    </div>
+                    <p class="text-muted m-0">@currentAccout.Role</p>
+                </div>
+            </div>
+        </a>
+
+        <!-- Sidebar Menu -->
+        <div id="sidebar-menu">
+            <ul>
+                <li>
+                    <a asp-page="/Index" class="waves-effect active">
+                        <i class="fa fa-tachometer"></i>
+                        <span> داشبورد </span>
+                    </a>
+                </li>
+
+                <li>
+                    <a asp-page="/Comments/Index" class="waves-effect">
+                        <i class="ion-chatbubble-working"></i>
+                        <span> کامنت‌ها </span>
+                    </a>
+                </li>
+
+                @if (AuthHelper.IsSuperAdmin() || AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(2))
+                {
+                    <li>
+                        <a asp-page="/Inventory/Index" class="waves-effect">
+                            <i class="fa fa-archive"></i>
+                            <span> انبار </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Orders/Index" class="waves-effect">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span> سفارش‌ها </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Tickets/Index" class="waves-effect">
+                            <i class="fa fa-ticket"></i>
+                            <span> تیکت‌ها </span>
+                        </a>
+                    </li>
+
+                    @* <li class="has_sub"> *@
+                    @*     <a class="waves-effect"> *@
+                    @*         <i class="ion-pricetag"></i> *@
+                    @*         <span> تخفیف‌ها </span> *@
+                    @*         <span class="pull-left"><i class="md md-add"></i></span> *@
+                    @*     </a> *@
+                    @*     <ul class="list-unstyled"> *@
+                    @*         <li><a asp-page="/Discounts/CustomerDiscounts/Index"><i class="ion-person-stalker"></i> تخفیف مشتریان</a></li> *@
+                    @*         <li><a asp-page="/Discounts/ColleagueDiscounts/Index"><i class="fa fa-id-badge"></i> تخفیف همکاران</a></li> *@
+                    @*     </ul> *@
+                    @* </li> *@
+
+                    <li>
+                        <a asp-page="/Discounts/Index" class="waves-effect">
+                            <i class="ion-pricetag"></i>
+                            <span> تخفیف‌ها </span>
+                        </a>
+                    </li>
+
+                    <li class="has_sub">
+                        <a class="waves-effect">
+                            <i class="fa fa-shopping-bag"></i>
+                            <span> فروشگاه </span>
+                            <span class="pull-left"><i class="md md-add"></i></span>
+                        </a>
+                        <ul class="list-unstyled">
+                            <li><a asp-page="/Shop/Slides/Index"><i class="ion-images"></i> اسلایدها</a></li>
+                            <li><a asp-page="/Shop/ProductCategories/Index"><i class="ion-grid"></i> گروه محصولات</a></li>
+                            <li><a asp-page="/Shop/Products/Index"><i class="fa fa-cube"></i> محصولات</a></li>
+                            <li><a asp-page="/Shop/ProductPictures/Index"><i class="ion-image"></i> عکس محصولات</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="has_sub">
+                        <a class="waves-effect">
+                            <i class="ion-person"></i>
+                            <span> کاربران </span>
+                            <span class="pull-left"><i class="md md-add"></i></span>
+                        </a>
+                        <ul class="list-unstyled">
+                            <li><a asp-page="/Accounts/Account/Index"><i class="fa fa-users"></i> کاربران</a></li>
+                            <li><a asp-page="/Accounts/Role/Index"><i class="fa fa-shield"></i> نقش‌ها</a></li>
+                        </ul>
+                    </li>
+                }
+                else if (AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(3))
+                {
+                    <li>
+                        <a asp-page="/Inventory/Index" class="waves-effect">
+                            <i class="ion-archive"></i>
+                            <span> انبار </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Orders/Index" class="waves-effect">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span> سفارش‌ها </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Shop/Tickets/Index" class="waves-effect">
+                            <i class="fa fa-ticket"></i>
+                            <span> تیکت‌ها </span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a asp-page="/Discounts/Index" class="waves-effect">
+                            <i class="ion-pricetag"></i>
+                            <span> تخفیف‌ها </span>
+                        </a>
+                    </li>
+
+                    <li class="has_sub">
+                        <a class="waves-effect">
+                            <i class="ion-bag"></i>
+                            <span> فروشگاه </span>
+                            <span class="pull-left"><i class="md md-add"></i></span>
+                        </a>
+                        <ul class="list-unstyled">
+                            <li><a asp-page="/Shop/Slides/Index"><i class="ion-images"></i> اسلایدها</a></li>
+                            <li><a asp-page="/Shop/ProductCategories/Index"><i class="ion-grid"></i> گروه محصولات</a></li>
+                            <li><a asp-page="/Shop/Products/Index"><i class="ion-ios-box"></i> محصولات</a></li>
+                            <li><a asp-page="/Shop/ProductPictures/Index"><i class="ion-image"></i> عکس محصولات</a></li>
+                        </ul>
+                    </li>
+                }
+
+                <!-- Blog -->
+                <li class="has_sub">
+                    <a class="waves-effect">
+                        <i class="fa fa-newspaper-o"></i>
+                        <span> بلاگ </span>
+                        <span class="pull-left"><i class="md md-add"></i></span>
+                    </a>
+                    <ul class="list-unstyled">
+                        <li><a asp-page="/Blog/Articles/Index"><i class="fa fa-file-text-o"></i> مقالات</a></li>
+                        <li><a asp-page="/Blog/ArticleCategories/Index"><i class="fa fa-folder-open-o"></i> گروه مقالات</a></li>
+                    </ul>
+                </li>
+
+                @if (AuthHelper.IsSuperAdmin() || AuthHelper.CurrentAccountRole() == Roles.GetRoleBy(2))
+                {
+                    <li><a asp-page="/Site/Index"><i class="fa fa-wrench"></i>تنظیمات سایت</a></li>
+                }
+
+                <!-- Logout -->
+                <li>
+                    <a asp-page="/Login" asp-page-handler="Logout" class="waves-effect">
+                        <i class="fa fa-power-off"></i>
+                        <span> خروج </span>
+                    </a>
+                </li>
+
+            </ul>
+            <div class="clearfix"></div>
+        </div>
+        <div class="clearfix"></div>
+    </div>
+</div>

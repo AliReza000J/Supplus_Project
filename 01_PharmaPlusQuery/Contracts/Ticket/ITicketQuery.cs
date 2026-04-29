@@ -2,7 +2,7 @@
 {
     public interface ITicketQuery
     {
-        Task<TicketQueryModel?> GetByCode(string code, string userId, CancellationToken cancellation);
+        Task<TicketQueryModel?> GetTicketDetailsByCode(string code, string userId, CancellationToken cancellation);
         Task<List<TicketQueryModel>?> GetUserTickets(string userId, CancellationToken cancellation);
     }
 }

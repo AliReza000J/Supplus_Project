@@ -54,7 +54,7 @@ namespace SiteManagement.Application
 
             ticket.Reply(command.ReplyMessage, command.AdminId);
             await _ticketRepository.SaveChangesAsync(cancellation);
-            return op.Succeeded($"پاسخ شما برای تیکت #{ticket.Id} ثبت شد.");
+            return op.Succeeded($"پاسخ شما برای تیکت #{ticket.Id.ToString()} ثبت شد.");
         }
 
         public async Task<List<TicketViewModel>> Search(TicketSearchModel searchModel, CancellationToken cancellation)

@@ -7,6 +7,7 @@ namespace InventoryManagement.Domain.InventoryAgg
     {
         Task<EditInventory?> GetDetails(long id, CancellationToken cancellation);
         Task<Inventory?> GetBy(long productId, CancellationToken cancellation);
+        Task<List<Inventory>> GetByProductIds(List<long> productIds, CancellationToken cancellation);
         Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel, CancellationToken cancellation);
         Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId, CancellationToken cancellation);
     }

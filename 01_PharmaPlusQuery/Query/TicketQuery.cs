@@ -14,27 +14,28 @@ namespace _01_PharmaPlusQuery.Query
             _siteContext = siteContext;
         }
 
-        public async Task<TicketQueryModel?> GetByCode(string code, string userId, CancellationToken cancellation)
+        public async Task<TicketQueryModel?> GetTicketDetailsByCode(string code, string userId, CancellationToken cancellation)
         {
             if (!long.TryParse(userId, out var currentUserId))
                 return null;
 
             return await _siteContext.Tickets
                 .Where(t =>
-                    t.TrackingCode == code &&
+                    (t.TrackingCode == code || t.TrackingCode == code)
+                    &&
                     t.UserId == currentUserId
                 )
                 .Select(t => new TicketQueryModel
                 {
                     AdminReply = t.AdminReply,
-                    CreationDate = t.CreationDate.ToFarsiFull().ToPersianNumber(),
+                    CreationDate = t.CreationDate.ToFarsiFull(),
                     IsAnswered = t.IsAnswered,
                     UserId = t.UserId,
                     Message = t.Message,
                     Subject = t.Subject,
                     TrackingCode = t.TrackingCode,
                     AdminReplyDate = t.AnsweredAt != null
-                        ? t.AnsweredAt.ToFarsiFull().ToPersianNumber()
+                        ? t.AnsweredAt.ToFarsiFull()
                         : null
                 })
                 .FirstOrDefaultAsync(cancellation);
@@ -53,13 +54,13 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     TrackingCode = t.TrackingCode,
                     Subject = t.Subject,
-                    Message = t.Message,
+                    //Message = t.Message,
                     IsAnswered = t.IsAnswered,
-                    CreationDate = t.CreationDate.ToFarsiFull().ToPersianNumber(),
+                    CreationDate = t.CreationDate.ToFarsiFull(),
                     AdminReplyDate = t.AnsweredAt != null
-                        ? t.AnsweredAt.ToFarsiFull().ToPersianNumber()
+                        ? t.AnsweredAt.ToFarsiFull()
                         : null,
-                    UserId = t.UserId
+                    UserId = t.UserId,
                 })
                 .ToListAsync(cancellation);
         }

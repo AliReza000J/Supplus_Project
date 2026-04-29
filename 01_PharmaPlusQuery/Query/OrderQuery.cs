@@ -34,6 +34,9 @@ namespace _01_PharmaPlusQuery.Query
                     PostTrackingNumber = o.ShipTrackingNo,
                     CreationDate = o.CreationDate,
                     LastModifiedDate = o.LastModifiedDate,
+                    CouponCode = o.CouponCode,
+                    AppliedCouponId = o.AppliedCouponId,
+                    OrderCouponAmount = o.OrderCouponAmount,
                     Items = o.Items.Select(i => new OrderItemQueryModel
                     {
                         ProductId = i.ProductId,
@@ -48,9 +51,10 @@ namespace _01_PharmaPlusQuery.Query
 
             foreach (var order in orders)
             {
-                order.DiscountAmountDisplay = order.DiscountAmount.ToMoney().ToPersianNumber();
-                order.PayAmountDisplay = order.PayAmount.ToMoney().ToPersianNumber();
-                order.TotalAmountDisplay = order.TotalAmount.ToMoney().ToPersianNumber();
+                order.DiscountAmountDisplay = order.DiscountAmount.ToMoney();
+                order.PayAmountDisplay = order.PayAmount.ToMoney();
+                order.OrderCouponAmountDisplay = order.OrderCouponAmount.ToMoney();
+                order.TotalAmountDisplay = order.TotalAmount.ToMoney();
 
                 order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
                 order.PaymentMethod = PaymentMethod.GetMethodByCode(order.PaymentMethodInt);
@@ -60,9 +64,9 @@ namespace _01_PharmaPlusQuery.Query
 
                 foreach (var item in order.Items)
                 {
-                    item.UnitPriceDisplay = item.UnitPrice.ToMoney().ToPersianNumber();
-                    item.TotalPriceWithDiscountDisplay = item.TotalPriceWithDiscount.ToMoney().ToPersianNumber();
-                    item.DiscountRateDisplay = item.DiscountRate.ToString().ToPersianNumber() + "%";
+                    item.UnitPriceDisplay = item.UnitPrice.ToMoney();
+                    item.TotalPriceWithDiscountDisplay = item.TotalPriceWithDiscount.ToMoney();
+                    item.DiscountRateDisplay = item.DiscountRate.ToString() + "%";
                 }
             }
 

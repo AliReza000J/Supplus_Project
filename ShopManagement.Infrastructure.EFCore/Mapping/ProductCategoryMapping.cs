@@ -21,7 +21,6 @@ namespace ShopManagement.Infrastructure.EFCore.Mapping
             builder.Property(x => x.Slug).HasMaxLength(250).IsRequired();
             builder.Property(x => x.FullSlug).HasMaxLength(1000).IsRequired(false);
 
-
             // Self-referencing relationship
             builder.HasOne(c => c.Parent)
                    .WithMany(c => c.Children)

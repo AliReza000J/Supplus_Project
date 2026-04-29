@@ -5,6 +5,7 @@
         Task SignIn(AuthViewModel account, bool rememberMe);
         bool IsAuthenticated();
         bool IsSuperAdmin();
+        bool IsAdmin();
         Task SignOut();
         string CurrentAccountRole();
         //string CurrentAccountMobile();

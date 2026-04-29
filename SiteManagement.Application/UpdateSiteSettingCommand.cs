@@ -58,7 +58,7 @@ namespace SiteManagement.Application
                 data.Contact = dto.Contact;
                 data.About = dto.About;
                 data.Payment = dto.Payment;
-
+                data.TicketTitles = dto.TicketTitles;
                 data.TermsAndConditions = dto.TermsAndConditions;
                 data.ReturnPolicy = dto.ReturnPolicy;
                 data.Socials = dto.Socials;

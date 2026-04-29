@@ -29,8 +29,7 @@ namespace _01_PharmaPlusQuery.Query
             // -----------------------------
             // 1) Get static parts from cache
             // -----------------------------
-            var article = await _cacheService.GetOrCreateAsync(
-                cacheKey,
+            var article = await _cacheService.GetOrCreateAsync(cacheKey,
                 factory: async () =>
                 {
                     return await _blogContext.Articles
@@ -50,17 +49,14 @@ namespace _01_PharmaPlusQuery.Query
                             PictureAlt = x.PictureAlt,
                             PictureTitle = x.PictureTitle,
                             ShortDescription = x.ShortDescription,
-                            PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
-
+                            PublishDate = x.PublishDate.ToFarsi(),
+                            ViewCount = x.ViewCount,
                             CategoryName = x.Category.Name,
                             CategorySlug = x.Category.Slug
                         })
                         .FirstOrDefaultAsync(cancellation);
-                },
-                absoluteExpiration: TimeSpan.FromHours(1),
-                slidingExpiration: TimeSpan.FromMinutes(20),
-                size: 1
-            );
+                }, absoluteExpiration: TimeSpan.FromHours(1), slidingExpiration: TimeSpan.FromMinutes(20), size: 1
+                , cancellationToken: cancellation);
 
             if (article == null)
                 return null;
@@ -87,15 +83,15 @@ namespace _01_PharmaPlusQuery.Query
                     Id = x.Id,
                     Message = x.Message,
                     Username = x.Username,
-                    CreationDate = x.CreationDate.ToFarsi().ToPersianNumber(),
+                    CreationDate = x.CreationDate.ToFarsi(),
                     Reply = x.AdminReply,
                     DislikeCount = x.DislikeCount,
                     LikeCount = x.LikeCount,
                     Rate = x.Rate,
-                    ReplyDate = x.AdminReplyDate.ToFarsi().ToPersianNumber(),
+                    ReplyDate = x.AdminReplyDate.ToFarsi(),
                     HasEdited = x.CreationDate == x.LastModified,
                     UserId = x.UserId,
-                    LastModifedDate = x.LastModified.ToFarsi().ToPersianNumber(),
+                    LastModifedDate = x.LastModified.ToFarsi(),
                     LikedByUserIds = new List<long>(),
                     DislikedByUserIds = new List<long>()
                 })
@@ -164,6 +160,12 @@ namespace _01_PharmaPlusQuery.Query
             article.RateCount = rateCount;
             article.AvgRate = avgRate;
 
+            article.AvgRateStr = avgRate.ToString();
+            article.CommentCountStr = commentCount.ToString();
+            article.RateCountStr = rateCount.ToString();
+            article.ViewsLabel = "+" + (Math.Ceiling(article.ViewCount / 10.0) * 10).ToString() 
+            + " بازدید از این مقاله";
+
             return article;
         }
 
@@ -218,7 +220,7 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                    PublishDate = x.PublishDate.ToFarsi(),
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug,
@@ -267,7 +269,7 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                    PublishDate = x.PublishDate.ToFarsi(),
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug,
@@ -338,7 +340,7 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                    PublishDate = x.PublishDate.ToFarsi(),
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
                     CategorySlug = x.Category.Slug
@@ -358,7 +360,7 @@ namespace _01_PharmaPlusQuery.Query
             return new PagedResult<ArticleQueryModel>
             {
                 Items = items,
-                Page = page,
+                CurrentPage = page,
                 PageSize = pageSize,
                 TotalCount = totalCount,
                 TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
@@ -415,7 +417,7 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = x.Picture,
                     PictureAlt = x.PictureAlt,
                     PictureTitle = x.PictureTitle,
-                    PublishDate = x.PublishDate.ToFarsi().ToPersianNumber(),
+                    PublishDate = x.PublishDate.ToFarsi(),
                     ViewCount = x.ViewCount,
                     ShortDescription = x.ShortDescription,
                     CategoryName = x.Category.Name,
