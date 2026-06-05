@@ -3,7 +3,6 @@ using CommentManagement.Application.Contracts.Comment;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmaShared.Web.Filters;
 using System.Security.Claims;
 
 namespace PharmaStore.WebApi.Controllers
@@ -35,7 +34,6 @@ namespace PharmaStore.WebApi.Controllers
         /// This endpoint allows an authenticated user to post a comment and a rating for a specific record.
         /// The user's ID and username are extracted from the authentication token.
         /// <br/>
-        /// **Rate Limit:** 5 requests per 60 seconds.
         /// </remarks>
         /// <param name="command">The details of the comment to be added.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -44,7 +42,6 @@ namespace PharmaStore.WebApi.Controllers
         /// <response code="401">Unauthorized. The user is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("add")]
-        [RateLimit(Limit = 5, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -77,7 +74,6 @@ namespace PharmaStore.WebApi.Controllers
         /// Allows an authenticated user to edit their own comment. The user can update the message, the rating, or both.
         /// An attempt to edit a comment that does not belong to the user will result in a failed operation.
         /// <br/>
-        /// **Rate Limit:** 5 requests per 60 seconds.
         /// </remarks>
         /// <param name="command">The details of the comment to be edited.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -86,7 +82,6 @@ namespace PharmaStore.WebApi.Controllers
         /// <response code="401">Unauthorized. The user is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPut("edit")]
-        [RateLimit(Limit = 5, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -146,7 +141,6 @@ namespace PharmaStore.WebApi.Controllers
         /// Allows an authenticated user to add a 'like' to a specific comment.
         /// If the user has already liked the comment, the operation might fail or have no effect.
         /// <br/>
-        /// **Rate Limit:** 10 requests per 60 seconds.
         /// </remarks>
         /// <param name="commentId">The ID of the comment to like.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -155,7 +149,6 @@ namespace PharmaStore.WebApi.Controllers
         /// <response code="401">Unauthorized. The user is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("like/{commentId:long}")]
-        [RateLimit(Limit = 10, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -182,7 +175,6 @@ namespace PharmaStore.WebApi.Controllers
         /// Allows an authenticated user to add a 'dislike' to a specific comment.
         /// If the user has already disliked the comment, the operation might fail or have no effect.
         /// <br/>
-        /// **Rate Limit:** 10 requests per 60 seconds.
         /// </remarks>
         /// <param name="commentId">The ID of the comment to dislike.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -191,7 +183,6 @@ namespace PharmaStore.WebApi.Controllers
         /// <response code="401">Unauthorized. The user is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("dislike/{commentId:long}")]
-        [RateLimit(Limit = 10, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

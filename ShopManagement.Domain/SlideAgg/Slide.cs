@@ -3,7 +3,7 @@
 
 namespace ShopManagement.Domain.SlideAgg
 {
-    public class Slide : BaseEntity
+    public class Slide : EntityBase
     {
         public string Picture { get; private set; }
         public string PictureAlt { get; private set; }

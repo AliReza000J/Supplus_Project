@@ -1,10 +1,11 @@
 ﻿using _0_Framework.Application;
-using Microsoft.AspNetCore.Mvc;
 using SiteManagement.Application;
 using SiteManagement.Application.Contracts.SiteSetting;
 
 namespace PharmaStore.WebApi.Controllers.Site
 {
+    using Microsoft.AspNetCore.Mvc;
+
     [ApiController]
     [Route("api/site-settings")]
     public class SiteSettingController : ControllerBase
@@ -16,12 +17,75 @@ namespace PharmaStore.WebApi.Controllers.Site
             _query = query;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<SiteSettingDto>>> Get(CancellationToken cancellation)
+        [HttpGet("global")]
+        public async Task<ActionResult<ApiResponse<GlobalSettingResponse>>> GetGlobalSettings(CancellationToken cancellation)
         {
-            var result = await _query.Execute(cancellation);
-            return Ok(ApiResponse<SiteSettingDto>.Ok(result));
+            var settings = await _query.Execute(cancellation);
+
+            var response = new GlobalSettingResponse(
+                settings.Logo,
+                settings.Favicon,
+                settings.Socials,
+                settings.Contact,
+                settings.GeneralSetting
+            );
+
+            return Ok(ApiResponse<GlobalSettingResponse>.Ok(response));
+        }
+
+        [HttpGet("about")]
+        public async Task<ActionResult<ApiResponse<AboutDto>>> GetAbout(CancellationToken cancellation)
+        {
+            var settings = await _query.Execute(cancellation);
+            return Ok(ApiResponse<AboutDto>.Ok(settings.About));
+        }
+
+        [HttpGet("payment")]
+        public async Task<ActionResult<ApiResponse<PaymentDto>>> GetPaymentSettings(CancellationToken cancellation)
+        {
+            var settings = await _query.Execute(cancellation);
+            return Ok(ApiResponse<PaymentDto>.Ok(settings.Payment));
+        }
+
+        [HttpGet("ticket-titles")]
+        public async Task<ActionResult<ApiResponse<TicketTitlesDto>>> GetTicketTitles(CancellationToken cancellation)
+        {
+            var settings = await _query.Execute(cancellation);
+            var titles = settings.TicketTitles.Titles.OrderBy(x => x.NumberOfRow).ToList();
+            var result = new TicketTitlesDto
+            {
+                Titles = titles
+            };
+            return Ok(ApiResponse<TicketTitlesDto>.Ok(result));
+        }
+
+        [HttpGet("faq")]
+        public async Task<ActionResult<ApiResponse<FaqDto>>> GetFaq(CancellationToken cancellation)
+        {
+            var settings = await _query.Execute(cancellation);
+            return Ok(ApiResponse<FaqDto>.Ok(settings.Faq));
+        }
+
+        [HttpGet("terms")]
+        public async Task<ActionResult<ApiResponse<TermsAndConditionsDto>>> GetTerms(CancellationToken cancellation)
+        {
+            var settings = await _query.Execute(cancellation);
+            return Ok(ApiResponse<TermsAndConditionsDto>.Ok(settings.TermsAndConditions));
+        }
+
+        [HttpGet("return-policy")]
+        public async Task<ActionResult<ApiResponse<ReturnPolicyDto>>> GetReturnPolicy(CancellationToken cancellation)
+        {
+            var settings = await _query.Execute(cancellation);
+            return Ok(ApiResponse<ReturnPolicyDto>.Ok(settings.ReturnPolicy));
         }
     }
 
+    public record GlobalSettingResponse(
+        string? Logo,
+        string? Favicon,
+        SocialsDto Socials,
+        ContactSettingDto Contact,
+        GeneralSettingDto GeneralSetting
+    );
 }

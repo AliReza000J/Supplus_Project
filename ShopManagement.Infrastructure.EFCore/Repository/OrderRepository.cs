@@ -6,7 +6,7 @@ using ShopManagement.Domain.OrderAgg;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class OrderRepository : BaseRepository<long, Order>, IOrderRepository
+    public class OrderRepository : RepositoryBase<long, Order>, IOrderRepository
     {
         private readonly ShopContext _context;
         public OrderRepository(ShopContext context) : base(context)

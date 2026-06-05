@@ -9,7 +9,6 @@
         public string? CreationDateDisplay { get; set; }
         public DateTime LastModifiedDate { get; set; }
         public string? LastModifiedDateDisplay { get; set; }
-        public DateTime SortDate { get; set; }
 
         public int Status { get; set; }
         public string? StatusTitle { get; set; }
@@ -20,6 +19,7 @@
 
         public double TotalAmount { get; set; }
         public string? TotalAmountDisplay { get; set; }
+
         public double DiscountAmount { get; set; }
         public string? DiscountAmountDisplay { get; set; }
 

@@ -41,15 +41,27 @@ namespace PharmaShared.Web.Middlewares
 
             var (statusCode, message) = MapException(ex);
 
-            var response = ApiResponse<object>.Fail(message);
+            if (IsAjaxOrApiRequest(context.Request))
+            {
+                var response = ApiResponse<object>.Fail(message);
+                context.Response.Clear();
+                context.Response.StatusCode = (int)statusCode;
+                context.Response.ContentType = "application/json; charset=utf-8";
 
-            context.Response.Clear();
-            context.Response.StatusCode = (int)statusCode;
-            context.Response.ContentType = "application/json; charset=utf-8";
+                var json = JsonSerializer.Serialize(response);
+                await context.Response.WriteAsync(json);
+            }
+            else
+            {
+                context.Response.Redirect("/Admin/Error");
+            }
+        }
 
-            var json = JsonSerializer.Serialize(response);
-
-            await context.Response.WriteAsync(json);
+        private static bool IsAjaxOrApiRequest(HttpRequest request)
+        {
+            return request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                   request.Headers["Accept"].ToString().Contains("application/json") ||
+                   request.Path.Value.StartsWith("/api");
         }
 
         private static (HttpStatusCode statusCode, string message) MapException(Exception ex)

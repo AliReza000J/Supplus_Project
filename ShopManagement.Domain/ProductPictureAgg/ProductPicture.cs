@@ -3,7 +3,7 @@ using ShopManagement.Domain.ProductAgg;
 
 namespace ShopManagement.Domain.ProductPictureAgg
 {
-    public class ProductPicture : BaseEntity
+    public class ProductPicture : EntityBase
     {
         public long ProductId { get; private set; }
         public string Picture { get; private set; }

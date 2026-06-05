@@ -148,8 +148,17 @@ namespace ShopManagement.Infrastructure.EFCore.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("ShipTrackingNo")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("ShippingCost")
+                        .HasColumnType("float");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");

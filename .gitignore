@@ -49,7 +49,7 @@ Desktop.ini
 .DS_Store
 
 # --- AppSettings management ---
-!appsettings.json  
+appsettings.json  
 
 appsettings.*.json  
 

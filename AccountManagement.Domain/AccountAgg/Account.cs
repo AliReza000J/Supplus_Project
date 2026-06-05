@@ -1,10 +1,9 @@
 ﻿using _0_Framework.Domain;
-using _0_Framework.Application;
 using AccountManagement.Domain.RoleAgg;
 
 namespace AccountManagement.Domain.AccountAgg
 {
-    public class Account : BaseEntity
+    public class Account : EntityBase
     {
         public string? Fullname { get; private set; }
         public string Username { get; private set; }
@@ -14,7 +13,7 @@ namespace AccountManagement.Domain.AccountAgg
         public string ProfilePhoto { get; private set; }
         public long RoleId { get; private set; }
         public bool IsActive { get; private set; }
-        public bool IsProfileCompleted { get; private set; } = true;
+        public bool IsProfileCompleted { get; private set; } = true; // password and fullname for users - setup for admin
 
         // Navigation
         public Role? Role { get; private set; }
@@ -54,10 +53,22 @@ namespace AccountManagement.Domain.AccountAgg
             ProfilePhoto = defaultPhoto;
         }
 
+        public Account(string fullname, string username, string profilePhoto, int roleId)
+        {
+            Fullname = fullname;
+            Username = username;
+            ProfilePhoto = profilePhoto;
+            RoleId = roleId;
+            Password = null;
+            Email = null;
+            Mobile = "09120000000";
+            IsActive = true;
+            IsProfileCompleted = false;
+        }
 
         // --- Behaviors (Methods) ---
 
-        public void EditFullInfo(string fullname, string username, string? email, string mobile, long roleId, string profilePhoto)
+        public void EditFullInfoByAdmin(string fullname, string username, string? email, string mobile, long roleId, string profilePhoto)
         {
             if (Id == 1 || this.Username.ToLower() == "admin")
             {
@@ -79,7 +90,7 @@ namespace AccountManagement.Domain.AccountAgg
                 ProfilePhoto = profilePhoto;
         }
 
-        public void UpdatePersonalProfileAndMobile(string fullname, string username, string mobile, string? email, string profilePhoto)
+        public void UpdatePersonalProfileAndMobileAdminPanel(string fullname, string username, string mobile, string? email, string profilePhoto)
         {
             if (Id == 1 || this.Username.ToLower() == "admin")
             {
@@ -97,10 +108,9 @@ namespace AccountManagement.Domain.AccountAgg
 
             if (!string.IsNullOrWhiteSpace(profilePhoto))
                 ProfilePhoto = profilePhoto;
-
         }
 
-        public void UpdateProfileInfo(string fullname, string username, string? email, string profilePhoto)
+        public void UpdateProfileInfoApi(string fullname, string username, string? email, string profilePhoto)
         {
             if (Id == 1 || this.Username.ToLower() == "admin")
             {
@@ -118,7 +128,7 @@ namespace AccountManagement.Domain.AccountAgg
             if (!string.IsNullOrWhiteSpace(profilePhoto))
                 ProfilePhoto = profilePhoto;
 
-            IsProfileCompleted = true;
+            IsProfileCompleted = !string.IsNullOrWhiteSpace(Password);
         }
 
         public void UpdateSuperAdmin(string email, string mobile)
@@ -127,6 +137,12 @@ namespace AccountManagement.Domain.AccountAgg
             Mobile = mobile;
         }
 
+        public void SetPassword(string password)
+        {
+            Password = password;
+
+            IsProfileCompleted = !string.IsNullOrWhiteSpace(Fullname);
+        }
 
         public void ChangePassword(string newPassword)
         {
@@ -137,6 +153,8 @@ namespace AccountManagement.Domain.AccountAgg
         {
             Mobile = newMobile;
         }
+
+        public void SetCompleted() => IsProfileCompleted = true;
 
         public void Activate() => IsActive = true;
 

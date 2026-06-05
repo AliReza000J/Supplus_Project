@@ -5,16 +5,16 @@ namespace _01_PharmaPlusQuery.Contracts.Dashbord
     public class ComparisonChartDto
     {
         [JsonProperty(PropertyName = "label")]
-        public string Label { get; set; } // عنوان کلی نمودار (مثلاً "مقایسه فروش")
+        public string Label { get; set; }
 
         [JsonProperty(PropertyName = "currentValue")]
-        public double CurrentValue { get; set; } // مقدار دوره فعلی
+        public double CurrentValue { get; set; }
 
         [JsonProperty(PropertyName = "previousValue")]
-        public double PreviousValue { get; set; } // مقدار دوره قبلی
+        public double PreviousValue { get; set; }
 
         [JsonProperty(PropertyName = "labels")]
-        public List<string> Labels { get; set; } = new List<string>(); // نام دوره‌ها (مثلاً "آبان" و "آذر")
+        public List<string> Labels { get; set; } = new List<string>();
 
         public double GrowthPercentage
         {

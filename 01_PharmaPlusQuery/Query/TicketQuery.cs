@@ -14,16 +14,11 @@ namespace _01_PharmaPlusQuery.Query
             _siteContext = siteContext;
         }
 
-        public async Task<TicketQueryModel?> GetTicketDetailsByCode(string code, string userId, CancellationToken cancellation)
+        public async Task<TicketQueryModel?> GetTicketDetails(long id, long userId, CancellationToken cancellation)
         {
-            if (!long.TryParse(userId, out var currentUserId))
-                return null;
-
             return await _siteContext.Tickets
                 .Where(t =>
-                    (t.TrackingCode == code || t.TrackingCode == code)
-                    &&
-                    t.UserId == currentUserId
+                    t.Id == id && t.UserId == userId
                 )
                 .Select(t => new TicketQueryModel
                 {
@@ -42,13 +37,10 @@ namespace _01_PharmaPlusQuery.Query
         }
 
 
-        public async Task<List<TicketQueryModel>?> GetUserTickets(string userId, CancellationToken cancellation)
+        public async Task<List<TicketQueryModel>?> GetUserTickets(long userId, CancellationToken cancellation)
         {
-            if (!long.TryParse(userId, out var currentUserId))
-                return null;
-
             return await _siteContext.Tickets
-                .Where(t => t.UserId == currentUserId)
+                .Where(t => t.UserId == userId)
                 .OrderByDescending(t => t.Id)
                 .Select(t => new TicketQueryModel
                 {

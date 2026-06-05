@@ -3,7 +3,7 @@ using AccountManagement.Domain.AccountAgg;
 
 namespace AccountManagement.Domain.RoleAgg
 {
-    public class Role : BaseEntity
+    public class Role : EntityBase
     {
         public string Name { get; private set; }
         public List<Permission> Permissions { get; private set; }

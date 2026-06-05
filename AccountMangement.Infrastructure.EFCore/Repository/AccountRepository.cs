@@ -2,11 +2,12 @@
 using _0_Framework.Infrastructure;
 using AccountManagement.Application.Contracts.Account.ApplicationDTOs;
 using AccountManagement.Domain.AccountAgg;
+using AccountManagement.Domain.RoleAgg;
 using Microsoft.EntityFrameworkCore;
 
 namespace AccountManagement.Infrastructure.EFCore.Repository
 {
-    public class AccountRepository : BaseRepository<long, Account>, IAccountRepository
+    public class AccountRepository : RepositoryBase<long, Account>, IAccountRepository
     {
         private readonly AccountContext _context;
 
@@ -102,6 +103,13 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
         {
             return await _context.Accounts
                 .FirstOrDefaultAsync(x => x.Mobile == usernameOrMobile || x.Username == usernameOrMobile, cancellation);
+        }
+
+        public async Task<bool> NeedSetup(CancellationToken cancellation)
+        {
+            return await _context.Accounts
+                .AnyAsync(a =>
+                a.RoleId == Roles.SuperAdmin && !a.IsProfileCompleted, cancellation);
         }
     }
 }

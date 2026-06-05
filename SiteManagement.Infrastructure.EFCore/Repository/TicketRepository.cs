@@ -8,7 +8,7 @@ using SiteManagement.Domain.TicketAgg;
 
 namespace SiteManagement.Infrastructure.EFCore.Repository
 {
-    public class TicketRepository : BaseRepository<long, Ticket>, ITicketRepository
+    public class TicketRepository : RepositoryBase<long, Ticket>, ITicketRepository
     {
         private readonly SiteContext _context;
         private readonly AccountContext _accountContext;

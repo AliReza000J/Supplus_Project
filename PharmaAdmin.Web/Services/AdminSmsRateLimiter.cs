@@ -9,6 +9,9 @@ namespace PharmaAdmin.Web.Services
 
         private const int MaxAttempts = 5;
         private static readonly TimeSpan Window = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan OrderCooldown = TimeSpan.FromMinutes(2);
+
+        private class Counter { public int Value = 0; }
 
         public AdminSmsRateLimiter(IMemoryCache cache)
         {
@@ -23,17 +26,20 @@ namespace PharmaAdmin.Web.Services
             if (_cache.TryGetValue(orderKey, out _))
                 return false;
 
-            var adminCount = _cache.GetOrCreate(adminKey, entry =>
+            var adminCounter = _cache.GetOrCreate(adminKey, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = Window;
-                return 0;
+                return new Counter();
             });
 
-            if (adminCount >= MaxAttempts)
+            if (adminCounter == null) return false;
+
+            var currentCount = Interlocked.Increment(ref adminCounter!.Value);
+
+            if (currentCount > MaxAttempts)
                 return false;
 
-            _cache.Set(orderKey, true, TimeSpan.FromMinutes(2));
-            _cache.Set(adminKey, adminCount + 1, Window);
+            _cache.Set(orderKey, true, OrderCooldown);
 
             return true;
         }

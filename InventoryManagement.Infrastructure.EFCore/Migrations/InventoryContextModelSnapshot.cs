@@ -36,8 +36,17 @@ namespace InventoryManagement.Infrastructure.EFCore.Migrations
                     b.Property<bool>("InStock")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<long>("ProductId")
                         .HasColumnType("bigint");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<double>("UnitPrice")
                         .HasColumnType("float");

@@ -1,11 +1,15 @@
 ﻿using _0_Framework.Domain;
 using _0_Framework.Application;
 using static DiscountManagement.Domain.DiscountAgg.DiscountTarget;
+using System.ComponentModel.DataAnnotations;
 
 namespace DiscountManagement.Domain.DiscountAgg
 {
-    public class Discount : BaseEntity
+    public class Discount : EntityBase
     {
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+
         public string Title { get; private set; }
         public string? CouponCode { get; private set; }
 

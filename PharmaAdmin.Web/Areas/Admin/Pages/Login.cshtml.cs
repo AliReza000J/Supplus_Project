@@ -4,12 +4,10 @@ using AccountManagement.Application.Contracts.Account.ApplicationDTOs;
 using AccountManagement.Domain.RoleAgg;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using PharmaShared.Web.Filters;
 using SiteManagement.Application;
 
 namespace PharmaAdmin.Web.Areas.Admin.Pages
 {
-    [RateLimit(Limit = 10, Seconds = 300)]
     public class LoginModel : PageModel
     {
         [TempData]

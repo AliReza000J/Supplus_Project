@@ -5,7 +5,6 @@ using BlogManagement.Application.Contracts.Article;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmaShared.Web.Filters;
 using System.Security.Claims;
 
 namespace PharmaStore.WebApi.Controllers.Blog
@@ -136,7 +135,6 @@ namespace PharmaStore.WebApi.Controllers.Blog
         /// </summary>
         /// <remarks>
         /// Provides search functionality across article titles, texts, and keywords with pagination support.
-        /// This endpoint has a rate limit of 30 requests per 60 seconds.
         /// </remarks>
         /// <param name="value">The search query keyword.</param>
         /// <param name="page">The current page number (default: 1).</param>
@@ -147,7 +145,6 @@ namespace PharmaStore.WebApi.Controllers.Blog
         /// <response code="400">Bad request. The search query is missing or empty.</response>
         [AllowAnonymous]
         [HttpGet("search")]
-        [RateLimit(Limit = 30, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<PagedResult<ArticleQueryModel>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<PagedResult<ArticleQueryModel>>), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ApiResponse<PagedResult<ArticleQueryModel>>>> Search(

@@ -10,8 +10,8 @@ namespace CommentManagement.Domain.CommentAgg
         Task<bool> OwnsComment(long commentId, long userId, CancellationToken cancellation);
 
         // reactions
-        Task<bool> HasUserLiked(long commentId, long userId, CancellationToken cancellation);
-        Task<bool> HasUserDisliked(long commentId, long userId, CancellationToken cancellation);
+        //Task<bool> HasUserLiked(long commentId, long userId, CancellationToken cancellation);
+        //Task<bool> HasUserDisliked(long commentId, long userId, CancellationToken cancellation);
 
         // reaction add/remove helpers for repository-level operations
         void AddReaction(CommentReaction reaction);

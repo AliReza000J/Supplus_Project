@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BlogManagement.Infrastructure.EFCore.Repository
 {
-    public class ArticleRepository : BaseRepository<long, Article>, IArticleRepository
+    public class ArticleRepository : RepositoryBase<long, Article>, IArticleRepository
     {
         private readonly BlogContext _context;
 

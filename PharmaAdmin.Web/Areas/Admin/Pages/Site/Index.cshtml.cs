@@ -39,6 +39,8 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Site
                 ReturnPolicy = Setting.ReturnPolicy ?? new ReturnPolicyDto(),
                 TermsAndConditions = Setting.TermsAndConditions ?? new TermsAndConditionsDto(),
                 Payment = Setting.Payment ?? new PaymentDto(),
+                Faq = Setting.Faq ?? new FaqDto(),
+                GeneralSetting = Setting.GeneralSetting ?? new GeneralSettingDto(),
                 Branding = new BrandingSettingDto
                 {
                     CurrentLogo = Setting.Logo,
@@ -46,19 +48,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Site
                 }
             };
 
-            if (Command.Payment.Cards == null)
-                Command.Payment.Cards = new List<CardDto>();
-
-            if (Command.Socials.Items == null)
-                Command.Socials.Items = new List<SocialItemDto>();
-
-            if (Command.TicketTitles.Titles == null)
-                Command.TicketTitles.Titles = new List<TicketTitleItem>();
+            Command.Payment.Cards ??= new List<CardDto>();
+            Command.Socials.Items ??= new List<SocialItemDto>();
+            Command.TicketTitles.Titles ??= new List<TicketTitleItem>();
+            Command.Faq.Items ??= new List<FaqItemDto>();
+            Command.Contact.Phones ??= new List<ContactPhoneDto>();
         }
 
         public async Task<IActionResult> OnPost(CancellationToken cancellation)
         {
-            var errors = ModelState.Values.SelectMany(v => v.Errors);
+            //var errors = ModelState.Values.SelectMany(v => v.Errors);
             //foreach (var error in errors)
             //{
             //    Console.WriteLine(error.ErrorMessage);
@@ -72,9 +71,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Site
 
             var result = await _command.Execute(Command, cancellation);
 
-            TempData["Toast.Success"] = result.IsSucceeded;
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
             TempData["Toast.Message"] = result.Message;
-            return RedirectToPage("./Index");
+            return Page();
         }
     }
 

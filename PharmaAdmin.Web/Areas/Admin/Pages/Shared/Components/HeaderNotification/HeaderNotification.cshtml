@@ -1,0 +1,157 @@
+﻿@model AdminNotificationDto
+@using _01_PharmaPlusQuery.Contracts.AdminNotification
+@using _0_Framework.Application;
+
+<style>
+    .notify-drop {
+        min-width: 320px;
+        padding: 0;
+        text-align: right;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .drop-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #fbfbfb;
+    }
+
+        .drop-header h5 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .drop-header .clear-btn {
+            color: #777;
+            font-size: 16px;
+        }
+
+            .drop-header .clear-btn:hover {
+                color: #d9534f;
+            }
+
+    .notify-item-custom {
+        display: flex !important;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f5f5f5;
+        text-decoration: none !important;
+        color: #333;
+        align-items: center;
+    }
+
+        .notify-item-custom:hover {
+            background-color: #f9f9f9;
+        }
+
+    .notify-icon-custom {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        background-color: #337ab7;
+        margin-left: 15px;
+        font-size: 16px;
+    }
+
+    .notify-body-custom {
+        flex-grow: 1;
+        text-align: right;
+        width: 100%;
+        overflow: hidden;
+    }
+
+        .notify-body-custom strong {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 3px;
+            color: #333;
+        }
+
+        .notify-body-custom .msg-text {
+            display: block;
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+            line-height: 1.4;
+            white-space: normal;
+        }
+
+        .notify-body-custom .time-text {
+            display: block;
+            font-size: 11px;
+            color: #aaa;
+            text-align: left;
+        }
+
+    .drop-footer {
+        padding: 12px 15px;
+        text-align: center;
+        background-color: #fbfbfb;
+        border-top: 1px solid #eee;
+    }
+
+        .drop-footer a {
+            color: #337ab7;
+            font-weight: bold;
+            text-decoration: none;
+        }
+</style>
+
+<li class="dropdown notification-list">
+    <a class="nav-link dropdown-toggle arrow-none waves-effect" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+        <i class="fa fa-bell"></i>
+        @if (Model.TotalUnreadCount > 0)
+        {
+            <span class="badge badge-danger badge-pill noti-icon-badge">@Model.TotalUnreadCount</span>
+        }
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-right notify-drop">
+
+        <li class="drop-header">
+            <h5 style="margin:0;">اعلان ها</h5>
+            <a href="#" class="clear-btn" title="پاک کردن همه"><i class="fa fa-trash-o"></i></a>
+        </li>
+
+        <li>
+            <div class="drop-content slimscroll" style="max-height: 250px; overflow-y: auto;">
+                @if (Model.RecentNotifications != null && Model.RecentNotifications.Any())
+                {
+                    foreach (var item in Model.RecentNotifications)
+                    {
+                        <a href="@item.Link" class="notify-item-custom">
+                            <div class="notify-icon-custom @item.ColorClass">
+                                <i class="@item.IconClass"></i>
+                            </div>
+                            <div class="notify-body-custom">
+                                <strong>@item.Title</strong>
+                                <span class="msg-text">@item.Message.ToPersianNumber()</span>
+                                <span class="time-text" dir="ltr"><i class="fa fa-clock-o"></i> @item.CreationDate.ToPersianNumber()</span>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <p class="text-center text-muted" style="margin: 30px 0;">اعلان جدیدی وجود ندارد</p>
+                }
+            </div>
+        </li>
+
+        <li class="drop-footer">
+            <a href="/Admin/Notifications">
+                نمایش همه <i class="fa fa-arrow-left" style="margin-right: 5px; font-size: 11px;"></i>
+            </a>
+        </li>
+    </ul>
+</li>

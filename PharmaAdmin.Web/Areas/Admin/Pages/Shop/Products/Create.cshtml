@@ -25,7 +25,7 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label asp-for="Command.Code" class="control-label">کد</label>
-                                <input type="text" class="form-control" asp-for="Command.Code">
+                                <input type="text" class="form-control" dir="ltr" asp-for="Command.Code">
                                 <span asp-validation-for="Command.Code" class="error"></span>
                             </div>
                         </div>
@@ -96,10 +96,37 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12">
-                            <div class="form-group no-margin">
-                                <label asp-for="Command.Specifications" class="control-label">مشخصات</label>
-                                <textarea class="form-control" asp-for="Command.Specifications" id="specEditor"></textarea>
-                                <span asp-validation-for="Command.Specifications" class="error"></span>
+                            <div class="panel panel-border panel-info">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title">مشخصات محصول (Specifications)</h3>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="control-label">کشور سازنده</label>
+                                                <input type="text" id="spec-country" class="form-control" placeholder="مثال: ایران">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="control-label">شکل محصول</label>
+                                                <input type="text" id="spec-form" class="form-control" placeholder="مثال: قرص، شربت">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr />
+                                    <h5 class="m-b-20">مشخصات پویا</h5>
+                                    <div id="dynamic-attributes-container">
+                                        <!-- ردیف‌های پویا در اینجا اضافه می‌شوند -->
+                                    </div>
+                                    <button type="button" id="btn-add-attribute" class="btn btn-info btn-sm m-t-10">
+                                        <i class="fa fa-plus"></i> افزودن مشخصه جدید
+                                    </button>
+
+                                    <!-- فیلد مخفی برای ارسال کل دیتای JSON به بک‌اند -->
+                                    <input type="hidden" asp-for="Command.Specifications" id="hidden-specifications" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -136,3 +163,77 @@
         </div>
     </div>
 </div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const existingSpecVal = $('#hidden-specifications').val();
+            let specData = { CountryOfOrigin: '', ProductForm: '', Attributes: {} };
+
+            if (existingSpecVal) {
+                try {
+                    specData = JSON.parse(existingSpecVal);
+                    $('#spec-country').val(specData.CountryOfOrigin || '');
+                    $('#spec-form').val(specData.ProductForm || '');
+
+                    if (specData.Attributes) {
+                        for (const [key, value] of Object.entries(specData.Attributes)) {
+                            addAttributeRow(key, value);
+                        }
+                    }
+                } catch (e) {
+                    console.error("خطا در پارس کردن JSON مشخصات.");
+                }
+            } else {
+                addAttributeRow();
+            }
+
+            $('#btn-add-attribute').click(function () {
+                addAttributeRow();
+            });
+
+            $(document).on('click', '.btn-remove-attr', function () {
+                $(this).closest('.attr-row').remove();
+            });
+
+            function addAttributeRow(key = '', value = '') {
+                const rowHtml = `
+                    <div class="row attr-row m-b-10">
+                        <div class="col-md-5">
+                            <input type="text" class="form-control attr-key" placeholder="عنوان (مثال: وزن)" value="${key}" />
+                        </div>
+                        <div class="col-md-5">
+                            <input type="text" class="form-control attr-value" placeholder="مقدار (مثال: 50 گرم)" value="${value}" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-attr" style="margin-top: 2px;">حذف</button>
+                        </div>
+                    </div>
+                `;
+                $('#dynamic-attributes-container').append(rowHtml);
+            }
+
+            $('form').on('submit', function () {
+                const finalSpec = {
+                    CountryOfOrigin: $('#spec-country').val().trim(),
+                    ProductForm: $('#spec-form').val().trim(),
+                    Attributes: {}
+                };
+
+                $('.attr-row').each(function () {
+                    const key = $(this).find('.attr-key').val().trim();
+                    const val = $(this).find('.attr-value').val().trim();
+
+                    if (key !== '') {
+                        finalSpec.Attributes[key] = val;
+                    }
+                });
+
+                $('#hidden-specifications').val(JSON.stringify(finalSpec));
+            });
+        });
+    </script>
+}
+
+</script>

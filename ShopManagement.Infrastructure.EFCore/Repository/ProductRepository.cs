@@ -6,7 +6,7 @@ using ShopManagement.Domain.ProductAgg;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class ProductRepository: BaseRepository<long, Product>, IProductRepository
+    public class ProductRepository : RepositoryBase<long, Product>, IProductRepository
     {
         private readonly ShopContext _context;
 
@@ -71,6 +71,25 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
         public async Task<Product?> GetProductWithCategory(long id, CancellationToken cancellation)
         {
             return await _context.Products.Include(x => x.Category).FirstOrDefaultAsync(x => x.Id == id, cancellation);
+        }
+
+        public async Task<List<Product>> GetProductsWithCategoryByIdsAsync(List<long> productIds, CancellationToken cancellation)
+        {
+            return await _context.Products.Include(x => x.Category)
+                .Where(x=>productIds.Contains(x.Id))
+                .ToListAsync(cancellation);
+        }
+
+        public async Task<List<(long ProductId, long CategoryId, string Brand, string Name, string Picture)>> GetProductDetailsByIdsAsync(List<long> productIds, CancellationToken cancellation)
+        {
+            var products = await _context.Products
+                .Where(x => productIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.CategoryId, x.Brand, x.Name, x.Picture })
+                .ToListAsync(cancellation);
+
+            return products
+                .Select(x => (x.Id, x.CategoryId, x.Brand, x.Name, x.Picture))
+                .ToList();
         }
 
         public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel, CancellationToken cancellation)

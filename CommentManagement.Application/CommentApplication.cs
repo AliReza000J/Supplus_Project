@@ -40,8 +40,8 @@ namespace CommentManagement.Application
             var acc = await _accountRepository.GetAsync(userId, cancellation);
             if (acc == null)
                 return op.Failed("کاربر یافت نشد!");
-            if (!acc.IsCompleted())
-                op.Failed("برای ثبت نظر باید پروفایل خود را تکمیل نمایید.");
+            //if (!acc.IsCompleted())
+            //    op.Failed("برای ثبت نظر باید پروفایل خود را تکمیل نمایید.");
 
             if (command.Type == 1)
             {
@@ -192,22 +192,27 @@ namespace CommentManagement.Application
             var comment = await _commentRepository.GetAsync(id, cancellation);
             if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
 
-            if (await _commentRepository.HasUserLiked(id, userId, cancellation))
-                return op.Failed("شما قبلاً لایک کرده‌اید.");
-
             var existing = await _commentRepository.GetUserReaction(id, userId, cancellation);
-            if (existing != null && existing.Reaction == ReactionType.Dislike)
+
+            if (existing != null)
             {
-                // remove previous
-                _commentRepository.RemoveReaction(existing);
-                comment.RemoveReactionDislike();
+                if (existing.Reaction == ReactionType.Like)
+                {
+                    _commentRepository.RemoveReaction(existing);
+                    comment.RemoveReactionLike();
+                    await _commentRepository.SaveChangesAsync(cancellation);
+                    return op.Succeeded("لایک برداشته شد.");
+                }
+
+                if (existing.Reaction == ReactionType.Dislike)
+                {
+                    _commentRepository.RemoveReaction(existing);
+                    comment.RemoveReactionDislike();
+                }
             }
 
-            // add reaction record
             var reaction = new CommentReaction(id, userId, ReactionType.Like);
             _commentRepository.AddReaction(reaction);
-
-            // update aggregate count
             comment.AddLike();
 
             await _commentRepository.SaveChangesAsync(cancellation);
@@ -220,19 +225,27 @@ namespace CommentManagement.Application
             var comment = await _commentRepository.GetAsync(id, cancellation);
             if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
 
-            if (await _commentRepository.HasUserDisliked(id, userId, cancellation))
-                return op.Failed("شما قبلاً دیسلایک کرده‌اید.");
-
             var existing = await _commentRepository.GetUserReaction(id, userId, cancellation);
-            if (existing != null && existing.Reaction == ReactionType.Like)
+
+            if (existing != null)
             {
-                _commentRepository.RemoveReaction(existing);
-                comment.RemoveReactionLike();
+                if (existing.Reaction == ReactionType.Dislike)
+                {
+                    _commentRepository.RemoveReaction(existing);
+                    comment.RemoveReactionDislike();
+                    await _commentRepository.SaveChangesAsync(cancellation);
+                    return op.Succeeded("دیسلایک برداشته شد.");
+                }
+
+                if (existing.Reaction == ReactionType.Like)
+                {
+                    _commentRepository.RemoveReaction(existing);
+                    comment.RemoveReactionLike();
+                }
             }
 
             var reaction = new CommentReaction(id, userId, ReactionType.Dislike);
             _commentRepository.AddReaction(reaction);
-
             comment.AddDislike();
 
             await _commentRepository.SaveChangesAsync(cancellation);

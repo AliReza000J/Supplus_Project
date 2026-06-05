@@ -3,7 +3,7 @@ using _0_Framework.Application;
 
 namespace CommentManagement.Domain.CommentAgg
 {
-    public class Comment : BaseEntity
+    public class Comment : EntityBase
     {
         public string Username { get; private set; }
         public long UserId { get; set; }

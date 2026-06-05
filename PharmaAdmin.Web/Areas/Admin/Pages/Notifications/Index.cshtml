@@ -1,0 +1,75 @@
+﻿@page
+@using _0_Framework.Application
+@model PharmaAdmin.Web.Areas.Admin.Pages.Notifications.IndexModel
+@{
+    Layout = "Shared/_AdminLayout";
+    ViewData["title"] = "همه اعلان ها";
+}
+
+<div class="row">
+    <div class="col-sm-12">
+        <h4 class="page-title pull-right">@ViewData["title"]</h4>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">لیست اعلان های بررسی نشده (@Model.Notifications.Count)</h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-12 col-sm-12 col-xs-12">
+                        <div class="table-responsive">
+                            <table id="datatable" class="table table-striped table-bordered centered-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">نوع</th>
+                                        <th>عنوان</th>
+                                        <th>جزئیات پیام</th>
+                                        <th>تاریخ</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Notifications)
+                                    {
+                                        <tr>
+                                            <td class="text-center">
+                                                <i class="@item.IconClass @item.ColorClass" style="font-size: 18px;"></i>
+                                            </td>
+                                            <td>
+                                                <span class="@item.ColorClass">@item.Title</span>
+                                            </td>
+                                            <td>@item.Message.ToPersianNumber()</td>
+                                            <td dir="ltr">@item.CreationDate.ToPersianNumber()</td>
+                                            <td>
+                                                <a class="btn btn-primary btn-sm waves-effect waves-light" href="@item.Link">
+                                                    <i class="fa fa-eye"></i> مشاهده و بررسی
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/adminTheme/assets/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/adminTheme/assets/datatables/dataTables.bootstrap.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#datatable').dataTable({
+                order: []
+            });
+        });
+    </script>
+}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <title>@ViewData["Title"] | PhrmaPlus Shop</title>
 
     <link rel="icon" type="image/x-icon" href="~/favicon.png">
 
@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet" />
     <link href="~/AdminTheme/assets/css/bootstrap.min.css" rel="stylesheet" />
     <link href="~/AdminTheme/assets/font-awesome-4.7.0/css/font-awesome.css" rel="stylesheet" />
+    <link href="~/AdminTheme/assets/sweet-alert/sweet-alert.min.css" rel="stylesheet">
 
     <style>
         body {
@@ -89,8 +90,19 @@
 
     </style>
 </head>
-<body>
+<body class="fixed-left" data-toast-message="@TempData["Toast.Message"]"
+      data-toast-success="@(TempData["Toast.Success"]?.ToString().ToLower())">
+
     @RenderBody()
 
+    <div id="admin-toast"
+         class="alert alert-success"
+         style="position: fixed; bottom: 20px; right: 20px; display:none; z-index:1050;">
+    </div>
+
+    <script src="~/AdminTheme/assets/js/admin-toast.js"></script>
+
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
 </body>
 </html>

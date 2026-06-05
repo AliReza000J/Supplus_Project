@@ -93,7 +93,7 @@
                                     @foreach (var item in Model.Discounts)
                                     {
                                         <tr>
-                                            <td>@item.Id.ToString().ToPersianNumber()</td>
+                                            <td>@item.Id</td>
                                             <td>@item.Title</td>
                                             <td>@(string.IsNullOrWhiteSpace(item.CouponCode) ? "---" : item.CouponCode.ToPersianNumber())</td>
                                             <td>@item.TypeName</td>

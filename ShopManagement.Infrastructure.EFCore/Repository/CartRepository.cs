@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class CartRepository : BaseRepository<long, Cart>, ICartRepository
+    public class CartRepository : RepositoryBase<long, Cart>, ICartRepository
     {
         private readonly ShopContext _context;
         private readonly AccountContext _accContext;

@@ -5,7 +5,6 @@ namespace ShopManagement.Application.Contracts.Order
     public class OrderSearchModel
     {
         public long? UserId { get; set; }
-        public long? OrderId { get; set; }
 
         private string? _mobile;
         public string? Mobile

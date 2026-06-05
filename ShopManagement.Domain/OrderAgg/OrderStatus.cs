@@ -2,27 +2,29 @@
 {
     public static class OrderStatus
     {
-        public const int Pending = 0;           // سفارش ثبت شده ولی هنوز کار خاصی نشده
-        public const int WaitingForGateway = 1;   // منتظر پرداخت برای درگاه
-        public const int WaitingForManualVerification = 2;   // منتظر پرداخت برای کارت به کارت
-        public const int Paid = 3;              // پرداخت موفق
-        public const int Processing = 4;        // در حال آماده‌سازی
-        public const int Shipped = 5;           // ارسال شده
-        public const int Delivered = 6;         // تحویل داده شده به مشتری
-        public const int Cancelled = 7;         // لغو شده
+        public const int Pending = 1;
+        public const int WaitingForGateway = 2;
+        public const int WaitingForManualVerification = 3;
+        public const int Paid = 4;
+        public const int Processing = 5;
+        public const int Shipped = 6;
+        public const int Delivered = 7;
+        public const int NeedsRefund = 8;
+        public const int Cancelled = 9;
 
         public static string GetStatusTitleByCode(int code)
         {
             return code switch
             {
-                0 => "در انتظار",
-                1 => "در انتظار پرداخت درگاه",
-                2 => "در انتظار تایید پرداخت کارت به کارت",
-                3 => "پرداخت شده",
-                4 => "در حال پردازش",
-                5 => "ارسال شده",
-                6 => "تحویل داده شده",
-                7 => "لغو شده",
+                1 => "ثبت شده، پرداخت نشده",
+                2 => "در انتظار پرداخت درگاه",
+                3 => "در انتظار تایید کارت به کارت",
+                4 => "پرداخت موفق",
+                5 => "در حال آماده‌سازی",
+                6 => "ارسال شده",
+                7 => "تحویل داده شده",
+                8 => "نیازمند بازگشت وجه",
+                9 => "لغو شده",
                 _ => "",
             };
         }

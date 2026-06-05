@@ -16,12 +16,11 @@ namespace _01_PharmaPlusQuery.Query
             _shopContext = orderContext;
         }
 
-        public async Task<List<OrderQueryModel>> GetOrdersByUser(long userId, CancellationToken cancellation = default)
+        public async Task<OrderQueryModel> GetOrderDetailsAsync(long orderId, long userId, CancellationToken cancellation = default)
         {
-            var orders = await _shopContext.Orders
-                .Where(o => o.UserId == userId &&
-                            o.Status >= OrderStatus.Paid &&
-                            o.Status <= OrderStatus.Delivered)
+            var order = await _shopContext.Orders
+                .AsNoTracking()
+                .Where(o => o.Id == orderId && o.UserId == userId)
                 .Select(o => new OrderQueryModel
                 {
                     Id = o.Id,
@@ -47,59 +46,79 @@ namespace _01_PharmaPlusQuery.Query
                         TotalPriceWithDiscount = i.TotalPriceWithDiscount
                     }).ToList()
                 })
-                .ToListAsync(cancellation);
+                .FirstOrDefaultAsync(cancellation);
 
-            foreach (var order in orders)
-            {
-                order.DiscountAmountDisplay = order.DiscountAmount.ToMoney();
-                order.PayAmountDisplay = order.PayAmount.ToMoney();
-                order.OrderCouponAmountDisplay = order.OrderCouponAmount.ToMoney();
-                order.TotalAmountDisplay = order.TotalAmount.ToMoney();
+            if (order == null)
+                return null;
 
-                order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
-                order.PaymentMethod = PaymentMethod.GetMethodByCode(order.PaymentMethodInt);
+            var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
 
-                order.CreationDateDisplay = order.CreationDate.ToFarsi();
-                order.LastModifiedDateDisplay = order.LastModifiedDate.ToFarsiFull();
-
-                foreach (var item in order.Items)
+            var productsDict = await _shopContext.Products
+                .AsNoTracking()
+                .Where(p => productIds.Contains(p.Id))
+                .Select(p => new
                 {
-                    item.UnitPriceDisplay = item.UnitPrice.ToMoney();
-                    item.TotalPriceWithDiscountDisplay = item.TotalPriceWithDiscount.ToMoney();
-                    item.DiscountRateDisplay = item.DiscountRate.ToString() + "%";
+                    p.Id,
+                    p.Category.FullSlug,
+                    p.Slug
+                })
+                .ToDictionaryAsync(p => p.Id, cancellation);
+
+            order.DiscountAmountDisplay = order.DiscountAmount.ToMoney();
+            order.PayAmountDisplay = order.PayAmount.ToMoney();
+            order.OrderCouponAmountDisplay = order.OrderCouponAmount.ToMoney();
+            order.TotalAmountDisplay = order.TotalAmount.ToMoney();
+
+            order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
+            order.PaymentMethod = PaymentMethod.GetMethodByCode(order.PaymentMethodInt);
+
+            order.CreationDateDisplay = order.CreationDate.ToFarsi();
+            order.LastModifiedDateDisplay = order.LastModifiedDate.ToFarsiFull();
+
+            foreach (var item in order.Items)
+            {
+                item.UnitPriceDisplay = item.UnitPrice.ToMoney();
+                item.TotalPriceWithDiscountDisplay = item.TotalPriceWithDiscount.ToMoney();
+                item.DiscountRateDisplay = item.DiscountRate.ToString() + "%";
+
+                if (productsDict.TryGetValue(item.ProductId, out var p))
+                {
+                    item.ProductFullPath = $"{p.FullSlug}/{p.Slug}";
                 }
             }
 
+            return order;
+        }
 
-            var orderedProductIds = orders
-                .SelectMany(o => o.Items)
-                .Select(i => i.ProductId)
-                .Distinct()
-                .ToList();
-
-            var products = await _shopContext.Products
-                .Where(x => orderedProductIds.Contains(x.Id))
-                .Select(product => new ProductQueryModel
+        public async Task<List<OrderSummaryQueryModel>> GetUserOrdersSummaryAsync(long userId, CancellationToken cancellation = default)
+        {
+            var orders = await _shopContext.Orders
+                .AsNoTracking()
+                .Where(o => o.UserId == userId &&
+                            o.Status >= OrderStatus.Pending &&
+                            o.Status <= OrderStatus.Cancelled)
+                .OrderByDescending(o => o.CreationDate)
+                .Select(o => new OrderSummaryQueryModel
                 {
-                    Id = product.Id,
-                    CategoryName = product.Category.Name,
-                    CategoryFullSlug = product.Category.FullSlug,
-                    Slug = product.Slug,
+                    Id = o.Id,
+                    PayAmount = o.PayAmount,
+                    TotalAmount = o.TotalAmount,
+                    Status = o.Status,
+                    CreationDate = o.CreationDate,
+                    PostTrackingNumber = o.ShipTrackingNo
                 })
                 .ToListAsync(cancellation);
 
-            var productDict = products.ToDictionary(x => x.Id);
-
             foreach (var order in orders)
             {
-                foreach (var item in order.Items)
-                {
-                    if (productDict.TryGetValue(item.ProductId, out var p))
-                        item.ProductFullPath = $"{p.CategoryFullSlug}/{p.Slug}";
-                }
+                order.PayAmountDisplay = order.PayAmount.ToMoney();
+                order.TotalAmountDisplay = order.TotalAmount.ToMoney();
+                order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
+                order.CreationDateDisplay = order.CreationDate.ToFarsi();
             }
 
-            return orders.OrderByDescending(x => x.SortDate).ToList();
+            return orders;
         }
+
     }
 }

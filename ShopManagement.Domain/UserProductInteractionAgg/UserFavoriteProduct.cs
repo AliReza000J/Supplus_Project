@@ -2,7 +2,7 @@
 
 namespace ShopManagement.Domain.UserProductInteractionAgg
 {
-    public class UserFavoriteProduct: BaseEntity
+    public class UserFavoriteProduct: EntityBase
     {
         public long ProductId { get; set; }
         public long UserId { get; set; }

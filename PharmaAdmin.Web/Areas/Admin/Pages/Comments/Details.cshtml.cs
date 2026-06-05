@@ -31,9 +31,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Comments
             if (comment == null) return RedirectToPage();
 
             var result = await _commentApplication.Reply(comment.Id, comment.Reply ?? string.Empty, cancellation);
-            TempData["Toast.Success"] = result.IsSucceeded;
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
             TempData["Toast.Message"] = result.Message;
-            return result.IsSucceeded ? RedirectToPage("./Index") : RedirectToPage();
+            return Page();
         }
     }
 }

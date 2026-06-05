@@ -1,12 +1,12 @@
 ﻿namespace _0_Framework.Domain
 {
-    public class BaseEntity
+    public class EntityBase
     {
         public long Id { get; set; }
         public DateTime CreationDate { get; set; }
 
 
-        public BaseEntity()
+        public EntityBase()
         {
             CreationDate = DateTime.Now;
         }

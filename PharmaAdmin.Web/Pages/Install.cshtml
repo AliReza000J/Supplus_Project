@@ -1,0 +1,216 @@
+﻿@page
+@model PharmaAdmin.Web.Pages.InstallModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>راه‌اندازی اولیه سیستم</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f3f4f6;
+            --text: #1f2937;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: Tahoma, 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .setup-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 450px;
+        }
+
+            .setup-card h1 {
+                margin-top: 0;
+                font-size: 1.5rem;
+                text-align: center;
+                margin-bottom: 1.5rem;
+            }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-size: 0.9rem;
+                font-weight: bold;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+            .form-control:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .form-control[readonly] {
+                background-color: #e5e7eb;
+                cursor: not-allowed;
+                color: #6b7280;
+            }
+
+        .btn-submit {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.85rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background-color 0.2s;
+        }
+
+            .btn-submit:hover {
+                background-color: var(--primary-hover);
+            }
+
+        .text-danger {
+            color: var(--error);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        .validation-summary {
+            background-color: #fee2e2;
+            color: var(--error);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+            .validation-summary ul {
+                margin: 0;
+                padding-right: 1.5rem;
+            }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .alert-danger {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #f87171;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="setup-card">
+        <h1>پیکربندی مدیر ارشد (SuperAdmin)</h1>
+
+        @if (!ModelState.IsValid)
+        {
+            <div class="validation-summary">
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <form method="post">
+            <input type="hidden" asp-for="Command.Id" value="1" />
+
+            <div class="form-group">
+                <label>نام کاربری (برای ورود)</label>
+                <input type="text" class="form-control" value="admin" dir="ltr" readonly tabindex="-1" />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Command.Mobile">شماره موبایل</label>
+                <input asp-for="Command.Mobile" class="form-control" dir="ltr" autocomplete="off" />
+                <span asp-validation-for="Command.Mobile" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Command.Email">ایمیل - اجباری برای مدیر سیستم</label>
+                <input asp-for="Command.Email" class="form-control" dir="ltr" autocomplete="off" />
+                <span asp-validation-for="Command.Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Command.Password" class="control-label form-label fw-semibold">رمز عبور</label>
+                <div class="password-input-wrapper">
+                    <input type="password"
+                           asp-for="Command.Password"
+                           class="form-control password-field"
+                           dir="ltr"
+                           autocomplete="new-password">
+                    <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                        <i class="fa fa-eye-slash"></i>
+                    </span>
+                </div>
+                <span asp-validation-for="Command.Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Command.RePassword" class="control-label form-label fw-semibold">تکرار رمز عبور</label>
+                <div class="password-input-wrapper">
+                    <input type="password"
+                           asp-for="Command.RePassword"
+                           class="form-control password-field"
+                           dir="ltr"
+                           autocomplete="new-password">
+                    <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                        <i class="fa fa-eye-slash"></i>
+                    </span>
+                </div>
+                <span asp-validation-for="Command.RePassword" class="text-danger"></span>
+            </div>
+
+            <div class="form-group" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed #d1d5db;">
+                <label asp-for="Command.InstallationKey">🔑 کلید نصب (از تنظیمات سرور)</label>
+                <input asp-for="Command.InstallationKey" type="password" class="form-control" dir="ltr" autocomplete="off" />
+                <span asp-validation-for="Command.InstallationKey" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn-submit">تکمیل نصب و ورود</button>
+        </form>
+    </div>
+
+    <script src="~/AdminTheme/assets/js/site.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>

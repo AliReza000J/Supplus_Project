@@ -2,7 +2,7 @@
 
 namespace BlogManagement.Domain.UserArticleInteractionAgg
 {
-    public class ArticleView : BaseEntity
+    public class ArticleView : EntityBase
     {
         public long ArticleId { get; set; }
         public long UserId { get; set; }

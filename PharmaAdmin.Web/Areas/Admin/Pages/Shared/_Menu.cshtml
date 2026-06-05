@@ -1,9 +1,12 @@
 ﻿@using AccountManagement.Domain.RoleAgg
 @using _0_Framework.Infrastructure
+@using _01_PharmaPlusQuery.Contracts.AdminNotification
+
 @inject _0_Framework.Application.IAuthHelper AuthHelper;
 @inject AccountManagement.Application.Contracts.Account.IAccountApplication accountApplication;
-
+@inject IAdminNotificationQuery NotificationQuery
 @{
+    var notifications = await NotificationQuery.GetAdminNotifications();
     var currentAccout = AuthHelper.CurrentAccountInfo();
     var user = await accountApplication.GetAccountDetails(currentAccout.Id, CancellationToken.None);
     var photo = user.ProfilePhoto;
@@ -83,6 +86,10 @@
                         <a asp-page="/Shop/Orders/Index" class="waves-effect">
                             <i class="fa fa-shopping-cart"></i>
                             <span> سفارش‌ها </span>
+                            @if (notifications.PendingOrdersCount > 0)
+                            {
+                                <span class="badge badge-warning float-right">@notifications.PendingOrdersCount</span>
+                            }
                         </a>
                     </li>
 
@@ -90,6 +97,10 @@
                         <a asp-page="/Shop/Tickets/Index" class="waves-effect">
                             <i class="fa fa-ticket"></i>
                             <span> تیکت‌ها </span>
+                            @if (notifications.NewTicketsCount > 0)
+                            {
+                                <span class="badge badge-danger float-right">@notifications.NewTicketsCount</span>
+                            }
                         </a>
                     </li>
 
@@ -151,6 +162,10 @@
                         <a asp-page="/Shop/Orders/Index" class="waves-effect">
                             <i class="fa fa-shopping-cart"></i>
                             <span> سفارش‌ها </span>
+                            @if (notifications.PendingOrdersCount > 0)
+                            {
+                                <span class="badge badge-warning float-right">@notifications.PendingOrdersCount</span>
+                            }
                         </a>
                     </li>
 
@@ -158,6 +173,10 @@
                         <a asp-page="/Shop/Tickets/Index" class="waves-effect">
                             <i class="fa fa-ticket"></i>
                             <span> تیکت‌ها </span>
+                            @if (notifications.NewTicketsCount > 0)
+                            {
+                                <span class="badge badge-danger float-right">@notifications.NewTicketsCount</span>
+                            }
                         </a>
                     </li>
 

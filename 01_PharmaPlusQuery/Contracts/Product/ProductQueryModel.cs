@@ -17,7 +17,7 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public string ShortDescription { get; set; }
         public string Slug { get; set; }
         public string Description { get; set; }
-        public string Specifications { get; set; }
+        public ProductSpecificationModel? Specifications { get; set; }
         public string Keywords { get; set; }
         public string MetaDescription { get; set; }
 
@@ -28,6 +28,7 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public double DoublePrice { get; set; }
         public string Price { get; set; }
 
+        public double DoublePriceWithDiscount { get; set; }
         public string PriceWithDiscount { get; set; }
         public int DiscountRate { get; set; }
         public bool HasDiscount { get; set; }
@@ -40,13 +41,9 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public int CommentCount { get; set; }
         public float AvgRate { get; set; }
         public int RateCount { get; set; }
-        public string? CommentCountStr { get; set; }
-        public string? AvgRateStr { get; set; }
-        public string? RateCountStr { get; set; }
-
-
+        public int InFavedCount { get; set; }
+        public int InCartCount { get; set; }
         public int ViewCount { get; set; }
-        public string? ViewsLabel { get; set; } = null;
 
         public DateTime? CurrentUserFavedDate { get; set; } = null;
         public string? CurrentUserFavedDateStr { get; set; } = null;
@@ -54,5 +51,12 @@ namespace _01_PharmaPlusQuery.Contracts.Product
 
         public List<CommentQueryModel> Comments { get; set; }
         public List<ProductPictureQueryModel> Pictures { get; set; }
+    }
+
+    public class ProductSpecificationModel
+    {
+        public string CountryOfOrigin { get; set; }
+        public string ProductForm { get; set; }
+        public Dictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
     }
 }

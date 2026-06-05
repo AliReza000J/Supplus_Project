@@ -9,7 +9,7 @@ using ShopManagement.Infrastructure.EFCore;
 
 namespace CommentManagement.Infrastructure.EFCore.Repository
 {
-    public class CommentRepository : BaseRepository<long, Comment>, ICommentRepository
+    public class CommentRepository : RepositoryBase<long, Comment>, ICommentRepository
     {
         private readonly CommentContext _context;
         private readonly ShopContext _shopContext;
@@ -152,26 +152,26 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             return vm;
         }
 
-        // reactions
-        public async Task<bool> HasUserLiked(long commentId, long userId, CancellationToken cancellation)
-        {
-            return await _context.CommentReactions
-                .AsNoTracking()
-                .AnyAsync(r => r.CommentId == commentId
-                && r.UserId == userId
-                && r.Reaction == ReactionType.Like,
-                cancellation);
-        }
+        //// reactions
+        //public async Task<bool> HasUserLiked(long commentId, long userId, CancellationToken cancellation)
+        //{
+        //    return await _context.CommentReactions
+        //        .AsNoTracking()
+        //        .AnyAsync(r => r.CommentId == commentId
+        //        && r.UserId == userId
+        //        && r.Reaction == ReactionType.Like,
+        //        cancellation);
+        //}
 
-        public async Task<bool> HasUserDisliked(long commentId, long userId, CancellationToken cancellation)
-        {
-            return await _context.CommentReactions
-                .AsNoTracking()
-                .AnyAsync(r => r.CommentId == commentId &&
-                r.UserId == userId &&
-                r.Reaction == ReactionType.Dislike,
-                cancellation);
-        }
+        //public async Task<bool> HasUserDisliked(long commentId, long userId, CancellationToken cancellation)
+        //{
+        //    return await _context.CommentReactions
+        //        .AsNoTracking()
+        //        .AnyAsync(r => r.CommentId == commentId &&
+        //        r.UserId == userId &&
+        //        r.Reaction == ReactionType.Dislike,
+        //        cancellation);
+        //}
 
         public void AddReaction(CommentReaction reaction)
         {

@@ -27,11 +27,11 @@
                 <form class="form-inline" role="form" method="get">
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.FromDate"></label>
-                        <input class="form-control persianDateInput" asp-for="SearchModel.FromDate">
+                        <input class="form-control persianDateInput" dir="ltr" asp-for="SearchModel.FromDate">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.ToDate"></label>
-                        <input class="form-control persianDateInput" asp-for="SearchModel.ToDate">
+                        <input class="form-control persianDateInput" dir="ltr" asp-for="SearchModel.ToDate">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.UserId"></label>
@@ -81,10 +81,11 @@
                                     {
                                         <tr class="@(
                                                 item.Status <= OrderStatus.WaitingForManualVerification ? "pending-order" :
+                                                item.Status == OrderStatus.NeedsRefund ? "needRefund-order" :
                                                 item.Status == OrderStatus.Cancelled ? "cancelled-order" :
                                                 item.Status == OrderStatus.Paid ? "paid-order" : "default-order"
                                                 )">
-                                            <td>@item.Id.ToString().ToPersianNumber()</td>
+                                            <td>@item.Id</td>
                                             <td>@item.ReceiverFullName</td>
                                             <td>@item.PayAmount.ToMoney().ToPersianNumber()</td>
                                             <td>@item.PaymentMethod</td>

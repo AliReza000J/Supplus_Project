@@ -6,7 +6,7 @@ using ShopManagement.Domain.ProductPictureAgg;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class ProductPictureRepository : BaseRepository<long, ProductPicture>, IProductPictureRepository
+    public class ProductPictureRepository : RepositoryBase<long, ProductPicture>, IProductPictureRepository
     {
         private readonly ShopContext _context;
 

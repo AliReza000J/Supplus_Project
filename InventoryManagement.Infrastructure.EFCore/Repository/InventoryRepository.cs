@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace InventoryMangement.Infrastructure.EFCore.Repository
 {
-    public class InventoryRepository : BaseRepository<long, Inventory>, IInventoryRepository
+    public class InventoryRepository : RepositoryBase<long, Inventory>, IInventoryRepository
     {
         private readonly AccountContext _accountContext;
         private readonly ShopContext _shopContext;
@@ -27,7 +27,7 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
 
         public async Task<Inventory?> GetBy(long productId, CancellationToken cancellation)
         {
-            return await _inventoryContext.Inventory
+            return await _inventoryContext.Inventory.Include(x => x.Operations)
                 .FirstOrDefaultAsync(x => x.ProductId == productId, cancellation);
         }
 
@@ -50,22 +50,22 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
 
         public async Task<List<InventoryOperationViewModel>> GetOperationLog(long inventoryId, CancellationToken cancellation)
         {
-            var accounts = await _accountContext.Accounts.Select(x => new {x.Id, x.Fullname}).ToListAsync(cancellation);
+            var accounts = await _accountContext.Accounts.Select(x => new { x.Id, x.Fullname }).ToListAsync(cancellation);
             var inventory = await _inventoryContext.Inventory
                 .FirstOrDefaultAsync(x => x.Id == inventoryId, cancellation);
 
             var operations = inventory.Operations
                 .Select(x => new InventoryOperationViewModel
-            {
-                Id = x.Id,
-                Count = x.Count,
-                CurrentCount = x.CurrentCount,
-                Description = x.Description,
-                Operation = x.Operation,
-                OperationDate = x.OperationDate.ToFarsi(),
-                OperatorId = x.OperatorId,
-                OrderId = x.OrderId
-            }).OrderByDescending(x => x.Id).ToList();
+                {
+                    Id = x.Id,
+                    Count = x.Count,
+                    CurrentCount = x.CurrentCount,
+                    Description = x.Description,
+                    Operation = x.Operation,
+                    OperationDate = x.OperationDate.ToFarsi(),
+                    OperatorId = x.OperatorId,
+                    OrderId = x.OrderId
+                }).OrderByDescending(x => x.Id).ToList();
 
             foreach (var operation in operations)
             {
@@ -73,6 +73,13 @@ namespace InventoryMangement.Infrastructure.EFCore.Repository
             }
 
             return operations;
+        }
+
+        public async Task<List<Inventory>> GetInvListByIdsAsync(List<long> productIds, CancellationToken cancellation)
+        {
+            return await _inventoryContext.Inventory
+                    .Where(x => productIds.Contains(x.ProductId))
+                    .ToListAsync(cancellation);
         }
 
         public async Task<List<InventoryViewModel>> Search(InventorySearchModel searchModel, CancellationToken cancellation)

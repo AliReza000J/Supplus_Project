@@ -2,7 +2,7 @@
 
 namespace DiscountManagement.Domain.DiscountAgg
 {
-    public class DiscountTarget : BaseEntity
+    public class DiscountTarget : EntityBase
     {
         public DiscountTargetType TargetType { get; private set; }
 

@@ -5,6 +5,7 @@ namespace InventoryManagement.Domain.InventoryAgg
 {
     public interface IInventoryRepository : IRepository<long, Inventory>
     {
+        Task<List<Inventory>> GetInvListByIdsAsync(List<long> productIds, CancellationToken cancellation);
         Task<EditInventory?> GetDetails(long id, CancellationToken cancellation);
         Task<Inventory?> GetBy(long productId, CancellationToken cancellation);
         Task<List<Inventory>> GetByProductIds(List<long> productIds, CancellationToken cancellation);

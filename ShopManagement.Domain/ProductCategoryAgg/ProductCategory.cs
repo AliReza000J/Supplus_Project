@@ -4,7 +4,7 @@ using ShopManagement.Domain.ProductAgg;
 
 namespace ShopManagement.Domain.ProductCategoryAgg
 {
-    public class ProductCategory: BaseEntity
+    public class ProductCategory: EntityBase
     {
         public string Name { get; private set; }
         public string Description { get; private set; }

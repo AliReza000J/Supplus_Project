@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using _0_Framework.Infrastructure;
 using AccountManagement.Configuration.Permissions;
+using AccountManagement.Domain.ShippingInfoAgg;
+using AccountManagement.Application.Contracts.ShippingInfo;
 
 namespace AccountManagement.Configuration
 {
@@ -24,6 +26,9 @@ namespace AccountManagement.Configuration
             services.AddTransient<IRoleRepository, RoleRepository>();
 
             services.AddTransient<ITokenRepository, TokenRepository>();
+
+            services.AddScoped<IShippingInfoRepository, ShippingInfoRepository>();
+            services.AddScoped<IShippingInfoApplication, ShippingInfoApplication>();
 
             services.AddTransient<IPermissionExposer, AccountPermissionExposer>();
             services.AddDbContext<AccountContext>(x => x.UseSqlServer(connectionString));

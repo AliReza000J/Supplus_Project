@@ -251,7 +251,6 @@ namespace ShopManagement.Application
                 await _cartRepository.SaveChangesAsync(cancellation);
                 return op.Succeeded("سبد خرید شما با موفقیت به‌هنگام شد.");
             }
-            // else: syncing is not available, let the cart be unchanged.
             return op.Warn("سبد خرید به‌هنگام نشد.");
         }
 

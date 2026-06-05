@@ -2,7 +2,7 @@
 
 namespace ShopManagement.Domain.CartAgg
 {
-    public class CartItem : BaseEntity
+    public class CartItem : EntityBase
     {
         public string CartKey { get; private set; }
         public long ProductId { get; private set; }

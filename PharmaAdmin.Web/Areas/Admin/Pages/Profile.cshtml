@@ -19,24 +19,40 @@
                     <div class="row">
                         <div class="col-md-6">
                             <label asp-for="EditSuperAdminCommand.Email">ایمیل (الزامی برای بازیابی رمز)</label>
-                            <input asp-for="EditSuperAdminCommand.Email" type="email" class="form-control" />
+                            <input asp-for="EditSuperAdminCommand.Email" type="email" class="form-control" dir="ltr" />
                             <span asp-validation-for="EditSuperAdminCommand.Email" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="EditSuperAdminCommand.Mobile">شماره موبایل (اعداد انگلیسی)</label>
-                            <input asp-for="EditSuperAdminCommand.Mobile" class="form-control en-number" />
+                            <input asp-for="EditSuperAdminCommand.Mobile" class="form-control en-number" dir="ltr" />
                             <span asp-validation-for="EditSuperAdminCommand.Mobile" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="row" style="margin-top: 15px;">
                         <div class="col-md-6">
                             <label asp-for="EditSuperAdminCommand.Password">رمز عبور جدید (در صورت عدم تغییر، خالی بگذارید)</label>
-                            <input asp-for="EditSuperAdminCommand.Password" type="password" class="form-control" />
+                            <div class="password-input-wrapper">
+                                <input type="password"
+                                       asp-for="EditSuperAdminCommand.Password"
+                                       class="form-control form-control-lg password-field"
+                                       dir="ltr">
+                                <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                                    <i class="fa fa-eye-slash"></i>
+                                </span>
+                            </div>
                             <span asp-validation-for="EditSuperAdminCommand.Password" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="EditSuperAdminCommand.RePassword">تکرار رمز عبور جدید</label>
-                            <input asp-for="EditSuperAdminCommand.RePassword" type="password" class="form-control" />
+                            <div class="password-input-wrapper">
+                                <input type="password"
+                                       asp-for="EditSuperAdminCommand.RePassword"
+                                       class="form-control form-control-lg password-field"
+                                       dir="ltr">
+                                <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                                    <i class="fa fa-eye-slash"></i>
+                                </span>
+                            </div>
                             <span asp-validation-for="EditSuperAdminCommand.RePassword" class="text-danger"></span>
                         </div>
                     </div>
@@ -60,19 +76,19 @@
                         </div>
                         <div class="col-md-6">
                             <label asp-for="EditCommand.Username">نام کاربری</label>
-                            <input asp-for="EditCommand.Username" class="form-control" />
+                            <input asp-for="EditCommand.Username" class="form-control" dir="ltr" />
                             <span asp-validation-for="EditCommand.Username" class="text-danger"></span>
                         </div>
                     </div>
                     <div class="row" style="margin-top: 15px;">
                         <div class="col-md-4">
                             <label asp-for="EditCommand.Email">ایمیل</label>
-                            <input asp-for="EditCommand.Email" type="email" class="form-control" />
+                            <input asp-for="EditCommand.Email" type="email" class="form-control" dir="ltr" />
                             <span asp-validation-for="EditCommand.Email" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="EditCommand.Mobile">شماره موبایل (اعداد انگلیسی)</label>
-                            <input asp-for="EditCommand.Mobile" class="form-control en-number" />
+                            <input asp-for="EditCommand.Mobile" class="form-control en-number" dir="ltr" />
                             <span asp-validation-for="EditCommand.Mobile" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
@@ -94,17 +110,41 @@
                     <div class="row">
                         <div class="col-md-4">
                             <label asp-for="PasswordCommand.CurrentPassword"></label>
-                            <input asp-for="PasswordCommand.CurrentPassword" type="password" class="form-control" />
+                            <div class="password-input-wrapper">
+                                <input type="password"
+                                       asp-for="PasswordCommand.CurrentPassword"
+                                       class="form-control form-control-lg password-field"
+                                       dir="ltr">
+                                <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                                    <i class="fa fa-eye-slash"></i>
+                                </span>
+                            </div>
                             <span asp-validation-for="PasswordCommand.CurrentPassword" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="PasswordCommand.Password"></label>
-                            <input asp-for="PasswordCommand.Password" type="password" class="form-control" />
+                            <div class="password-input-wrapper">
+                                <input type="password"
+                                       asp-for="PasswordCommand.Password"
+                                       class="form-control form-control-lg password-field"
+                                       dir="ltr">
+                                <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                                    <i class="fa fa-eye-slash"></i>
+                                </span>
+                            </div>
                             <span asp-validation-for="PasswordCommand.Password" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="PasswordCommand.RePassword"></label>
-                            <input asp-for="PasswordCommand.RePassword" type="password" class="form-control" />
+                            <label asp-for="PasswordCommand.RePassword" class="control-label form-label fw-semibold"></label>
+                            <div class="password-input-wrapper">
+                                <input type="password"
+                                       asp-for="PasswordCommand.RePassword"
+                                       class="form-control form-control-lg password-field"
+                                       dir="ltr">
+                                <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
+                                    <i class="fa fa-eye-slash"></i>
+                                </span>
+                            </div>
                             <span asp-validation-for="PasswordCommand.RePassword" class="text-danger"></span>
                         </div>
                     </div>

@@ -19,6 +19,10 @@ namespace AccountManagement.Infrastructure.EFCore.Mappings
             builder.Property(x => x.Email).HasMaxLength(150).IsRequired(false);
 
             builder.HasOne(x => x.Role).WithMany(x => x.Accounts).HasForeignKey(x => x.RoleId);
+
+            builder.HasIndex(x => x.RoleId)
+               .IsUnique()
+               .HasFilter("[RoleId] = 1");
         }
     }
 }

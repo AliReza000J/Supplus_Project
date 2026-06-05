@@ -22,7 +22,7 @@
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label asp-for="Command.Percentage" class="control-label">درصد تخفیف</label>
-                                <input type="number" class="form-control" asp-for="Command.Percentage">
+                                <input type="number" class="form-control" dir="ltr" asp-for="Command.Percentage">
                                 <span asp-validation-for="Command.Percentage" class="text-danger"></span>
                             </div>
                         </div>
@@ -38,7 +38,7 @@
                         <div id="CouponCodeDiv" class="col-md-3" style="display:none;">
                             <div class="form-group">
                                 <label asp-for="Command.CouponCode" class="control-label">کد کوپن</label>
-                                <input type="text" class="form-control" asp-for="Command.CouponCode">
+                                <input type="text" class="form-control" dir="ltr" asp-for="Command.CouponCode">
                             </div>
                         </div>
                     </div>
@@ -48,25 +48,25 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label asp-for="Command.MinOrderAmount" class="control-label">حداقل مبلغ سفارش (تومان)</label>
-                                <input type="number" class="form-control" asp-for="Command.MinOrderAmount">
+                                <input type="number" class="form-control" dir="ltr" asp-for="Command.MinOrderAmount">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label asp-for="Command.MaxDiscountQuantity" class="control-label">سقف تعداد محصول در سبد</label>
-                                <input type="number" class="form-control" asp-for="Command.MaxDiscountQuantity">
+                                <input type="number" class="form-control" dir="ltr" asp-for="Command.MaxDiscountQuantity">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label asp-for="Command.MaxUsageCount" class="control-label">ظرفیت کل استفاده (تعداد نفرات)</label>
-                                <input type="number" class="form-control" asp-for="Command.MaxUsageCount">
+                                <input type="number" class="form-control" dir="ltr" asp-for="Command.MaxUsageCount">
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label asp-for="Command.UsageLimitPerUser" class="control-label">سقف استفاده برای هر کاربر</label>
-                                <input type="number" class="form-control" asp-for="Command.UsageLimitPerUser">
+                                <input type="number" class="form-control" dir="ltr" asp-for="Command.UsageLimitPerUser">
                             </div>
                         </div>
                     </div>
@@ -76,13 +76,13 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label asp-for="Command.StartDate" class="control-label">تاریخ شروع (اختیاری)</label>
-                                <input class="form-control persianDateInput" asp-for="Command.StartDate">
+                                <input class="form-control persianDateInput" dir="ltr" asp-for="Command.StartDate">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label asp-for="Command.EndDate" class="control-label">تاریخ پایان (اختیاری)</label>
-                                <input class="form-control persianDateInput" asp-for="Command.EndDate">
+                                <input class="form-control persianDateInput" dir="ltr" asp-for="Command.EndDate">
                             </div>
                         </div>
                     </div>

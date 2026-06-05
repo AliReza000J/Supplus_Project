@@ -1,7 +1,7 @@
 ﻿using _0_Framework.Application;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
-namespace PharmaShared.Web
+namespace PharmaAdmin.Web
 {
     [HtmlTargetElement(Attributes = "Permission")]
     public class PermissionTagHelper : TagHelper

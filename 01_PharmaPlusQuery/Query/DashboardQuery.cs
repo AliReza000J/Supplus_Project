@@ -1,4 +1,5 @@
-﻿using _01_PharmaPlusQuery.Contracts.Dashbord;
+﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Dashbord;
 using AccountManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Domain.OrderAgg;
@@ -70,6 +71,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x =>
                     x.CreationDate >= fromDateLastYear &&
                     x.Status >= OrderStatus.Paid &&
+                    x.Status != OrderStatus.NeedsRefund &&
                     x.Status != OrderStatus.Cancelled)
                 .Select(x => new
                 {
@@ -96,7 +98,6 @@ namespace _01_PharmaPlusQuery.Query
             var lastYearData = new List<double>();
             var labels = new List<string>();
 
-            // تولید لیبل‌ها و داده‌ها (کاملاً شمسی)
             for (int i = months - 1; i >= 0; i--)
             {
                 int month = currentPersianMonth - i;
@@ -127,7 +128,7 @@ namespace _01_PharmaPlusQuery.Query
                     Label = "سال جاری",
                     Data = currentYearData,
                     labels = labels,
-                    BorderColor = "#4361ee", // آبی
+                    BorderColor = "#4361ee",
                     BackgroundColor = new List<string> { "rgba(67, 97, 238, 0.1)" }
                 },
                 new()
@@ -135,7 +136,7 @@ namespace _01_PharmaPlusQuery.Query
                     Label = "سال گذشته",
                     Data = lastYearData,
                     labels = labels,
-                    BorderColor = "#e63946", // قرمز
+                    BorderColor = "#e63946",
                     BackgroundColor = new List<string> { "rgba(230, 57, 70, 0.1)" }
                 }
             };
@@ -152,7 +153,7 @@ namespace _01_PharmaPlusQuery.Query
             var allStatuses = new List<int>
         {
             OrderStatus.Pending, OrderStatus.WaitingForGateway, OrderStatus.WaitingForManualVerification,
-            OrderStatus.Paid, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered, OrderStatus.Cancelled
+            OrderStatus.Paid, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered, OrderStatus.NeedsRefund, OrderStatus.Cancelled
         };
 
             var countsDict = data.ToDictionary(x => x.Status, x => (double)x.Count);
@@ -174,7 +175,7 @@ namespace _01_PharmaPlusQuery.Query
             var data = await _shopContext.OrderItems
                 .Include(x => x.Order)
                 .Where(x => x.Order.Status >= OrderStatus.Paid
-                && x.Order.Status != OrderStatus.Cancelled)
+                && x.Order.Status <= OrderStatus.NeedsRefund)
                 .GroupBy(x => x.ProductName)
                 .Select(g => new
                 {
@@ -203,14 +204,12 @@ namespace _01_PharmaPlusQuery.Query
             int currentPersianYear = pc.GetYear(now);
             int currentPersianMonth = pc.GetMonth(now);
 
-            // ابتدای ماه جاری شمسی (به میلادی)
             var currentMonthStart = pc.ToDateTime(
                 currentPersianYear,
                 currentPersianMonth,
                 1,
                 0, 0, 0, 0);
 
-            // محاسبه ماه قبل شمسی
             int previousPersianMonth = currentPersianMonth - 1;
             int previousPersianYear = currentPersianYear;
 
@@ -230,7 +229,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Where(x =>
                     x.CreationDate >= currentMonthStart &&
                     x.Status >= OrderStatus.Paid &&
-                    x.Status != OrderStatus.Cancelled)
+                    x.Status <= OrderStatus.NeedsRefund)
                 .SumAsync(x => (double?)x.PayAmount, cancellation) ?? 0;
 
             var previousSales = await _shopContext.Orders
@@ -238,7 +237,7 @@ namespace _01_PharmaPlusQuery.Query
                     x.CreationDate >= previousMonthStart &&
                     x.CreationDate < currentMonthStart &&
                     x.Status >= OrderStatus.Paid &&
-                    x.Status != OrderStatus.Cancelled)
+                    x.Status <= OrderStatus.NeedsRefund)
                 .SumAsync(x => (double?)x.PayAmount, cancellation) ?? 0;
 
             return new ComparisonChartDto
@@ -258,7 +257,7 @@ namespace _01_PharmaPlusQuery.Query
         public async Task<ChartDto> GetConversionRateAsync(CancellationToken cancellation)
         {
             var totalViews = await _shopContext.Products.SumAsync(x => x.ViewCount, cancellation);
-            var totalOrders = await _shopContext.Orders.CountAsync(x => x.Status >= OrderStatus.Paid && x.Status != OrderStatus.Cancelled, cancellation);
+            var totalOrders = await _shopContext.Orders.CountAsync(x => x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.NeedsRefund, cancellation);
 
             double conversionRate = totalViews > 0 ? Math.Round((double)totalOrders / totalViews * 100, 2) : 0;
 
@@ -275,7 +274,7 @@ namespace _01_PharmaPlusQuery.Query
         {
             var salesData = await _shopContext.OrderItems
                 .Include(x => x.Order)
-                .Where(x => x.Order.Status >= OrderStatus.Paid && x.Order.Status != OrderStatus.Cancelled)
+                .Where(x => x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.NeedsRefund)
                 .GroupBy(x => x.ProductId)
                 .Select(g => new
                 {
@@ -324,7 +323,7 @@ namespace _01_PharmaPlusQuery.Query
         {
             var salesData = await _shopContext.OrderItems
                 .Include(x => x.Order)
-                .Where(x => x.Order.Status >= OrderStatus.Paid && x.Order.Status != OrderStatus.Cancelled)
+                .Where(x => x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.NeedsRefund)
                 .GroupBy(x => x.ProductId)
                 .Select(g => new
                 {
@@ -370,6 +369,67 @@ namespace _01_PharmaPlusQuery.Query
                 labels = finalLabels,
                 BackgroundColor = new List<string> { "#00d2d3", "#ff9f43", "#ee5253", "#10ac84", "#54a0ff", "#d2dae2" }
             };
+        }
+
+        public async Task<List<TopCustomerDto>> GetTopCustomersAsync(int take = 5, CancellationToken cancellation = default)
+        {
+            var topBuyers = await _shopContext.Orders
+                .Where(x => x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.NeedsRefund)
+                .GroupBy(x => x.UserId)
+                .Select(g => new
+                {
+                    AccountId = g.Key,
+                    TotalSpent = g.Sum(x => x.PayAmount),
+                    OrderCount = g.Count()
+                })
+                .OrderByDescending(x => x.TotalSpent)
+                .Take(take)
+                .ToListAsync(cancellation);
+
+            var accountIds = topBuyers.Select(x => x.AccountId).ToList();
+
+            var accounts = await _accountContext.Accounts
+                .Where(x => accountIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.Username })
+                .ToListAsync(cancellation);
+
+            return topBuyers.Select(buyer => new TopCustomerDto
+            {
+                AccountId = buyer.AccountId,
+                TotalSpent = buyer.TotalSpent,
+                OrderCount = buyer.OrderCount,
+                Username = accounts.FirstOrDefault(a => a.Id == buyer.AccountId)?.Username ?? "کاربر ناشناس"
+            }).ToList();
+        }
+
+        public async Task<List<RecentOrderDto>> GetRecentOrdersAsync(int take = 5, CancellationToken cancellation = default)
+        {
+            var recentOrders = await _shopContext.Orders
+                .OrderByDescending(x => x.CreationDate)
+                .Take(take)
+                .Select(x => new RecentOrderDto
+                {
+                    Id = x.Id,
+                    PayAmount = x.PayAmount,
+                    StatusChangedAt = x.LastModifiedDate.ToFarsiFull(),
+                    Status = x.Status,
+                    AccountId = x.UserId
+                })
+                .ToListAsync(cancellation);
+
+            var accountIds = recentOrders.Select(x => x.AccountId).Distinct().ToList();
+
+            var accounts = await _accountContext.Accounts
+                .Where(x => accountIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.Username })
+                .ToListAsync(cancellation);
+
+            foreach (var order in recentOrders)
+            {
+                order.CustomerUsername = accounts.FirstOrDefault(a => a.Id == order.AccountId)?.Username ?? "ناشناس";
+            }
+
+            return recentOrders;
         }
 
         private static string GetPersianMonthName(int month)

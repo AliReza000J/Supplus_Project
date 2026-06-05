@@ -35,11 +35,11 @@
                     <label asp-for="Username" class="control-label">نام کاربری</label>
                     @if (Model.RoleId == 1)
                     {
-                        <input readonly type="text" class="form-control" asp-for="Username">
+                        <input readonly type="text" class="form-control" dir="ltr" asp-for="Username">
                     }
                     else
                     {
-                        <input type="text" class="form-control" asp-for="Username">
+                        <input type="text" class="form-control" dir="ltr" asp-for="Username">
                     }
                     <span asp-validation-for="Username" class="error"></span>
                 </div>
@@ -49,14 +49,14 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label asp-for="Mobile" class="control-label">شماره موبایل (اعداد انگلیسی)</label>
-                    <input type="text" class="form-control en-number" asp-for="Mobile">
+                    <input type="text" class="form-control en-number" dir="ltr" asp-for="Mobile">
                     <span asp-validation-for="Mobile" class="error"></span>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
                     <label asp-for="Email" class="control-label">ایمیل (اختیاری)</label>
-                    <input type="text" class="form-control" asp-for="Email">
+                    <input type="text" class="form-control" dir="ltr" asp-for="Email">
                     <span asp-validation-for="Email" class="error"></span>
                 </div>
             </div>

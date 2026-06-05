@@ -25,6 +25,7 @@ namespace _0_Framework.Infrastructure
                 new("UserId", account.Id.ToString()),
                 new("RoleId", account.RoleId.ToString()),
                 new("Username", account.Username ?? string.Empty),
+                new(ClaimTypes.Name, account.Fullname)
             };
 
             if (!string.IsNullOrWhiteSpace(account.Role))
@@ -133,7 +134,7 @@ namespace _0_Framework.Infrastructure
             if (roleIdClaim != null) long.TryParse(roleIdClaim.Value, out roleId);
             var username = user.Claims.FirstOrDefault(x => x.Type == "Username")?.Value ?? string.Empty;
 
-            if (username == "admin" && roleId == 1 && id == 1)
+            if (username == "admin" && roleId == Roles.SuperAdmin)
                 return true;
 
             return false;
@@ -150,10 +151,20 @@ namespace _0_Framework.Infrastructure
             long roleId = 0;
             if (roleIdClaim != null) _ = long.TryParse(roleIdClaim.Value, out roleId);
 
-            if (roleId == 1 || roleId == 2)
+            if (roleId == Roles.SuperAdmin || roleId == Roles.Admin)
                 return true;
 
             return false;
+        }
+
+        private static class Roles
+        {
+            public const long SuperAdmin = 1;
+            public const long Admin = 2;
+            public const long Support = 3;
+            public const long ContentUploader = 4;
+            public const long Customer = 5;
+            public const long ColleagueUser = 10002;
         }
     }
 }

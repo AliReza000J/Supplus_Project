@@ -1,4 +1,4 @@
-using _0_Framework.Infrastructure;
+﻿using _0_Framework.Infrastructure;
 using AccountManagement.Application.Contracts.Role;
 using AccountManagement.Configuration.Permissions;
 using Microsoft.AspNetCore.Mvc;
@@ -61,9 +61,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Accounts.Role
         public async Task<IActionResult> OnPostAsync(EditRole command, CancellationToken cancellation)
         {
             var result = await _roleApplication.Edit(command, cancellation);
-            TempData["Toast.Success"] = result.IsSucceeded;
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
             TempData["Toast.Message"] = result.Message;
-            return RedirectToPage("Index");
+            return Page();
         }
     }
 }

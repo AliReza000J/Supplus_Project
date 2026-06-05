@@ -1,10 +1,14 @@
-﻿using _0_Framework.Domain;
-using _0_Framework.Application;
+﻿using _0_Framework.Application;
+using _0_Framework.Domain;
+using System.ComponentModel.DataAnnotations;
 
 namespace ShopManagement.Domain.OrderAgg
 {
-    public class Order : BaseEntity
+    public class Order : EntityBase
     {
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+
         public long UserId { get; private set; }
         public DateTime LastModifiedDate { get; set; } = DateTime.Now;
         public int PayMethod { get; private set; }
@@ -16,6 +20,7 @@ namespace ShopManagement.Domain.OrderAgg
 
         public double TotalAmount { get; private set; }
         public double DiscountAmount { get; private set; }
+        public double ShippingCost { get; private set; }
         public double PayAmount { get; private set; }
 
         public string? CouponCode { get; set; }
@@ -35,31 +40,33 @@ namespace ShopManagement.Domain.OrderAgg
         public Order(long userId, string fullName, string mobile,
             string address, string receiverZipCode, int payMethod, List<OrderItem> items)
         {
-            if (userId <= 0) throw new ArgumentException(nameof(userId));
+            if (userId <= 0) throw new ArgumentException("Invalid UserId", nameof(userId));
             if (items == null || !items.Any()) throw new ArgumentException("Order must have items", nameof(items));
 
             UserId = userId;
             ReceiverFullName = fullName;
             ReceiverMobile = mobile;
             ReceiverAddress = address;
+            ReceiverZipCode = receiverZipCode;
             PayMethod = payMethod;
             Items = items;
             TotalAmount = Items.Sum(i => i.Total());
             DiscountAmount = Items.Sum(i => i.TotalDiscAmount());
             PayAmount = Items.Sum(i => i.TotalPayAmount());
             Status = OrderStatus.Pending;
-            ReceiverZipCode = receiverZipCode;
+
+            Touch();
         }
 
         public void Touch() => LastModifiedDate = DateTime.Now;
 
-        public void StartGatewayPayment(string trackId) // اضافه کردن ورودی
+        public void StartGatewayPayment(string trackId)
         {
             if (PayMethod != PaymentMethod.Gateway)
                 throw new InvalidOperationException("این روش پرداخت Gateway نیست.");
 
-            this.PaymentRefId = trackId; // ذخیره کد پیگیری موقت زیبال
-            this.Status = OrderStatus.WaitingForGateway;
+            PaymentRefId = trackId;
+            Status = OrderStatus.WaitingForGateway;
             Touch();
         }
 
@@ -68,7 +75,7 @@ namespace ShopManagement.Domain.OrderAgg
             if (PayMethod != PaymentMethod.CardToCard)
                 throw new InvalidOperationException("این روش پرداخت کارت به کارت نیست.");
 
-            Status = OrderStatus.WaitingForManualVerification; // وضعیت در انتظار تایید پرداخت کارت به کارت
+            Status = OrderStatus.WaitingForManualVerification;
             Touch();
         }
 
@@ -108,7 +115,21 @@ namespace ShopManagement.Domain.OrderAgg
         public void Cancel(string reason)
         {
             Status = OrderStatus.Cancelled;
-            CancellationReason = reason; 
+            CancellationReason = reason;
+            Touch();
+        }
+
+        public void MarkAsNeedsRefund(string reason)
+        {
+            Status = OrderStatus.NeedsRefund;
+            CancellationReason = reason;
+            Touch();
+        }
+
+        public void RefundAndCancel ()
+        {
+            Status = OrderStatus.Cancelled;
+            CancellationReason += $"{Environment.NewLine}[تاریخ عودت]: {DateTime.Now.ToFarsiFull().ToPersianNumber()}";
             Touch();
         }
 
@@ -121,10 +142,16 @@ namespace ShopManagement.Domain.OrderAgg
 
         public void ApplyOrderCoupon(long couponId, string couponCode, double discountAmount)
         {
-            this.AppliedCouponId = couponId;
-            this.CouponCode = couponCode;
-            this.OrderCouponAmount = discountAmount;
-            this.PayAmount -= discountAmount;
+            AppliedCouponId = couponId;
+            CouponCode = couponCode;
+            OrderCouponAmount = discountAmount;
+            PayAmount -= discountAmount;
+        }
+
+        public void SetShippingCost(double shippingCost)
+        {
+            ShippingCost = shippingCost;
+            PayAmount += shippingCost;
         }
     }
 }

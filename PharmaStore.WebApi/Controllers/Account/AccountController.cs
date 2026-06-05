@@ -5,10 +5,10 @@ using _01_PharmaPlusQuery.Contracts.Ticket;
 using AccountManagement.Application.Contracts.Account;
 using AccountManagement.Application.Contracts.Account.ApiDTOs;
 using AccountManagement.Application.Contracts.Account.ApplicationDTOs;
+using AccountManagement.Application.Contracts.ShippingInfo;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmaShared.Web.Filters;
 using System.Security.Claims;
 
 namespace PharmaStore.WebApi.Controllers.Account
@@ -22,9 +22,12 @@ namespace PharmaStore.WebApi.Controllers.Account
     public class AccountController : ControllerBase
     {
         private readonly IAccountApplication _accountApp;
+        private readonly IShippingInfoApplication _shippingInfoApp;
         private readonly IProductQuery _productQuery;
         private readonly IOrderQuery _orderQuery;
         private readonly ITicketQuery _ticketQuery;
+        private readonly IOtpRateLimiter _otpRateLimiter;
+        private readonly IActionRateLimiter _rateLimiter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountController"/>.
@@ -32,12 +35,18 @@ namespace PharmaStore.WebApi.Controllers.Account
         public AccountController(IAccountApplication accountApp,
             IProductQuery productQuery,
             IOrderQuery orderQuery,
-            ITicketQuery ticketQuery)
+            ITicketQuery ticketQuery,
+            IShippingInfoApplication shippingInfoApp,
+            IOtpRateLimiter otpRateLimiter,
+            IActionRateLimiter rateLimiter)
         {
             _accountApp = accountApp;
             _productQuery = productQuery;
             _orderQuery = orderQuery;
             _ticketQuery = ticketQuery;
+            _shippingInfoApp = shippingInfoApp;
+            _otpRateLimiter = otpRateLimiter;
+            _rateLimiter = rateLimiter;
         }
 
         /// <summary>
@@ -81,21 +90,21 @@ namespace PharmaStore.WebApi.Controllers.Account
         /// <response code="401">Unauthorized. User ID claim is missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("favorites")]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> UserFavoritedProdcts(CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(ApiResponse<List<FaveProductsCardModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<FaveProductsCardModel>>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<List<FaveProductsCardModel>>>> UserFavoritedProdcts(CancellationToken cancellationToken)
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrWhiteSpace(idClaim))
-                return Unauthorized(ApiResponse<ProductQueryModel>.Fail("شناسه کاربر یافت نشد."));
+                return Unauthorized(ApiResponse<FaveProductsCardModel>.Fail("شناسه کاربر یافت نشد."));
 
             if (!long.TryParse(idClaim, out var userId))
-                return Unauthorized(ApiResponse<ProductQueryModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+                return Unauthorized(ApiResponse<FaveProductsCardModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
 
             var favs = await _productQuery.GetUserFavoriteList(userId, cancellationToken);
 
-            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(
+            return Ok(ApiResponse<List<FaveProductsCardModel>>.Ok(
                 favs,
                 favs.Any()
                     ? "عملیات با موفقیت انجام شد."
@@ -115,9 +124,44 @@ namespace PharmaStore.WebApi.Controllers.Account
         /// <response code="401">Unauthorized. User ID claim is missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("orders")]
-        [ProducesResponseType(typeof(ApiResponse<List<OrderQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<List<OrderQueryModel>>), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<ApiResponse<List<OrderQueryModel>>>> GetUserOrders(CancellationToken cancellation)
+        [ProducesResponseType(typeof(ApiResponse<List<OrderSummaryQueryModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<OrderSummaryQueryModel>>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<List<OrderSummaryQueryModel>>>> GetUserOrders(CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<OrderSummaryQueryModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<OrderSummaryQueryModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var orders = await _orderQuery.GetUserOrdersSummaryAsync(userId, cancellation);
+
+            return Ok(ApiResponse<List<OrderSummaryQueryModel>>.Ok(
+                orders,
+                orders.Any()
+                    ? "عملیات با موفقیت انجام شد."
+                    : $"هیچ سفارشی یافت نشد!"
+            ));
+        }
+
+        /// <summary>
+        /// Retrieves the details of an order for the authenticated user.
+        /// </summary>
+        /// <remarks>
+        /// Returns details of specific order placed by the currently authenticated user.
+        /// </remarks>
+        /// <param name="id"></param>
+        /// <param name="cancellation">Cancellation token.</param>
+        /// <returns>A list of the user's orders.</returns>
+        /// <response code="200">Operation successful. User orders list returned (can be empty).</response>
+        /// <response code="401">Unauthorized. User ID claim is missing or invalid.</response>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("orders/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<OrderQueryModel>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OrderQueryModel>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<OrderQueryModel>>> GetOrderDetails(long id, CancellationToken cancellation)
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -127,15 +171,16 @@ namespace PharmaStore.WebApi.Controllers.Account
             if (!long.TryParse(idClaim, out var userId))
                 return Unauthorized(ApiResponse<OrderQueryModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
 
-            var orders = await _orderQuery.GetOrdersByUser(userId, cancellation);
+            var order = await _orderQuery.GetOrderDetailsAsync(id, userId, cancellation);
 
-            return Ok(ApiResponse<List<OrderQueryModel>>.Ok(
-                orders,
-                orders.Any()
+            return Ok(ApiResponse<OrderQueryModel>.Ok(
+                order,
+                order != null
                     ? "عملیات با موفقیت انجام شد."
-                    : $"هیچ محصولی در لیست سفارشات پیشین شما یافت نشد!"
+                    : $"سفارش مورد نظر یافت نشد!"
             ));
         }
+
 
         /// <summary>
         /// Retrieves the support tickets created by the authenticated user.
@@ -147,15 +192,23 @@ namespace PharmaStore.WebApi.Controllers.Account
         /// <returns>A list of user's support tickets.</returns>
         /// <response code="200">Operation successful. Tickets list returned.</response>
         /// <response code="404">Not found. The user has no tickets.</response>
+        /// <response code="401">Unauthorized. The user is not authenticated.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpGet("tickets")]
         [ProducesResponseType(typeof(ApiResponse<List<TicketQueryModel>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<List<TicketQueryModel>>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<List<TicketQueryModel>>), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ApiResponse<List<TicketQueryModel>>>> MyTickets(CancellationToken cancellation)
         {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            var result = await _ticketQuery.GetUserTickets(idClaim, cancellation);
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<List<TicketQueryModel>>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<List<TicketQueryModel>>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var result = await _ticketQuery.GetUserTickets(userId, cancellation);
 
             if (result == null || !result.Any())
                 return NotFound(ApiResponse<List<TicketQueryModel>>
@@ -165,12 +218,48 @@ namespace PharmaStore.WebApi.Controllers.Account
         }
 
         /// <summary>
+        /// Tracks a support ticket by its id.
+        /// </summary>
+        /// <remarks>
+        /// Retrieves the details and conversation history of a specific ticket. 
+        /// The user must be the owner of the ticket to view its details.
+        /// </remarks>
+        /// <param name="id">The unique id of the ticket.</param>
+        /// <param name="cancellation">A token to cancel the operation.</param>
+        /// <response code="200">Success. Returns the details of the ticket.</response>
+        /// <response code="404">Not Found. The ticket with the specified code was not found or the user does not have permission to view it.</response>
+        /// <response code="401">Unauthorized. The user is not authenticated.</response>
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("tickets/{id}")]
+        [ProducesResponseType(typeof(ApiResponse<TicketQueryModel>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TicketQueryModel>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<TicketQueryModel>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<TicketQueryModel>>> MyTickets(long id, CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<TicketQueryModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<TicketQueryModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var result = await _ticketQuery.GetTicketDetails(id, userId, cancellation);
+
+            if (result == null)
+                return NotFound(ApiResponse<TicketQueryModel>
+                    .Fail("موردی یافت نشد."));
+
+            return Ok(ApiResponse<TicketQueryModel>.Ok(result));
+        }
+
+        /// <summary>
         /// Updates the authenticated user's general profile information.
         /// </summary>
         /// <remarks>
         /// Updates details such as fullname, username, email, and profile photo.
         /// The user ID is extracted securely from the JWT token.
-        /// This endpoint is rate-limited to 5 requests per 60 seconds and requires a multipart/form-data payload.
+        /// This endpoint requires a multipart/form-data payload.
         /// </remarks>
         /// <param name="dto">The updated profile information provided via form data.</param>
         /// <param name="cancellation">Cancellation token.</param>
@@ -180,7 +269,6 @@ namespace PharmaStore.WebApi.Controllers.Account
         /// <response code="401">Unauthorized. User ID claim is missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("update-profile")]
-        [RateLimit(Limit = 5, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -211,13 +299,47 @@ namespace PharmaStore.WebApi.Controllers.Account
                 : BadRequest(ApiResponse<object>.Fail(op.Message));
         }
 
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("set-password")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<object>>> SetPassword(
+            [FromForm] SetPasswordApi dto, CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<object>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<object>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            if (!_rateLimiter.CheckLimit("SetPassword", userId.ToString(), maxRequests: 3, timeWindow: TimeSpan.FromMinutes(60)))
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    ApiResponse<object>.Fail("تعداد درخواست‌های تغییر رمز عبور بیش از حد مجاز است. لطفا بعدا تلاش کنید."));
+
+            var command = new SetPassword
+            {
+                Id = userId,
+                Password = dto.Password,
+                RePassword = dto.RePassword,
+            };
+            var op = await _accountApp.SetPassword(command, userId, cancellation);
+
+            return op.IsSucceeded
+                ? Ok(ApiResponse<object>.Ok(new(), message: op.Message))
+                : BadRequest(ApiResponse<object>.Fail(op.Message));
+        }
+
         /// <summary>
         /// Changes the authenticated user's password.
         /// </summary>
         /// <remarks>
         /// Validates the current password and updates it to the new password.
         /// The user ID is extracted securely from the JWT token.
-        /// This endpoint is rate-limited to 3 requests per 60 seconds and requires a multipart/form-data payload.
+        /// This endpoint requires a multipart/form-data payload.
         /// </remarks>
         /// <param name="dto">The password change details provided via form data.</param>
         /// <param name="cancellation">Cancellation token.</param>
@@ -227,7 +349,6 @@ namespace PharmaStore.WebApi.Controllers.Account
         /// <response code="401">Unauthorized. User ID claim is missing or invalid.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("change-password")]
-        [RateLimit(Limit = 3, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -241,6 +362,10 @@ namespace PharmaStore.WebApi.Controllers.Account
 
             if (!long.TryParse(idClaim, out var userId))
                 return Unauthorized(ApiResponse<object>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            if (!_rateLimiter.CheckLimit("ChangePassword", userId.ToString(), maxRequests: 3, timeWindow: TimeSpan.FromMinutes(60)))
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    ApiResponse<object>.Fail("تعداد درخواست‌های تغییر رمز عبور بیش از حد مجاز است. لطفا بعدا تلاش کنید."));
 
             var command = new ChangePassword
             {
@@ -276,6 +401,10 @@ namespace PharmaStore.WebApi.Controllers.Account
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<ApiResponse<object>>> RequestMobileChange([FromBody] SendOtpDto command, CancellationToken cancellation)
         {
+            if (!_otpRateLimiter.CanSend(command.Mobile))
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    ApiResponse<object>.Fail("تعداد درخواست‌ها بیش از حد مجاز است."));
+
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrWhiteSpace(idClaim))
@@ -334,5 +463,121 @@ namespace PharmaStore.WebApi.Controllers.Account
                 : BadRequest(ApiResponse<object>.Fail(result.Message));
         }
 
+        // GET: api/Account/ShippingInfos
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("ShippingInfos")]
+        public async Task<ActionResult<ApiResponse<List<ShippingInfoViewModel>>>> GetUserAddresses(CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<List<ShippingInfoViewModel>>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<List<ShippingInfoViewModel>>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var addresses = await _shippingInfoApp.GetUserAddressesAsync(userId, cancellation);
+
+            return Ok(ApiResponse<List<ShippingInfoViewModel>>.Ok(addresses));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("ShippingInfos/{id}")]
+        public async Task<ActionResult<ApiResponse<EditShippingInfoCommand>>> GetAddressDetails(long id, CancellationToken cancellation)
+        {
+            var address = await _shippingInfoApp.GetDetailsAsync(id, cancellation);
+
+            if (address == null)
+                return NotFound();
+
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<EditShippingInfoCommand>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<EditShippingInfoCommand>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            if (address.UserId != userId)
+                return BadRequest(ApiResponse<EditShippingInfoCommand>.Fail("درخواست نامعتبر است."));
+
+            return Ok(ApiResponse<EditShippingInfoCommand>.Ok(address));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("ShippingInfos")]
+        public async Task<ActionResult<ApiResponse<object>>> CreateAddress([FromBody] CreateShippingInfoDto dto, CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<object>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<object>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var command = new CreateShippingInfoCommand
+            {
+                ReceiverAddress = dto.ReceiverAddress,
+                ReceiverFullName = dto.ReceiverFullName,
+                ReceiverMobile = dto.ReceiverMobile,
+                ReceiverZipCode = dto.ReceiverZipCode,
+                UserId = userId
+            };
+
+            var result = await _shippingInfoApp.CreateAsync(command, cancellation);
+
+            return result.IsSucceeded
+                ? Ok(ApiResponse<object>.Ok(new(), message: "آدرس با موفقیت ثبت شد."))
+                : BadRequest(ApiResponse<object>.Fail(result.Message));
+        }
+
+        // PUT: api/Account/ShippingInfos
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPut("ShippingInfos")]
+        public async Task<ActionResult<ApiResponse<object>>> EditAddress([FromBody] EditShippingInfoDto dto, CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<object>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<object>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var command = new EditShippingInfoCommand
+            {
+                Id = dto.Id,
+                ReceiverAddress = dto.ReceiverAddress,
+                ReceiverFullName = dto.ReceiverFullName,
+                ReceiverMobile = dto.ReceiverMobile,
+                ReceiverZipCode = dto.ReceiverZipCode,
+                UserId = userId
+            };
+
+            var result = await _shippingInfoApp.EditAsync(command, cancellation);
+            return result.IsSucceeded
+                ? Ok(ApiResponse<object>.Ok(new(), message: "آدرس با موفقیت ویرایش شد."))
+                : BadRequest(ApiResponse<object>.Fail(result.Message));
+        }
+
+        // DELETE: api/Account/ShippingInfos
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpDelete("ShippingInfos/{id}")]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteAddress(long id, CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<object>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<object>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var result = await _shippingInfoApp.DeleteAsync(id, userId, cancellation);
+            return result.IsSucceeded
+                ? Ok(ApiResponse<object>.Ok(new(), message: "آدرس با موفقیت حذف شد."))
+                : BadRequest(ApiResponse<object>.Fail(result.Message));
+        }
     }
 }

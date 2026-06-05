@@ -38,7 +38,8 @@ namespace AccountManagement.Application.Contracts.Account
         Task<OperationResult> UpdateProfileInfo(UpdateGeneralInfo command, CancellationToken cancellation);
         Task<OperationResult> RequestMobileChangeOtp(long userId, string newMobile, CancellationToken cancellation);
         Task<OperationResult> ChangeMobileApi(ChangeMobileDto command, CancellationToken cancellation);
-        
+        Task<OperationResult> SetPassword(SetPassword command, long userId, CancellationToken cancellation);
+
         // ==========================================
         // Shared (Admin & Store)
         // ==========================================
@@ -47,6 +48,8 @@ namespace AccountManagement.Application.Contracts.Account
         Task<bool> IsMobileExist(string mobile, CancellationToken cancellation);
         Task<OperationResult> ChangePassword(ChangePassword command, long userId, CancellationToken cancellation);
         Task<List<AccountViewModel>> GetAccounts(CancellationToken cancellation);
-
+        Task<bool> NeedsSetup(CancellationToken cancellation);
+        Task<OperationResult> Setup(SetupSuperAdminProfile command, CancellationToken cancellation);
     }
+
 }

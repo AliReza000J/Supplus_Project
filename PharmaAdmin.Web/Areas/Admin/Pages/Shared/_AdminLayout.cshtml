@@ -1,5 +1,5 @@
 ﻿@{
-    
+
 }
 <!DOCTYPE html>
 <html>
@@ -70,6 +70,12 @@
                             </button>
                             <span class="clearfix"></span>
                         </div>
+
+                        <ul class="nav navbar-nav navbar-right pull-left">
+
+                            @await Component.InvokeAsync("HeaderNotification")
+
+                        </ul>
 
                     </div>
                     <!--/.nav-collapse -->

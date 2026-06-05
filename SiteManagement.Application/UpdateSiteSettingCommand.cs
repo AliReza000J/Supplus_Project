@@ -62,6 +62,8 @@ namespace SiteManagement.Application
                 data.TermsAndConditions = dto.TermsAndConditions;
                 data.ReturnPolicy = dto.ReturnPolicy;
                 data.Socials = dto.Socials;
+                data.Faq = dto.Faq;
+                data.GeneralSetting = dto.GeneralSetting;
 
                 setting.Update(JsonSerializer.Serialize(data));
                 await _repo.SaveChangesAsync(cancellation);

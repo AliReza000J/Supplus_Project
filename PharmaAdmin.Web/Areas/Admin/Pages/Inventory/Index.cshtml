@@ -76,7 +76,7 @@
                                     @foreach (var item in Model.Inventory)
                                     {
                                         <tr>
-                                            <td>@item.Id.ToString().ToPersianNumber()</td>
+                                            <td>@item.Id</td>
                                             <td class="message-cell" title="@item.Product">
                                                 @(item.Product.Length > 50 ? item.Product.Substring(0, 50) + "..." : item.Product)
                                                 <span class="full-message">@item.Product</span>

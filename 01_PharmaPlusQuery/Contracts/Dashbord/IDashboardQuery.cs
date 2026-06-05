@@ -10,5 +10,7 @@
         Task<ChartDto> GetConversionRateAsync(CancellationToken cancellation);
         Task<ChartDto> GetTopBrandsChartAsync(CancellationToken cancellation);
         Task<ChartDto> GetTopCategoriesChartAsync(CancellationToken cancellation);
+        Task<List<TopCustomerDto>> GetTopCustomersAsync(int take = 5, CancellationToken cancellation = default);
+        Task<List<RecentOrderDto>> GetRecentOrdersAsync(int take = 5, CancellationToken cancellation = default);
     }
 }

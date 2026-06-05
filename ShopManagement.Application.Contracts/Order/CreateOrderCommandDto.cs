@@ -9,44 +9,18 @@ namespace ShopManagement.Application.Contracts.Order
     /// </summary>
     public class CreateOrderCommandDto
     {
+        private string? _couponCode;
         /// <summary>
-        /// The full name of the person receiving the order.
+        /// An optional discount coupon code to be applied to the order.
         /// </summary>
-        [Display(Name = "نام و نام‌ خانوادگی گیرنده")]
-        public string? ReceiverFullName { get; set; }
-
-        private string? _receiverMobile;
-        /// <summary>
-        /// The mobile phone number of the receiver. 
-        /// Must be in a valid Iranian mobile format (e.g., 09123456789).
-        /// </summary>
-        [Display(Name = "شماره موبایل گیرنده")]
-        [RegularExpression(@"^09\d{9}$", ErrorMessage = ValidationMessages.InvalidInput)]
-        public string? ReceiverMobile
+        [Display(Name = "کد تخفیف")]
+        public string? CouponCode
         {
-            get => _receiverMobile;
-            set => _receiverMobile = value?.ToEnglishNumber();
+            get => _couponCode;
+            set => _couponCode = value?.ToEnglishNumber();
         }
 
-        /// <summary>
-        /// The physical shipping address where the order will be delivered.
-        /// </summary>
-        [Display(Name = "نشانی گیرنده")]
-        [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        public string ReceiverAddress { get; set; }
-
-        private string _receiverZipCode;
-        /// <summary>
-        /// The 10-digit postal code (zip code) for the delivery address.
-        /// </summary>
-        [Display(Name = "کد پستی")]
-        [Required(ErrorMessage = ValidationMessages.IsRequired)]
-        [RegularExpression(@"^\d{10}$", ErrorMessage = ValidationMessages.InvalidInput)]
-        public string ReceiverZipCode
-        {
-            get => _receiverZipCode;
-            set => _receiverZipCode = value?.ToEnglishNumber();
-        }
+        public long ShippingInfoId { get; set; }
 
         /// <summary>
         /// The selected payment method for the order.
@@ -63,17 +37,6 @@ namespace ShopManagement.Application.Contracts.Order
         [FileExtensionLimitation(new[] { ".jpeg", ".jpg", ".png" }, ErrorMessage = ValidationMessages.InvalidFileFormat)]
         [MaxFileSize(2 * 1024 * 1024, ErrorMessage = ValidationMessages.MaxFileSize)]
         public IFormFile? PaymentReceiptPic { get; set; }
-
-        private string? _couponCode;
-        /// <summary>
-        /// An optional discount coupon code to be applied to the order.
-        /// </summary>
-        [Display(Name = "کد تخفیف")]
-        public string? CouponCode
-        {
-            get => _couponCode;
-            set => _couponCode = value?.ToEnglishNumber();
-        }
 
         /// <summary>
         /// The name of the bank card owner. 
@@ -95,5 +58,4 @@ namespace ShopManagement.Application.Contracts.Order
             set => _nationalCode = value?.ToEnglishNumber();
         }
     }
-
 }

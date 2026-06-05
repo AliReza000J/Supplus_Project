@@ -3,7 +3,7 @@ using ShopManagement.Domain.UserProductInteractionAgg;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class ProductViewRepository: BaseRepository<long, ProductView>, IProductViewRepository
+    public class ProductViewRepository: RepositoryBase<long, ProductView>, IProductViewRepository
     {
         private readonly ShopContext _context;
 

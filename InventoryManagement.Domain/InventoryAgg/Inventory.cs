@@ -1,9 +1,14 @@
 ﻿using _0_Framework.Domain;
+using System.ComponentModel.DataAnnotations;
 
 namespace InventoryManagement.Domain.InventoryAgg
 {
-    public class Inventory: BaseEntity
+    public class Inventory: EntityBase
     {
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+
+        public DateTime LastUpdatedAt { get; private set; }
         public long ProductId { get; private set; }
         public double UnitPrice { get; private set; }
         public bool InStock { get; private set; }
@@ -35,10 +40,7 @@ namespace InventoryManagement.Domain.InventoryAgg
             var operation = new InventoryOperation(true, count, operatorId, currentCount, description, 0, Id);
             Operations.Add(operation);
 
-            //if (currentCount > 0)
-            //    InStock = true;
-            //else
-            //    InStock = false;
+            LastUpdatedAt = DateTime.Now;
 
             InStock = currentCount > 0;
         }
@@ -48,6 +50,9 @@ namespace InventoryManagement.Domain.InventoryAgg
             var currentCount = CalculateCurrentCount() - count;
             var operation = new InventoryOperation(false, count, operatorId, currentCount, description, orderId, Id);
             Operations.Add(operation);
+
+            LastUpdatedAt = DateTime.Now;
+
             InStock = currentCount > 0;
         }
     }

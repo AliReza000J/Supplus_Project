@@ -38,7 +38,15 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Discounts
         public async Task<IActionResult> OnPost(EditDiscount command, CancellationToken cancellation)
         {
             var result = await _discountApplication.Edit(command, cancellation);
-            if (result.IsSucceeded) return RedirectToPage("./Index");
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
+            TempData["Toast.Message"] = result.Message;
 
             Products = new SelectList(await _productApplication.GetProducts(cancellation), "Id", "Name");
             return Page();

@@ -98,7 +98,7 @@
                                 <strong>موبایل گیرنده:</strong>
                                 <i class="fa fa-phone text-success m-l-5"></i>
                                 <a href="tel:@Model.Order.ReceiverMobile"
-                                   style="direction:ltr; display:inline-block">
+                                style="direction:ltr; display:inline-block">
                                     @Model.Order.ReceiverMobile?.ToPersianNumber()
                                 </a>
                             </p>
@@ -114,8 +114,8 @@
                                 </span>
 
                                 <button type="button"
-                                        class="btn btn-xs btn-default m-l-10"
-                                        onclick="copyReceiverAddress()">
+                                class="btn btn-xs btn-default m-l-10"
+                                onclick="copyReceiverAddress()">
                                     <i class="fa fa-copy"></i>
                                     کپی آدرس
                                 </button>
@@ -155,8 +155,8 @@
                     {
                         <p><strong>تصویر فیش:</strong></p>
                         <img src="~/Pictures/@Model.Order.PaymentReceiptPic"
-                             class="img-thumbnail"
-                             style="max-width:300px" />
+                        class="img-thumbnail"
+                        style="max-width:300px" />
                     }
                 </div>
             </div>
@@ -219,11 +219,11 @@
 
                     <!-- تایید / رد پرداخت -->
                     @if (Model.Order.PaymentMethodInt == PaymentMethod.CardToCard &&
-                   Model.Order.Status == OrderStatus.WaitingForManualVerification)
+                  Model.Order.Status == OrderStatus.WaitingForManualVerification)
                     {
                         <form method="post"
-                              asp-page-handler="ConfirmPayment"
-                              class="m-t-10">
+                        asp-page-handler="ConfirmPayment"
+                        class="m-t-10">
                             <input type="hidden" asp-for="ConfirmPayment.OrderId" />
                             <button class="btn btn-success btn-block">
                                 تایید پرداخت
@@ -231,29 +231,29 @@
                         </form>
 
                         <form method="post" asp-page-handler="RejectPayment"
-                              class="m-t-10">
+                        class="m-t-10">
                             <input type="hidden" asp-for="RejectPayment.OrderId" />
 
                             <div class="form-group">
                                 <label>دلیل اصلی</label>
                                 <select asp-for="RejectPayment.SelectedReason"
-                                        class="form-control">
+                                class="form-control">
                                     <option value="">انتخاب دلیل</option>
                                     <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
                                     <option value="INVALID_RECEIPT">رسید نامعتبر</option>
                                     <option value="WRONG_AMOUNT">مبلغ اشتباه</option>
                                 </select>
                                 <span asp-validation-for="RejectPayment.SelectedReason"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <div class="form-group">
                                 <label>دلیل رد پرداخت</label>
                                 <textarea asp-for="RejectPayment.ReasonDescription"
-                                          class="form-control"
-                                          rows="3"></textarea>
+                                class="form-control"
+                                rows="3"></textarea>
                                 <span asp-validation-for="RejectPayment.ReasonDescription"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <button class="btn btn-danger btn-block">
@@ -266,8 +266,8 @@
                     @if (Model.Order.Status == OrderStatus.Paid)
                     {
                         <form method="post"
-                              asp-page-handler="Proccessing"
-                              class="m-t-10">
+                        asp-page-handler="Proccessing"
+                        class="m-t-10">
                             <input type="hidden" name="orderId" value="@Model.Order.Id" />
                             <button class="btn btn-warning">
                                 تغییر وضعیت به «در حال پردازش»
@@ -275,27 +275,27 @@
                         </form>
 
                         <form method="post" asp-page-handler="RejectPayment"
-                              class="m-t-10">
+                        class="m-t-10">
                             <input type="hidden" asp-for="RejectPayment.OrderId" />
 
                             <div class="form-group">
                                 <label>دلیل اصلی</label>
                                 <select asp-for="RejectPayment.SelectedReason"
-                                        class="form-control">
+                                class="form-control">
                                     <option value="">انتخاب دلیل</option>
                                     <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
                                 </select>
                                 <span asp-validation-for="RejectPayment.SelectedReason"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <div class="form-group">
                                 <label>دلیل رد پرداخت</label>
                                 <textarea asp-for="RejectPayment.ReasonDescription"
-                                          class="form-control"
-                                          rows="3"></textarea>
+                                class="form-control"
+                                rows="3"></textarea>
                                 <span asp-validation-for="RejectPayment.ReasonDescription"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <button class="btn btn-danger btn-block">
@@ -308,18 +308,18 @@
                     @if (Model.Order.Status == OrderStatus.Processing)
                     {
                         <form method="post"
-                              asp-page-handler="Ship"
-                              class="m-t-10">
+                        asp-page-handler="Ship"
+                        class="m-t-10">
                             <input type="hidden" asp-for="Ship.OrderId" />
                             <input type="hidden" asp-for="Ship.Mobile" />
 
                             <div class="form-group">
                                 <label>کد رهگیری پستی</label>
                                 <input asp-for="Ship.PostTrackingNo"
-                                       class="form-control"
-                                       placeholder="مثال: 1234567890" />
+                                class="form-control" dir="ltr"
+                                placeholder="1234567890" />
                                 <span asp-validation-for="Ship.PostTrackingNo"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <button class="btn btn-primary">
@@ -328,31 +328,43 @@
                         </form>
 
                         <form method="post" asp-page-handler="RejectPayment"
-                              class="m-t-10">
+                        class="m-t-10">
                             <input type="hidden" asp-for="RejectPayment.OrderId" />
 
                             <div class="form-group">
                                 <label>دلیل اصلی</label>
                                 <select asp-for="RejectPayment.SelectedReason"
-                                        class="form-control">
+                                class="form-control">
                                     <option value="">انتخاب دلیل</option>
                                     <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
                                 </select>
                                 <span asp-validation-for="RejectPayment.SelectedReason"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <div class="form-group">
                                 <label>دلیل رد پرداخت</label>
                                 <textarea asp-for="RejectPayment.ReasonDescription"
-                                          class="form-control"
-                                          rows="3"></textarea>
+                                class="form-control"
+                                rows="3"></textarea>
                                 <span asp-validation-for="RejectPayment.ReasonDescription"
-                                      class="text-danger"></span>
+                                class="text-danger"></span>
                             </div>
 
                             <button class="btn btn-danger btn-block">
                                 رد پرداخت
+                            </button>
+                        </form>
+                    }
+
+                    @if(Model.Order.Status == OrderStatus.NeedsRefund)
+                    {
+                        <form method="post"
+                              asp-page-handler="Refunded"
+                              class="m-t-10">
+                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                            <button class="btn btn-danger">
+                                ثبت عودت مبلغ به کاربر و لغو نهایی سفارش
                             </button>
                         </form>
                     }

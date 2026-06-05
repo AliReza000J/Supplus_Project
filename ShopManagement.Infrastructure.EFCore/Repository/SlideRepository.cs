@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class SlideRepository : BaseRepository<long, Slide>, ISlideRepository
+    public class SlideRepository : RepositoryBase<long, Slide>, ISlideRepository
     {
         private readonly ShopContext _context;
 

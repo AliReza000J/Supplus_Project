@@ -41,9 +41,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Products
 
             var result = await _productApplication.Edit(command, cancellation);
             _cacheService.Remove($"product:base:{command.Slug}");
-            TempData["Toast.Success"] = result.IsSucceeded;
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
             TempData["Toast.Message"] = result.Message;
-            return RedirectToPage("./Index", result);
+            return Page();
         }
     }
 }

@@ -13,6 +13,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\0_Framework\0_Framework.csproj" />
+		<ProjectReference Include="..\AccountMangement.Infrastructure.EFCore\AccountManagement.Infrastructure.EFCore.csproj" />
 		<ProjectReference Include="..\ShopManagement.Application.Contracts\ShopManagement.Application.Contracts.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Filters\" />
 	</ItemGroup>
 </Project>

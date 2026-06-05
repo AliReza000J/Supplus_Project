@@ -2,10 +2,11 @@
 using _0_Framework.Application;
 using ShopManagement.Domain.ProductCategoryAgg;
 using ShopManagement.Domain.ProductPictureAgg;
+using System.ComponentModel.DataAnnotations;
 
 namespace ShopManagement.Domain.ProductAgg
 {
-    public class Product: BaseEntity
+    public class Product: EntityBase
     {
         public string Name { get; private set; }
         public long CategoryId { get; private set; }

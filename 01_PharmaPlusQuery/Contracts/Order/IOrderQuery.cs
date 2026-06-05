@@ -2,6 +2,7 @@
 {
     public interface IOrderQuery
     {
-        Task<List<OrderQueryModel>> GetOrdersByUser(long userId, CancellationToken cancellation = default);
+        Task<List<OrderSummaryQueryModel>> GetUserOrdersSummaryAsync(long userId, CancellationToken cancellation = default);
+        Task<OrderQueryModel> GetOrderDetailsAsync(long orderId, long userId, CancellationToken cancellation = default);
     }
 }

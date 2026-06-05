@@ -6,9 +6,13 @@ namespace PharmaShared.Web.Services
     public class OtpRateLimiter : IOtpRateLimiter
     {
         private readonly IMemoryCache _cache;
-
         private const int MaxAttempts = 3;
         private static readonly TimeSpan Window = TimeSpan.FromMinutes(10);
+
+        private class Counter
+        {
+            public int Value;
+        }
 
         public OtpRateLimiter(IMemoryCache cache)
         {
@@ -19,17 +23,14 @@ namespace PharmaShared.Web.Services
         {
             var key = $"otp-rate:{mobile}";
 
-            var count = _cache.GetOrCreate(key, entry =>
+            var counter = _cache.GetOrCreate(key, entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = Window;
-                return 0;
+                return new Counter();
             });
 
-            if (count >= MaxAttempts)
-                return false;
-
-            _cache.Set(key, count + 1, Window);
-            return true;
+            var currentCount = Interlocked.Increment(ref counter!.Value);
+            return currentCount <= MaxAttempts;
         }
     }
 

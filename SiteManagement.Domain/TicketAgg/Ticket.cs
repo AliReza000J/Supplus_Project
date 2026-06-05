@@ -3,7 +3,7 @@ using _0_Framework.Application;
 
 namespace SiteManagement.Domain.TicketAgg
 {
-    public class Ticket : BaseEntity
+    public class Ticket : EntityBase
     {
         public long UserId { get; private set; }
         public string? Email { get; private set; }

@@ -7,24 +7,77 @@
 <div class="container-fluid">
     <form method="post" enctype="multipart/form-data">
         <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">تنظیمات عمومی سایت</h3></div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <div class="checkbox">
+                        <label style="font-weight: bold; color: darkred;">
+                            <input asp-for="Command.GeneralSetting.IsMaintenanceMode" type="checkbox" />
+                            فعال‌سازی حالت تعمیرات (خارج کردن سایت از دسترس کاربران و نمایش صفحه در حال بروزرسانی)
+                        </label>
+                    </div>
+                </div>
+                <hr />
+                <div class="form-group">
+                    <label asp-for="Command.GeneralSetting.CopyrightText">متن کپی‌رایت (فوتر سایت)</label>
+                    <input asp-for="Command.GeneralSetting.CopyrightText" class="form-control" placeholder="مثال: تمامی حقوق مادی و معنوی این سایت محفوظ است © 1405" />
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-default">
             <div class="panel-heading"><h3 class="panel-title">اطلاعات تماس</h3></div>
             <div class="panel-body">
                 <div class="row">
-                    <div class="col-md-4">
-                        <label asp-for="Command.Contact.Phone">تلفن</label>
-                        <input asp-for="Command.Contact.Phone" class="form-control" />
-                        <span asp-validation-for="Command.Contact.Phone" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label asp-for="Command.Contact.Email">ایمیل</label>
                         <input asp-for="Command.Contact.Email" class="form-control" />
                         <span asp-validation-for="Command.Contact.Email" class="text-danger"></span>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
+                        <label asp-for="Command.Contact.WorkingHours">ساعات کاری</label>
+                        <input asp-for="Command.Contact.WorkingHours" class="form-control" placeholder="مثال: شنبه تا چهارشنبه ۹ الی ۱۷ - پنجشنبه‌ها ۹ الی ۱۳" />
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-md-12">
                         <label asp-for="Command.Contact.Address">آدرس</label>
                         <input asp-for="Command.Contact.Address" class="form-control" />
                     </div>
                 </div>
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-md-6">
+                        <label asp-for="Command.Contact.Latitude">عرض جغرافیایی نقشه (Latitude)</label>
+                        <input asp-for="Command.Contact.Latitude" class="form-control" placeholder="مثال: 35.689198" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Command.Contact.Longitude">طول جغرافیایی نقشه (Longitude)</label>
+                        <input asp-for="Command.Contact.Longitude" class="form-control" placeholder="مثال: 51.388973" />
+                    </div>
+                </div>
+                <hr />
+                <h5>شماره‌های تماس</h5>
+                <div id="phones-container">
+                    @for (int i = 0; i < Model.Command.Contact.Phones.Count; i++)
+                    {
+                        <div class="row phone-item" style="margin-bottom: 10px;">
+                            <div class="col-md-5">
+                                <input asp-for="Command.Contact.Phones[i].Title" class="form-control" placeholder="عنوان (مثل: پشتیبانی)" />
+                                <span asp-validation-for="Command.Contact.Phones[i].Title"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-5">
+                                <input asp-for="Command.Contact.Phones[i].Number" class="form-control" placeholder="شماره تماس" />
+                                <span asp-validation-for="Command.Contact.Phones[i].Number"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-block remove-phone">حذف</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <button type="button" id="add-phone" class="btn btn-info btn-sm mt-2">افزودن شماره تماس</button>
             </div>
         </div>
 
@@ -174,6 +227,34 @@
             </div>
         </div>
 
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">سوالات متداول (FAQ)</h3>
+            </div>
+            <div class="panel-body">
+                <div id="faqs-container">
+                    @for (int i = 0; i < Model.Command.Faq.Items.Count; i++)
+                    {
+                        <div class="row faq-item" style="margin-bottom: 10px;">
+                            <div class="col-md-10">
+                                <input asp-for="Command.Faq.Items[i].Question" class="form-control mb-1" placeholder="سوال" />
+                                <span asp-validation-for="Command.Faq.Items[i].Question"
+                                      class="text-danger"></span>
+                                <textarea asp-for="Command.Faq.Items[i].Answer" class="form-control" rows="2" placeholder="پاسخ"></textarea>
+                                <span asp-validation-for="Command.Faq.Items[i].Answer"
+                                      class="text-danger"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-block remove-faq" style="height: 100%;">حذف</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <hr />
+                <button type="button" id="add-faq" class="btn btn-info btn-sm mt-2">افزودن سوال جدید</button>
+            </div>
+        </div>
+
         <div class="well">
             <button type="submit" class="btn btn-primary btn-block btn-lg">ذخیره نهایی تمامی تنظیمات</button>
         </div>
@@ -218,7 +299,7 @@
             $("#add-title").click(function () {
                 var index = $(".title-item").length;
                 var html = `
-                    <div class="row social-item" style="margin-bottom: 10px;">
+                    <div class="row title-item" style="margin-bottom: 10px;">
                         <div class="col-md-5">
                             <input name="Command.TicketTitles.Titles[${index}].TitleName" class="form-control" placeholder="موضوع تیکت" />
                         </div>
@@ -278,6 +359,65 @@
                 });
             }
         });
+
+        $(document).ready(function () {
+            $("#add-phone").click(function () {
+                var index = $(".phone-item").length;
+                var html = `
+                    <div class="row phone-item" style="margin-bottom: 10px;">
+                        <div class="col-md-5">
+                            <input name="Command.Contact.Phones[${index}].Title" class="form-control" placeholder="عنوان (مثل: پشتیبانی)" />
+                        </div>
+                        <div class="col-md-5">
+                            <input name="Command.Contact.Phones[${index}].Number" class="form-control" placeholder="شماره تماس" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger btn-block remove-phone">حذف</button>
+                        </div>
+                    </div>`;
+                $("#phones-container").append(html);
+            });
+
+            $(document).on("click", ".remove-phone", function () {
+                $(this).closest(".phone-item").remove();
+                $(".phone-item").each(function (index, element) {
+                    $(element).find("input").each(function () {
+                        var name = $(this).attr("name");
+                        if (name.includes("Title")) $(this).attr("name", `Command.Contact.Phones[${index}].Title`);
+                        if (name.includes("Number")) $(this).attr("name", `Command.Contact.Phones[${index}].Number`);
+                    });
+                });
+            });
+        });
+
+        $(document).ready(function () {
+            $("#add-faq").click(function () {
+                var index = $(".faq-item").length;
+                var html = `
+                    <div class="row faq-item" style="margin-bottom: 10px;">
+                        <div class="col-md-10">
+                            <input name="Command.Faq.Items[${index}].Question" class="form-control mb-1" placeholder="سوال" />
+                            <textarea name="Command.Faq.Items[${index}].Answer" class="form-control" rows="2" placeholder="پاسخ"></textarea>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger btn-block remove-faq" style="height: 100%;">حذف</button>
+                        </div>
+                    </div>`;
+                $("#faqs-container").append(html);
+            });
+
+            $(document).on("click", ".remove-faq", function () {
+                $(this).closest(".faq-item").remove();
+                $(".faq-item").each(function (index, element) {
+                    $(element).find("input, textarea").each(function () {
+                        var name = $(this).attr("name");
+                        if (name.includes("Question")) $(this).attr("name", `Command.Faq.Items[${index}].Question`);
+                        if (name.includes("Answer")) $(this).attr("name", `Command.Faq.Items[${index}].Answer`);
+                    });
+                });
+            });
+        });
+
     </script>
     <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
     <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>

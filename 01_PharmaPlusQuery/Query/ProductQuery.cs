@@ -8,6 +8,7 @@ using DiscountManagement.Infrastructure.EFCore;
 using InventoryMangement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Infrastructure.EFCore;
+using System.Text.Json;
 using static DiscountManagement.Domain.DiscountAgg.Discount;
 using static DiscountManagement.Domain.DiscountAgg.DiscountTarget;
 
@@ -36,9 +37,6 @@ namespace _01_PharmaPlusQuery.Query
             var productBaseCacheKey = $"product:base:{productSlug}";
             var now = DateTime.Now;
 
-            // -----------------------------
-            // 1) Get Product Base Data
-            // -----------------------------
             var productBase = await _cacheService.GetOrCreateAsync(
                 productBaseCacheKey,
                 factory: async () =>
@@ -79,11 +77,9 @@ namespace _01_PharmaPlusQuery.Query
                 return null;
 
             long productId = productBase.Id;
-            var cutoffTime = now.AddHours(-48);
-
+            var cutoffTime = now.AddDays(-7);
             var picturesCacheKey = $"product:pictures:{productBase.Id}";
 
-            // Pictures (MANUAL SPLIT)
             var pictures = await _cacheService.GetOrCreateAsync(
                 key: picturesCacheKey,
                 factory: async () =>
@@ -105,51 +101,28 @@ namespace _01_PharmaPlusQuery.Query
                 size: 5,
                 cancellationToken: cancellationToken);
 
-            // Recent Views (Real-time)
             var recentViews = await _shopContext.ProductViews
                 .AsNoTracking()
                 .CountAsync(v => v.ProductId == productId && v.CreationDate >= cutoffTime, cancellationToken);
 
-            // Current User favorited
+            var totalFaved = await _shopContext.UserFavoriteProducts
+                .AsNoTracking()
+                .CountAsync(v => v.ProductId == productId, cancellationToken);
+
+            var inCartCount = await _shopContext.CartItems
+                .AsNoTracking()
+                .CountAsync(x => x.ProductId == productId, cancellationToken);
+
             var currentUserfaved = await _shopContext.UserFavoriteProducts
-                .AnyAsync(x => x.ProductId == productId
-                && x.UserId == userId, cancellationToken);
+                .AnyAsync(x => x.ProductId == productId && x.UserId == userId, cancellationToken);
 
-            // -----------------------------
-            // 2) Parallel Data Fetching
-            // -----------------------------
-
-            //// Pictures Cache
-            //var picturesCacheKey = $"product:pictures:{productId}";
-            //var picturesTask = _cacheService.GetOrCreateAsync(
-            //    key: picturesCacheKey,
-            //    factory: async () =>
-            //    {
-            //        return await _shopContext.ProductPictures
-            //            .AsNoTracking()
-            //            .Where(p => p.ProductId == productId && !p.IsRemoved)
-            //            .Select(p => new ProductPictureQueryModel
-            //            {
-            //                Picture = p.Picture,
-            //                PictureAlt = p.PictureAlt,
-            //                PictureTitle = p.PictureTitle,
-            //                ProductId = productId
-            //            }).ToListAsync(cancellationToken);
-            //    },
-            //    absoluteExpiration: TimeSpan.FromHours(3),
-            //    size: 5
-            //);
-
-            // Inventory (Real-time)
             var inventoryTask = _inventoryContext.Inventory
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ProductId == productId, cancellationToken);
 
-            // Discount (Real-time)
             var discountTask = _discountContext.Discounts
                 .Include(x => x.Targets)
-                .Where(x => x.IsActive && x.Type == (DiscountType)1
-                && x.ApplyType == (DiscountApplyType)1) // 1: Automatic, 1: OnProduct
+                .Where(x => x.IsActive && x.Type == (DiscountType)1 && x.ApplyType == (DiscountApplyType)1)
                 .Where(x => x.StartDate < now && x.EndDate > now)
                 .Where(x => x.Targets.Any(t =>
                     t.TargetType == (DiscountTargetType)4 || // برای همه
@@ -157,10 +130,9 @@ namespace _01_PharmaPlusQuery.Query
                     (t.TargetType == (DiscountTargetType)3 && t.CategoryId == productBase.CategoryId) || // برای این دسته
                     (t.TargetType == (DiscountTargetType)2 && t.BrandName == productBase.Brand) // برای این برند
                 ))
-                .OrderByDescending(x => x.Percentage) // انتخاب بالاترین درصد
+                .OrderByDescending(x => x.Percentage)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            // Comments (Real-time)
             var commentsRawTask = _commentContext.Comments
                 .Where(x => !x.IsCanceled && x.IsConfirmed)
                 .Where(x => x.Type == (int)CommentType.Product)
@@ -187,26 +159,12 @@ namespace _01_PharmaPlusQuery.Query
                 .OrderByDescending(x => x.Id)
                 .ToListAsync(cancellationToken);
 
-            //var recentViewsTask = _shopContext.ProductViews
-            //    .AsNoTracking()
-            //    .CountAsync(v => v.ProductId == productId && v.CreationDate >= cutoffTime, cancellationToken);
-
-            //var currentUserfavedTask = _shopContext.UserFavoriteProducts
-            //    .AnyAsync(x => x.ProductId == productId && x.UserId == userId, cancellationToken);
-
-            //await Task.WhenAll(picturesTask, inventoryTask, discountTask, commentsRawTask, recentViewsTask, currentUserfavedTask);
             await Task.WhenAll(inventoryTask, discountTask, commentsRawTask);
 
             var inventory = inventoryTask.Result;
             var discount = discountTask.Result;
             var commentsRaw = commentsRawTask.Result;
-            //var pictures = picturesTask.Result;
-            //var recentViews = recentViewsTask.Result;
-            //var currentUserfaved = currentUserfavedTask.Result;
 
-            // -----------------------------
-            // 3) Reactions List
-            // -----------------------------
             var commentIds = commentsRaw.Select(c => c.Id).ToList();
 
             var reactions = await _commentContext.CommentReactions
@@ -242,9 +200,6 @@ namespace _01_PharmaPlusQuery.Query
                     .ToList();
             }
 
-            // -----------------------------
-            // 4) Calculate Price and Stats
-            // -----------------------------
             double unitPrice = inventory?.UnitPrice ?? 0;
             bool hasDiscount = discount != null;
             int discountPercentage = discount?.Percentage ?? 0;
@@ -259,10 +214,6 @@ namespace _01_PharmaPlusQuery.Query
 
             var comments = commentsRaw.Where(c => !string.IsNullOrWhiteSpace(c.Message)).ToList();
 
-            // -----------------------------
-            // 5) Build Final Model
-            // -----------------------------
-
             return new ProductQueryModel
             {
                 Id = productBase.Id,
@@ -272,7 +223,9 @@ namespace _01_PharmaPlusQuery.Query
                 Description = productBase.Description,
                 ShortDescription = productBase.ShortDescription,
                 MetaDescription = productBase.MetaDescription,
-                Specifications = productBase.Specifications,
+                Specifications = !string.IsNullOrWhiteSpace(productBase.Specifications)
+                ? JsonSerializer.Deserialize<ProductSpecificationModel>(productBase.Specifications, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                : new ProductSpecificationModel(),
                 Keywords = productBase.Keywords,
                 Slug = productBase.Slug,
                 ViewCount = productBase.ViewCount,
@@ -302,16 +255,12 @@ namespace _01_PharmaPlusQuery.Query
                 CommentCount = commentCount,
                 RateCount = rateCount,
                 AvgRate = avgRate,
-
-                AvgRateStr = avgRate.ToString(),
-                CommentCountStr = commentCount.ToString(),
-                RateCountStr = rateCount.ToString(),
-                ViewsLabel = "+" + (Math.Ceiling(recentViews / 10.0) * 10).ToString()
-                + " بازدید از این محصول"
+                InFavedCount = totalFaved,
+                InCartCount = inCartCount
             };
         }
 
-        public async Task<List<ProductQueryModel>> GetLatestArrivals(CancellationToken cancellationToken = default)
+        public async Task<List<ProductCardModel>> GetLatestArrivals(CancellationToken cancellationToken = default)
         {
             var now = DateTime.Now;
 
@@ -342,7 +291,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToListAsync(cancellationToken);
 
             var products = await _shopContext.Products.Include(x => x.Category)
-                .Select(product => new ProductQueryModel
+                .Select(product => new ProductCardModel
                 {
                     Id = product.Id,
                     CategoryId = product.CategoryId,
@@ -354,7 +303,6 @@ namespace _01_PharmaPlusQuery.Query
                     PictureAlt = product.PictureAlt,
                     PictureTitle = product.PictureTitle,
                     Slug = product.Slug,
-                    MetaDescription = product.MetaDescription
                 }).AsNoTracking().OrderByDescending(x => x.Id).Take(10).ToListAsync(cancellationToken);
 
             foreach (var product in products)
@@ -402,52 +350,78 @@ namespace _01_PharmaPlusQuery.Query
             return products;
         }
 
-        public async Task<PagedResult<ProductQueryModel>> Search(
-            string value,
-            int page,
-            int pageSize,
-            CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ProductCardModel>> Search(
+        ProductFilterRequest request,
+        CancellationToken cancellationToken = default)
         {
-            if (page <= 0) page = 1;
-            if (pageSize <= 0) pageSize = 10;
+            if (request.Page <= 0) request.Page = 1;
+            if (request.PageSize <= 0) request.PageSize = 10;
 
-            var query = _shopContext.Products.AsNoTracking();
+            var query = _shopContext.Products.Include(x => x.Category).AsNoTracking().AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(value))
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                value = value.Trim().Replace("ي", "ی").Replace("ك", "ک");
+                var term = request.SearchTerm.Trim().Replace("ي", "ی").Replace("ك", "ک");
+                var likeTerm = $"%{term}%";
                 query = query.Where(x =>
-                    EF.Functions.Like(x.Name, $"%{value}%") ||
-                    EF.Functions.Like(x.Category.Name, $"%{value}%") ||
-                    EF.Functions.Like(x.ShortDescription, $"%{value}%") ||
-                    EF.Functions.Like(x.Keywords, $"%{value}%") ||
-                    EF.Functions.Like(x.Brand, $"%{value}%"));
+                    EF.Functions.Like(x.Name, likeTerm) ||
+                    EF.Functions.Like(x.ShortDescription, likeTerm) ||
+                    EF.Functions.Like(x.Specifications, likeTerm) || // جستجو در مشخصات فعلی (HTML/String)
+                    EF.Functions.Like(x.Keywords, likeTerm) ||
+                    EF.Functions.Like(x.Category.Name, likeTerm));
             }
 
-            var totalCount = await query.CountAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(request.Brand))
+            {
+                query = query.Where(x => x.Brand == request.Brand.Trim());
+            }
 
-            var products = await query.OrderByDescending(x => x.Id)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new ProductQueryModel
-                {
-                    Id = p.Id,
-                    CategoryName = p.Category.Name,
-                    CategoryFullSlug = p.Category.FullSlug,
-                    Name = p.Name,
-                    Picture = p.Picture,
-                    PictureAlt = p.PictureAlt,
-                    PictureTitle = p.PictureTitle,
-                    ShortDescription = p.ShortDescription,
-                    Slug = p.Slug,
-                    Brand = p.Brand,
-                    Keywords = p.Keywords,
-                    MetaDescription = p.MetaDescription,
-                }).ToListAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(request.CategoryFullSlug))
+            {
+                query = query.Where(x => x.Category.FullSlug.StartsWith(request.CategoryFullSlug.Trim()));
+            }
 
-            if (!products.Any()) return new PagedResult<ProductQueryModel> { TotalCount = totalCount };
+            var baseProductsRaw = await query.Select(p => new
+            {
+                p.Id,
+                CategoryName = p.Category.Name,
+                CategoryFullSlug = p.Category.FullSlug,
+                p.Name,
+                p.Picture,
+                p.PictureAlt,
+                p.PictureTitle,
+                p.ShortDescription,
+                p.Slug,
+                p.Brand,
+                p.Keywords,
+                p.CategoryId,
+                p.Specifications
+            }).ToListAsync(cancellationToken);
 
-            var productIds = products.Select(x => x.Id).ToList();
+            var baseProducts = baseProductsRaw.Select(p => new ProductCardModel
+            {
+                Id = p.Id,
+                CategoryName = p.CategoryName,
+                CategoryFullSlug = p.CategoryFullSlug,
+                Name = p.Name,
+                Picture = p.Picture,
+                PictureAlt = p.PictureAlt,
+                PictureTitle = p.PictureTitle,
+                Slug = p.Slug,
+                Brand = p.Brand,
+                CategoryId = p.CategoryId,
+                Specifications = !string.IsNullOrWhiteSpace(p.Specifications)
+                ? JsonSerializer.Deserialize<ProductSpecificationModel>(p.Specifications, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                : new ProductSpecificationModel()
+            }).ToList();
+
+            if (!baseProducts.Any()) return new PagedResult<ProductCardModel>();
+
+            var productIds = baseProducts.Select(x => x.Id).ToList();
+
+            var inventory = await _inventoryContext.Inventory
+                .Where(x => productIds.Contains(x.ProductId))
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock }, cancellationToken);
 
             var avgRates = await _commentContext.Comments
                 .Where(x => productIds.Contains(x.RecordId) && x.IsConfirmed && !x.IsCanceled)
@@ -455,33 +429,19 @@ namespace _01_PharmaPlusQuery.Query
                 .Select(g => new { ProductId = g.Key, Avg = g.Average(c => c.Rate), Count = g.Count() })
                 .ToDictionaryAsync(x => x.ProductId, cancellationToken);
 
-            var inventory = await _inventoryContext.Inventory
-                .Where(x => productIds.Contains(x.ProductId))
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock }, cancellationToken);
-
             var activeDiscounts = await _cacheService.GetOrCreateAsync("ActiveDiscounts",
-                factory: async () =>
-                {
-                    return await _discountContext.Discounts
-                        .Include(x => x.Targets)
-                        .AsNoTracking()
-                        .Where(x => x.IsActive)
-                        .ToListAsync(cancellationToken);
-                },
-                absoluteExpiration: TimeSpan.FromMinutes(30),
-                cancellationToken: cancellationToken
-            );
+                factory: async () => await _discountContext.Discounts.Include(x => x.Targets).AsNoTracking().Where(x => x.IsActive).ToListAsync(cancellationToken),
+                absoluteExpiration: TimeSpan.FromMinutes(30), cancellationToken: cancellationToken);
 
             var now = DateTime.Now;
-            var validDiscounts = activeDiscounts
-                .Where(x => x.StartDate < now && x.EndDate > now)
-                .ToList();
+            var validDiscounts = activeDiscounts.Where(x => x.StartDate < now && x.EndDate > now).ToList();
 
-            foreach (var product in products)
+            foreach (var product in baseProducts)
             {
                 if (inventory.TryGetValue(product.Id, out var inv))
                 {
                     product.Price = inv.UnitPrice.ToMoney();
+                    product.DoublePrice = inv.UnitPrice;
                     product.IsInStock = inv.InStock;
 
                     var bestDiscount = validDiscounts
@@ -497,7 +457,12 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = bestDiscount.Percentage;
                         product.HasDiscount = true;
                         var discountAmount = Math.Round((inv.UnitPrice * bestDiscount.Percentage) / 100);
-                        product.PriceWithDiscount = (inv.UnitPrice - discountAmount).ToMoney();
+                        product.DoublePriceWithDiscount = inv.UnitPrice - discountAmount;
+                        product.PriceWithDiscount = product.DoublePriceWithDiscount.ToMoney();
+                    }
+                    else
+                    {
+                        product.DoublePriceWithDiscount = inv.UnitPrice;
                     }
                 }
 
@@ -508,17 +473,59 @@ namespace _01_PharmaPlusQuery.Query
                 }
             }
 
-            return new PagedResult<ProductQueryModel>
+            var filteredProducts = baseProducts.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(request.CountryOfOrigin))
             {
-                Items = products,
-                CurrentPage = page,
-                PageSize = pageSize,
+                filteredProducts = filteredProducts.Where(x =>
+                    x.Specifications != null &&
+                    x.Specifications.CountryOfOrigin == request.CountryOfOrigin.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.ProductForm))
+            {
+                filteredProducts = filteredProducts.Where(x =>
+                    x.Specifications != null &&
+                    x.Specifications.ProductForm == request.ProductForm.Trim());
+            }
+
+            if (request.OnlyInStock)
+                filteredProducts = filteredProducts.Where(x => x.IsInStock);
+
+            if (request.HasDiscount)
+                filteredProducts = filteredProducts.Where(x => x.HasDiscount);
+
+            if (request.MinPrice.HasValue)
+                filteredProducts = filteredProducts.Where(x => x.DoublePriceWithDiscount >= request.MinPrice.Value);
+
+            if (request.MaxPrice.HasValue)
+                filteredProducts = filteredProducts.Where(x => x.DoublePriceWithDiscount <= request.MaxPrice.Value);
+
+            filteredProducts = request.SortBy switch
+            {
+                ProductSortOption.PriceAsc => filteredProducts.OrderByDescending(x => x.IsInStock).ThenBy(x => x.DoublePriceWithDiscount),
+                ProductSortOption.PriceDesc => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.DoublePriceWithDiscount),
+                ProductSortOption.Popularity => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.AvgRate).ThenByDescending(x => x.RateCount),
+                ProductSortOption.HighestDiscount => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.DiscountRate),
+                ProductSortOption.MostViewed => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.ViewCount),
+                _ => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.Id) // Newest default
+            };
+
+            var finalResult = filteredProducts.ToList();
+            var totalCount = finalResult.Count;
+            var pagedItems = finalResult.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToList();
+
+            return new PagedResult<ProductCardModel>
+            {
+                Items = pagedItems,
+                CurrentPage = request.Page,
+                PageSize = request.PageSize,
                 TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                TotalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize)
             };
         }
 
-        public async Task<List<ProductQueryModel>> GetRandomRecommendations(int take = 10, CancellationToken cancellationToken = default)
+        public async Task<List<ProductCardModel>> GetRandomRecommendations(int take = 10, CancellationToken cancellationToken = default)
         {
             if (take <= 0 || take > 50)
                 take = 10;
@@ -541,7 +548,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
 
             if (!inStockProductIds.Any())
-                return new List<ProductQueryModel>();
+                return new List<ProductCardModel>();
 
             // ==== Rates ====
             var avgRates = await _commentContext.Comments
@@ -578,7 +585,7 @@ namespace _01_PharmaPlusQuery.Query
             var products = await _shopContext.Products
                 .Include(x => x.Category)
                 .Where(x => randomIds.Contains(x.Id))
-                .Select(product => new ProductQueryModel
+                .Select(product => new ProductCardModel
                 {
                     Id = product.Id,
                     CategoryId = product.CategoryId,
@@ -590,7 +597,6 @@ namespace _01_PharmaPlusQuery.Query
                     PictureAlt = product.PictureAlt,
                     PictureTitle = product.PictureTitle,
                     Slug = product.Slug,
-                    MetaDescription = product.MetaDescription,
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
@@ -643,7 +649,7 @@ namespace _01_PharmaPlusQuery.Query
             return products;
         }
 
-        public async Task<List<ProductQueryModel>> GetTopRatedProducts(int take = 10, CancellationToken cancellationToken = default)
+        public async Task<List<ProductCardModel>> GetTopRatedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
             if (take <= 0 || take > 50)
                 take = 10;
@@ -666,7 +672,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
 
             if (!inStockProductIds.Any())
-                return new List<ProductQueryModel>();
+                return new List<ProductCardModel>();
 
             // ---------- Calculate AvgRate from Comments ----------
             var avgRates = await _commentContext.Comments
@@ -691,7 +697,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
 
             if (!popularIds.Any())
-                return new List<ProductQueryModel>();
+                return new List<ProductCardModel>();
 
             var activeDiscounts = await _discountContext.Discounts
                 .Include(x => x.Targets)
@@ -704,14 +710,13 @@ namespace _01_PharmaPlusQuery.Query
             var products = await _shopContext.Products
                 .Include(x => x.Category)
                 .Where(x => popularIds.Contains(x.Id))
-                .Select(product => new ProductQueryModel
+                .Select(product => new ProductCardModel
                 {
                     Id = product.Id,
                     CategoryId = product.CategoryId,
                     Brand = product.Brand,
                     Name = product.Name,
                     Slug = product.Slug,
-                    MetaDescription = product.MetaDescription,
                     CategoryName = product.Category.Name,
                     CategoryFullSlug = product.Category.FullSlug,
                     Picture = product.Picture,
@@ -772,7 +777,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<List<ProductQueryModel>> GetMostViewedProducts(int take = 10, CancellationToken cancellationToken = default)
+        public async Task<List<ProductCardModel>> GetMostViewedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
             if (take <= 0 || take > 50)
                 take = 10;
@@ -795,7 +800,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
 
             if (!inStockProductIds.Any())
-                return new List<ProductQueryModel>();
+                return new List<ProductCardModel>();
 
             // ---------- Calculate AvgRate from Comments ----------
             var avgRates = await _commentContext.Comments
@@ -819,7 +824,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToListAsync(cancellationToken);
 
             if (!popularIds.Any())
-                return new List<ProductQueryModel>();
+                return new List<ProductCardModel>();
 
             var activeDiscounts = await _discountContext.Discounts
                 .Include(x => x.Targets)
@@ -832,14 +837,13 @@ namespace _01_PharmaPlusQuery.Query
             var products = await _shopContext.Products
                 .Include(x => x.Category)
                 .Where(x => popularIds.Contains(x.Id))
-                .Select(product => new ProductQueryModel
+                .Select(product => new ProductCardModel
                 {
                     Id = product.Id,
                     CategoryId = product.CategoryId,
                     Brand = product.Brand,
                     Name = product.Name,
                     Slug = product.Slug,
-                    MetaDescription = product.MetaDescription,
                     CategoryName = product.Category.Name,
                     CategoryFullSlug = product.Category.FullSlug,
                     Picture = product.Picture,
@@ -903,7 +907,7 @@ namespace _01_PharmaPlusQuery.Query
                 .ToList();
         }
 
-        public async Task<List<ProductQueryModel>> GetUserFavoriteList(long userId, CancellationToken cancellationToken = default)
+        public async Task<List<FaveProductsCardModel>> GetUserFavoriteList(long userId, CancellationToken cancellationToken = default)
         {
             var now = DateTime.Now;
 
@@ -914,7 +918,7 @@ namespace _01_PharmaPlusQuery.Query
             var favProductIds = favProducts.Keys.ToList();
 
             if (!favProductIds.Any())
-                return new List<ProductQueryModel>();
+                return new List<FaveProductsCardModel>();
 
             var activeDiscounts = await _discountContext.Discounts
                 .Include(x => x.Targets)
@@ -926,7 +930,7 @@ namespace _01_PharmaPlusQuery.Query
             var products = await _shopContext.Products
                 .Where(x => favProductIds.Contains(x.Id))
                 .Include(x => x.Category)
-                .Select(product => new ProductQueryModel
+                .Select(product => new FaveProductsCardModel
                 {
                     Id = product.Id,
                     CategoryId = product.CategoryId,
@@ -936,11 +940,8 @@ namespace _01_PharmaPlusQuery.Query
                     Picture = product.Picture,
                     PictureAlt = product.PictureAlt,
                     PictureTitle = product.PictureTitle,
-                    ShortDescription = product.ShortDescription,
                     Slug = product.Slug,
                     Brand = product.Brand,
-                    Keywords = product.Keywords,
-                    MetaDescription = product.MetaDescription,
                 })
                 .ToListAsync(cancellationToken: cancellationToken);
 

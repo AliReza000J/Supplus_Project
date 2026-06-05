@@ -2,7 +2,7 @@
 
 namespace DiscountManagement.Domain.DiscountAgg
 {
-    public class DiscountUserUsage : BaseEntity
+    public class DiscountUserUsage : EntityBase
     {
         public long UserId { get; private set; }
         public int UsedCount { get; private set; }

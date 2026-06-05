@@ -4,12 +4,12 @@ using System.Linq.Expressions;
 
 namespace _0_Framework.Infrastructure
 {
-    public class BaseRepository<TKey, T> : IRepository<TKey, T> where T : class
+    public class RepositoryBase<TKey, T> : IRepository<TKey, T> where T : class
     {
         protected readonly DbContext _context;
         protected readonly DbSet<T> _set;
 
-        public BaseRepository(DbContext context)
+        public RepositoryBase(DbContext context)
         {
             _context = context;
             _set = context.Set<T>();

@@ -24,7 +24,7 @@
             @foreach (var item in Model)
             {
                 <tr class="text-white @(item.Operation ? "bg-success" : "bg-danger")">
-                    <td>@item.Id.ToString().ToPersianNumber()</td>
+                    <td>@item.Id</td>
                     <td>@item.Count.ToString().ToPersianNumber()</td>
                     <td>@item.OperationDate.ToPersianNumber()</td>
                     <td>

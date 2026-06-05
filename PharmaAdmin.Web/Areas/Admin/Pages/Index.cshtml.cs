@@ -18,6 +18,8 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages
         public ChartDto TopBrandsChart { get; private set; }
         public ChartDto TopCategoriesChart { get; private set; }
         public ComparisonChartDto SalesComparison { get; private set; }
+        public List<TopCustomerDto> TopCustomers { get; private set; }
+        public List<RecentOrderDto> RecentOrders { get; private set; }
 
         public IndexModel(IAuthHelper authHelper, IDashboardQuery dashboardQuery)
         {
@@ -46,6 +48,8 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages
             SalesComparison = await _dashboardQuery.GetSalesComparisonAsync(cancellation);
             TopBrandsChart = await _dashboardQuery.GetTopBrandsChartAsync(cancellation);
             TopCategoriesChart = await _dashboardQuery.GetTopCategoriesChartAsync(cancellation);
+            TopCustomers = await _dashboardQuery.GetTopCustomersAsync(5, cancellation);
+            RecentOrders = await _dashboardQuery.GetRecentOrdersAsync(5, cancellation);
         }
     }
 }

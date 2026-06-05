@@ -71,7 +71,9 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleId")
+                        .IsUnique()
+                        .HasFilter("[RoleId] = 1");
 
                     b.ToTable("Accounts", (string)null);
                 });
@@ -95,6 +97,45 @@ namespace AccountManagement.Infrastructure.EFCore.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles", (string)null);
+                });
+
+            modelBuilder.Entity("AccountManagement.Domain.ShippingInfoAgg.ShippingInfo", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"), 1L, 1);
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReceiverAddress")
+                        .IsRequired()
+                        .HasMaxLength(1500)
+                        .HasColumnType("nvarchar(1500)");
+
+                    b.Property<string>("ReceiverFullName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ReceiverMobile")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ReceiverZipCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShippingInfos", (string)null);
                 });
 
             modelBuilder.Entity("AccountManagement.Domain.TokenAgg.Token", b =>

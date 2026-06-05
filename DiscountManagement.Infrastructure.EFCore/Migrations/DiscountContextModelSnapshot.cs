@@ -58,6 +58,12 @@ namespace DiscountManagement.Infrastructure.EFCore.Migrations
                     b.Property<int>("Percentage")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 

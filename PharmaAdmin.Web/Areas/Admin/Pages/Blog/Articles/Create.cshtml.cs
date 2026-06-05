@@ -28,9 +28,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Blog.Articles
         public async Task<IActionResult> OnPost(CreateArticle command, CancellationToken cancellation)
         {
             var result = await _articleApplication.Create(command, cancellation);
-            TempData["Toast.Success"] = result.IsSucceeded;
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
             TempData["Toast.Message"] = result.Message;
-            return RedirectToPage("./Index");
+            return Page();
         }
     }
 }

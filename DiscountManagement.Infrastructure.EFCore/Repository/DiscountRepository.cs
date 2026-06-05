@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DiscountManagement.Infrastructure.EFCore.Repository
 {
     public class DiscountRepository
-        : BaseRepository<long, Discount>, IDiscountRepository
+        : RepositoryBase<long, Discount>, IDiscountRepository
     {
         private readonly DiscountContext _context;
 
@@ -31,6 +31,13 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
                     (t.TargetType == DiscountTarget.DiscountTargetType.Category && categoryIds.Contains(t.CategoryId ?? 0)) ||
                     (t.TargetType == DiscountTarget.DiscountTargetType.Brand && brands.Contains(t.BrandName ?? ""))
                 ))
+                .ToListAsync(cancellation);
+        }
+
+        public async Task<List<Discount>> GetByIds(List<long> discountIds, CancellationToken cancellation)
+        {
+            return await _context.Discounts
+                .Where(x => discountIds.Contains(x.Id))
                 .ToListAsync(cancellation);
         }
 

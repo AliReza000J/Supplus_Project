@@ -4,7 +4,7 @@ using ShopManagement.Domain.UserProductInteractionAgg;
 
 namespace ShopManagement.Infrastructure.EFCore.Repository
 {
-    public class UserFavoriteProductRepository : BaseRepository<long, UserFavoriteProduct>, IUserFavoriteProductRepository
+    public class UserFavoriteProductRepository : RepositoryBase<long, UserFavoriteProduct>, IUserFavoriteProductRepository
     {
         private readonly ShopContext _context;
         public UserFavoriteProductRepository(ShopContext context) : base(context)

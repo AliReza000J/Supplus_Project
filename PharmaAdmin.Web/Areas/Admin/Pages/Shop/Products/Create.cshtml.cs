@@ -35,9 +35,16 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Products
                 return new JsonResult(new { IsSucceeded = false, Message = "ورودی نامعتبر است." });
 
             var result = await _productApplication.Create(command, cancellation);
-            TempData["Toast.Success"] = result.IsSucceeded;
+            if (result.IsSucceeded)
+            {
+                TempData["Toast.Success"] = "true";
+                TempData["Toast.Message"] = result.Message;
+                return RedirectToPage("./Index");
+            }
+
+            TempData["Toast.Success"] = "false";
             TempData["Toast.Message"] = result.Message;
-            return RedirectToPage("./Index", result);
+            return Page();
         }
     }
 }

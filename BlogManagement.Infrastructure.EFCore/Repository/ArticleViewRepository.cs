@@ -3,7 +3,7 @@ using BlogManagement.Domain.UserArticleInteractionAgg;
 
 namespace BlogManagement.Infrastructure.EFCore.Repository
 {
-    public class ArticleViewRepository: BaseRepository<long, ArticleView>, IArticleViewRepository
+    public class ArticleViewRepository: RepositoryBase<long, ArticleView>, IArticleViewRepository
     {
         private readonly BlogContext _context;
 

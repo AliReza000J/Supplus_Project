@@ -4,7 +4,7 @@ using SiteManagement.Domain.SiteSettingAgg;
 
 namespace SiteManagement.Infrastructure.EFCore.Repository
 {
-    public class SiteSettingRepository : BaseRepository<long, SiteSetting>, ISiteSettingRepository
+    public class SiteSettingRepository : RepositoryBase<long, SiteSetting>, ISiteSettingRepository
     {
         private readonly SiteContext _context;
         public SiteSettingRepository(SiteContext context) : base(context)

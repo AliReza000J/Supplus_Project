@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AccountManagement.Infrastructure.EFCore.Repository
 {
-    public class RoleRepository : BaseRepository<long, Role>, IRoleRepository
+    public class RoleRepository : RepositoryBase<long, Role>, IRoleRepository
     {
         private readonly AccountContext _accountContext;
 

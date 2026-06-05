@@ -4,7 +4,6 @@ using AccountManagement.Application.Contracts.Account.ApiDTOs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmaShared.Web.Filters;
 
 namespace PharmaStore.WebApi.Controllers.Auth
 {
@@ -21,13 +20,15 @@ namespace PharmaStore.WebApi.Controllers.Auth
     public class AuthController : ControllerBase
     {
         private readonly IAccountApplication _accountApp;
+        private readonly IOtpRateLimiter _otpRateLimiter;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthController"/>.
         /// </summary>
-        public AuthController(IAccountApplication accountApp)
+        public AuthController(IAccountApplication accountApp, IOtpRateLimiter otpRateLimiter)
         {
             _accountApp = accountApp;
+            _otpRateLimiter = otpRateLimiter;
         }
 
         /// <summary>
@@ -37,7 +38,6 @@ namespace PharmaStore.WebApi.Controllers.Auth
         /// This endpoint initiates the login/registration process. If the mobile number is not registered,
         /// a new user account will be prepared. A text message containing the verification code is sent to the provided mobile number.
         /// <br/>
-        /// **Rate Limit:** 3 requests per 60 seconds.
         /// </remarks>
         /// <param name="command">The DTO containing the user's mobile number.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -47,9 +47,13 @@ namespace PharmaStore.WebApi.Controllers.Auth
         [HttpPost("login/send-otp")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        [RateLimit(Limit = 3, Seconds = 60)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
         public async Task<ActionResult<ApiResponse<object>>> SendLoginOtp([FromBody] SendOtpDto command, CancellationToken cancellation)
         {
+            if (!_otpRateLimiter.CanSend(command.Mobile))
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                ApiResponse<object>.Fail("تعداد درخواست‌ها بیش از حد مجاز است. لطفا دقایقی دیگر تلاش کنید."));
+
             var result = await _accountApp.SendLoginOtp(command.Mobile, cancellation);
             return result.IsSucceeded
                 ? Ok(ApiResponse<object>.Ok(new(), message: result.Message))
@@ -86,7 +90,6 @@ namespace PharmaStore.WebApi.Controllers.Auth
         /// This is the first step in the "forgot password" flow. The user provides their mobile number,
         /// and if an account exists, an OTP is sent to them to verify their identity.
         /// <br/>
-        /// **Rate Limit:** 3 requests per 60 seconds.
         /// </remarks>
         /// <param name="command">The DTO containing the user's mobile number.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -96,9 +99,13 @@ namespace PharmaStore.WebApi.Controllers.Auth
         [HttpPost("forgot-password/send-otp")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        [RateLimit(Limit = 3, Seconds = 60)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status429TooManyRequests)]
         public async Task<ActionResult<ApiResponse<object>>> SendResetPasswordOtp([FromBody] SendOtpDto command, CancellationToken cancellation)
         {
+            if (!_otpRateLimiter.CanSend(command.Mobile))
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                ApiResponse<object>.Fail("تعداد درخواست‌ها بیش از حد مجاز است. لطفا دقایقی دیگر تلاش کنید."));
+
             var result = await _accountApp.SendResetPasswordOtp(command.Mobile, cancellation);
             return result.IsSucceeded
                 ? Ok(ApiResponse<object>.Ok(new(), message: result.Message))
@@ -135,9 +142,9 @@ namespace PharmaStore.WebApi.Controllers.Auth
         /// This endpoint allows users to log in by providing their credentials. 
         /// Upon successful authentication, it returns a JWT (JSON Web Token) and a refresh token.
         /// <br/>
-        /// **Rate Limit:** 5 requests per 60 seconds.
         /// </remarks>
         /// <param name="command">The login credentials DTO, containing the username/mobile and password.</param>
+        /// <param name="rateLimiter"></param>
         /// <param name="cancellation">A token to cancel the operation.</param>
         /// <response code="200">Login successful. Returns JWT and refresh tokens.</response>
         /// <response code="401">Unauthorized. Invalid username/mobile or password.</response>
@@ -145,9 +152,14 @@ namespace PharmaStore.WebApi.Controllers.Auth
         [HttpPost("login")]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status401Unauthorized)]
-        [RateLimit(Limit = 5, Seconds = 60)]
-        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Login([FromBody] LoginToApiViaUserMobilePass command, CancellationToken cancellation)
+        public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Login([FromBody] LoginToApiViaUserMobilePass command, [FromServices] IActionRateLimiter rateLimiter, CancellationToken cancellation)
         {
+            if (!rateLimiter.CheckLimit("Login", command.UsernameOrMobile, maxRequests: 5, timeWindow: TimeSpan.FromMinutes(15)))
+            {
+                return StatusCode(StatusCodes.Status429TooManyRequests,
+                    ApiResponse<JwtResponseDto>.Fail("تعداد درخواست‌های لاگین بیش از حد مجاز است. لطفا 15 دقیقه دیگر تلاش کنید."));
+            }
+
             var (op, data) = await _accountApp.LoginToStoreViaUserPass(command, cancellation);
 
             if (!op.IsSucceeded || data == null)
@@ -163,7 +175,6 @@ namespace PharmaStore.WebApi.Controllers.Auth
         /// This endpoint takes a refresh token and, if it's valid and not expired, returns a new JWT and a new refresh token.
         /// This allows the user to maintain their session without needing to log in again.
         /// <br/>
-        /// **Rate Limit:** 5 requests per 60 seconds.
         /// </remarks>
         /// <param name="request">The request body containing the refresh token.</param>
         /// <param name="cancellation">A token to cancel the operation.</param>
@@ -173,7 +184,6 @@ namespace PharmaStore.WebApi.Controllers.Auth
         [HttpPost("refresh")]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<JwtResponseDto>), StatusCodes.Status401Unauthorized)]
-        [RateLimit(Limit = 5, Seconds = 60)]
         public async Task<ActionResult<ApiResponse<JwtResponseDto>>> Refresh([FromBody] RefreshRequestDto request, CancellationToken cancellation)
         {
             var (op, data) = await _accountApp.RefreshToken(request.RefreshToken, cancellation);

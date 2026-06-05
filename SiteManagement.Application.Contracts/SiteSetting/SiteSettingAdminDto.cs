@@ -10,5 +10,7 @@
         public PaymentDto Payment { get; set; } = new();
         public TermsAndConditionsDto TermsAndConditions { get; set; } = new();
         public ReturnPolicyDto ReturnPolicy { get; set; } = new();
+        public FaqDto Faq { get; set; } = new();
+        public GeneralSettingDto GeneralSetting { get; set; } = new();
     }
 }

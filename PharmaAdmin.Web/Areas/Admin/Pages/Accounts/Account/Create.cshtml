@@ -26,7 +26,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label asp-for="Username" class="control-label">نام کاربری</label>
-                    <input type="text" class="form-control" asp-for="Username">
+                    <input type="text" class="form-control" dir="ltr" asp-for="Username">
                     <span asp-validation-for="Username" class="error"></span>
                 </div>
             </div>
@@ -35,14 +35,14 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label asp-for="Mobile" class="control-label">شماره موبایل (اعداد انگلیسی)</label>
-                    <input type="text" class="form-control en-number" asp-for="Mobile">
+                    <input type="text" class="form-control en-number" dir="ltr" asp-for="Mobile">
                     <span asp-validation-for="Mobile" class="error"></span>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="form-group">
                     <label asp-for="Email" class="control-label">ایمیل (اختیاری)</label>
-                    <input type="text" class="form-control" asp-for="Email">
+                    <input type="text" class="form-control" dir="ltr" asp-for="Email">
                     <span asp-validation-for="Email" class="error"></span>
                 </div>
             </div>
@@ -86,8 +86,7 @@
                         <input type="password"
                                asp-for="Password"
                                class="form-control form-control-lg password-field"
-                               placeholder="کلمه عبور"
-                               autocomplete="new-password">
+                               dir="ltr" autocomplete="new-password">
                         <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
                             <i class="fa fa-eye-slash"></i>
                         </span>
@@ -103,7 +102,7 @@
                         <input type="password"
                                asp-for="RePassword"
                                class="form-control form-control-lg password-field"
-                               placeholder="تکرار کلمه عبور"
+                               dir="ltr"
                                autocomplete="new-password">
                         <span class="password-toggle" aria-label="نمایش یا مخفی کردن رمز">
                             <i class="fa fa-eye-slash"></i>

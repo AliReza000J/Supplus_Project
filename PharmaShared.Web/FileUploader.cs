@@ -2,19 +2,20 @@
 using Jdenticon;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace PharmaShared.Web
 {
     public class FileUploader : IFileUploader
     {
-        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IConfiguration _config;
         private readonly ILogger<FileUploader> _logger;
 
-        public FileUploader(IWebHostEnvironment webHostEnvironment, ILogger<FileUploader> logger)
+        public FileUploader(ILogger<FileUploader> logger, IConfiguration config)
         {
-            _webHostEnvironment = webHostEnvironment;
             _logger = logger;
+            _config = config;
         }
 
         public async Task<string> UploadAsync(IFormFile? file, string folder, CancellationToken cancellation)
@@ -42,8 +43,11 @@ namespace PharmaShared.Web
 
             var fileName = $"{Guid.NewGuid():N}{extension}";
 
+            var basePath = _config["UploadSettings:BasePath"]
+               ?? throw new InvalidOperationException("Upload path is not configured.");
+
             var directoryPath = Path.Combine(
-                _webHostEnvironment.WebRootPath,
+                basePath,
                 "Pictures",
                 folder
             );
@@ -68,7 +72,10 @@ namespace PharmaShared.Web
         {
             if (string.IsNullOrEmpty(fileName)) return;
 
-            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "Pictures", fileName);
+            var basePath = _config["UploadSettings:BasePath"]
+               ?? throw new InvalidOperationException("Upload path is not configured.");
+
+            var filePath = Path.Combine(basePath, "Pictures", fileName);
 
             if (File.Exists(filePath))
             {

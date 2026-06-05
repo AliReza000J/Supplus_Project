@@ -182,7 +182,7 @@ namespace AccountManagement.Application
                 picturePath = await _fileUploader.UploadAsync(command.ProfilePhoto, path, cancellation);
             }
 
-            account.EditFullInfo(
+            account.EditFullInfoByAdmin(
                 command.Fullname,
                 command.Username.ToLower(),
                 command.Email,
@@ -229,7 +229,7 @@ namespace AccountManagement.Application
                 picturePath = await _fileUploader.UploadAsync(command.ProfilePhoto, path, cancellation);
             }
 
-            account.UpdatePersonalProfileAndMobile(command.Fullname, command.Username, command.Mobile, command.Email, picturePath);
+            account.UpdatePersonalProfileAndMobileAdminPanel(command.Fullname, command.Username, command.Mobile, command.Email, picturePath);
 
             await _accountRepository.SaveChangesAsync(cancellation);
 
@@ -239,7 +239,7 @@ namespace AccountManagement.Application
         public async Task<OperationResult> EditSuperAdminProfile(EditSuperAdminProfile command, CancellationToken cancellation)
         {
             var op = new OperationResult();
-            
+
             var account = await _accountRepository.GetAsync(command.Id, cancellation);
             if (account == null)
                 return op.Failed(ApplicationMessages.RecordNotFound);
@@ -291,8 +291,8 @@ namespace AccountManagement.Application
                 return op.Failed("فقط ادمین مجاز به غیرفعال‌سازی است.");
 
             var currentUserId = _authHelper.CurrentUserId();
-            if (id != 1 && id != currentUserId 
-                && 
+            if (id != 1 && id != currentUserId
+                &&
                (acc.RoleId > Roles.Admin || currentUserId == Roles.SuperAdmin))
                 acc.Deactivate();
             else
@@ -345,9 +345,38 @@ namespace AccountManagement.Application
 
             _cache.Set(cacheKey, token, TimeSpan.FromMinutes(15));
 
-            var resetLink = $"https://yourdomain.com/Admin/Account/ResetPassword?email={command.Email.ToLower()}&token={token}";
+            var baseUrl = _config["AppConfig:AdminBaseUrl"];
 
-            var emailBody = $"کاربر گرامی،<br/>برای بازیابی رمز عبور خود روی لینک زیر کلیک کنید:<br/><a href='{resetLink}'>بازیابی رمز عبور</a><br/>این لینک تنها 15 دقیقه اعتبار دارد.";
+            var resetLink = $"{baseUrl}/Admin/ResetPassword?email={command.Email.ToLower()}&token={token}";
+
+            var emailBody = $@"
+            <div style='font-family: Tahoma, Arial, sans-serif; direction: rtl; background-color: #f4f6f9; padding: 30px; text-align: right;'>
+                <div style='max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;'>
+        
+                    <div style='background-color: #1A365D; color: #ffffff; padding: 20px; text-align: center; font-size: 18px; font-weight: bold;'>
+                        سیستم مدیریت PharmaPlus
+                    </div>
+        
+                    <div style='padding: 30px; color: #333333; line-height: 1.8; font-size: 14px;'>
+                        <p><strong>کاربر گرامی،</strong></p>
+                        <p>درخواستی مبنی بر بازیابی رمز عبور حساب مدیریت شما دریافت شده است. در صورت تأیید، لطفاً روی دکمه زیر کلیک کنید:</p>
+            
+                        <div style='text-align: center; margin: 35px 0;'>
+                            <a href='{resetLink}' style='background-color: #1A365D; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 4px; font-weight: bold; display: inline-block;'>
+                                بازیابی رمز عبور
+                            </a>
+                        </div>
+            
+                        <p style='color: #e53e3e; font-size: 13px; margin-bottom: 0;'>
+                            ⚠️ توجه: این لینک به دلایل امنیتی تنها <strong>۱۵ دقیقه</strong> اعتبار دارد.
+                        </p>
+                        <p style='color: #718096; font-size: 12px; margin-top: 10px;'>
+                            اگر شما این درخواست را ثبت نکرده‌اید، می‌توانید با خیال راحت این ایمیل را نادیده بگیرید.
+                        </p>
+                    </div>
+
+                </div>
+            </div>";
             await _emailService.SendEmailAsync(command.Email.ToLower(), "بازیابی رمز عبور پنل مدیریت", emailBody);
 
             return operation.Succeeded("لینک بازیابی رمز عبور به ایمیل شما ارسال شد.");
@@ -362,7 +391,7 @@ namespace AccountManagement.Application
                 return operation.Failed("لینک بازیابی نامعتبر یا منقضی شده است.");
 
             var account = await _accountRepository.GetByEmailAsync(command.Email.ToLower(), cancellation);
-            if (account == null || account.RoleId != 1)
+            if (account == null || !_authHelper.IsSuperAdmin())
                 return operation.Failed("حساب کاربری نامعتبر است.");
 
             var hashPassword = _passwordHasher.Hash(command.NewPassword);
@@ -437,7 +466,7 @@ namespace AccountManagement.Application
             if (!account.IsActive)
                 return (op.Failed("حساب کاربری شما غیرفعال است."), null);
 
-            if (!account.IsProfileCompleted || string.IsNullOrWhiteSpace(account.Password))
+            if (!account.IsCompleted() || string.IsNullOrWhiteSpace(account.Password))
                 return (op.Failed("شما هنوز رمز عبور ندارید. لطفا ابتدا با شماره موبایل (OTP) وارد شوید و پروفایل خود را تکمیل کنید."), null);
 
             var (verified, needsUpgrade) = _passwordHasher.Check(account.Password, command.Password);
@@ -566,7 +595,7 @@ namespace AccountManagement.Application
                 picturePath = await _fileUploader.UploadAsync(command.ProfilePhoto, path, cancellation);
             }
 
-            account.UpdateProfileInfo(command.Fullname, command.Username, command.Email, picturePath);
+            account.UpdateProfileInfoApi(command.Fullname, command.Username, command.Email, picturePath);
 
             await _accountRepository.SaveChangesAsync(cancellation);
 
@@ -612,6 +641,31 @@ namespace AccountManagement.Application
             return operation.Succeeded("شماره موبایل شما با موفقیت تغییر کرد.");
         }
 
+        public async Task<OperationResult> SetPassword(SetPassword command, long userId, CancellationToken cancellation)
+        {
+            var operation = new OperationResult();
+
+            if (command.Id != userId)
+                return operation.Failed("شما تنها مجاز به تغییر رمز عبور حساب کاربری خود هستید.");
+
+            var account = await _accountRepository.GetAsync(userId, cancellation);
+            if (account == null)
+                return operation.Failed(ApplicationMessages.RecordNotFound);
+
+            if (!string.IsNullOrWhiteSpace(account.Password))
+                return operation.Failed("رمز عبور از قبل تنظیم شده است.");
+
+            if (command.Password != command.RePassword)
+                return operation.Failed(ApplicationMessages.PasswordsNotMatch);
+
+            var newPasswordHash = _passwordHasher.Hash(command.Password);
+
+            account.SetPassword(newPasswordHash);
+
+            await _accountRepository.SaveChangesAsync(cancellation);
+
+            return operation.Succeeded("رمز عبور با موفقیت تنظیم شد.");
+        }
 
         // ==========================================
         // Shared (Admin & Store)
@@ -632,6 +686,7 @@ namespace AccountManagement.Application
                 RoleName = Roles.GetRoleBy(account.RoleId),
                 IsActive = account.IsActive,
                 IsCompleted = account.IsCompleted(),
+                HasPassword = !string.IsNullOrWhiteSpace(account.Password),
                 ProfilePhoto = account.ProfilePhoto,
                 CreationDate = account.CreationDate.ToFarsi(),
             };
@@ -732,6 +787,40 @@ namespace AccountManagement.Application
             return true;
         }
 
+        public async Task<bool> NeedsSetup(CancellationToken cancellation)
+        {
+            return await _accountRepository.NeedSetup(cancellation);
+        }
+
+        public async Task<OperationResult> Setup(SetupSuperAdminProfile command, CancellationToken cancellation)
+        {
+            var op = new OperationResult();
+
+            var account = await _accountRepository.GetAsync(command.Id, cancellation);
+            if (account == null)
+                return op.Failed(ApplicationMessages.RecordNotFound);
+
+            if (await _accountRepository.ExistsAsync(x => x.Mobile == command.Mobile && x.Id != command.Id, cancellation))
+                return op.Failed("شماره موبایل وارد شده در سیستم موجود است.");
+
+            if (await _accountRepository.ExistsAsync(x => x.Email.ToLower() == command.Email.ToLower() && x.Id != command.Id, cancellation))
+                return op.Failed("ایمیل وارد شده در سیستم موجود است.");
+
+            if (!string.IsNullOrWhiteSpace(command.Password))
+            {
+                var newPasswordHash = _passwordHasher.Hash(command.Password);
+                account.ChangePassword(newPasswordHash);
+            }
+            else
+                return op.Failed("کلمه عبور نمی‌تواند خالی باشد!");
+
+            account.UpdateSuperAdmin(command.Email, command.Mobile);
+            account.SetCompleted();
+
+            await _accountRepository.SaveChangesAsync(cancellation);
+
+            return op.Succeeded("راه‌اندازی با موفقیت انجام شد. اکنون می‌توانید وارد سایت شوید.");
+        }
     }
 
 }

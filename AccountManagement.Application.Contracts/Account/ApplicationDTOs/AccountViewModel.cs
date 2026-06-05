@@ -11,6 +11,7 @@
         public string ProfilePhoto { get; set; }
         public bool IsActive { get; set; }
         public bool IsCompleted { get; set; }
+        public bool HasPassword { get; set; }
         public string CreationDate { get; set; }
     }
 }

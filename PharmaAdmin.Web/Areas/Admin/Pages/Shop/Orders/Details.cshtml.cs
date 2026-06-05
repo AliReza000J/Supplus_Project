@@ -4,11 +4,9 @@ using ShopManagement.Application.Contracts.Order;
 using _0_Framework.Application;
 using Hangfire;
 using PharmaAdmin.Web.Services;
-using PharmaShared.Web.Filters;
 
 namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Orders
 {
-    [RateLimit(Limit = 10, Seconds = 300)]
     public class DetailsModel : PageModel
     {
         [TempData]
@@ -66,6 +64,15 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Orders
             TempData["Toast.Success"] = op.IsSucceeded;
             TempData["Toast.Message"] = op.Message;
             return RedirectToPage(new { id = ConfirmPayment.OrderId });
+        }
+
+        public async Task<IActionResult> OnPostRefunded(long orderId, CancellationToken cancellation)
+        {
+            var op = await _orderApplication.ChangeStatusToCancelledAndRefunded(orderId, cancellation);
+
+            TempData["Toast.Success"] = op.IsSucceeded;
+            TempData["Toast.Message"] = op.Message;
+            return RedirectToPage(new { id = orderId });
         }
 
         public async Task<IActionResult> OnPostProccessing(long orderId, CancellationToken cancellation)

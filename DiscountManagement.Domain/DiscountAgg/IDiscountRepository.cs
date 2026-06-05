@@ -7,6 +7,7 @@ namespace DiscountManagement.Domain.DiscountAgg
     {
         Task<EditDiscount?> GetDetails(long id, CancellationToken cancellation);
         Task<List<DiscountViewModel>> Search(DiscountSearchModel searchModel, CancellationToken cancellation);
+        Task<List<Discount>> GetByIds(List<long> discountIds, CancellationToken cancellation);
 
         Task<List<Discount>> GetActiveAutomaticDiscounts(List<long> productIds,
         List<long> categoryIds, List<string> brands, CancellationToken cancellation);

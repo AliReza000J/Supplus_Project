@@ -13,6 +13,7 @@ namespace AccountManagement.Domain.AccountAgg
         Task<EditAccount?> GetDetailsAsync(long id, CancellationToken cancellation);
         Task<List<AccountViewModel>> GetAccountsAsync(CancellationToken cancellation);
         Task<List<AccountViewModel>> SearchAsync(AccountSearchModel searchModel, CancellationToken cancellation);
+        Task<bool> NeedSetup(CancellationToken cancellation);
 
         Task UpdatePasswordAsync(long userId, string hashedPassword, CancellationToken ct = default);
     }

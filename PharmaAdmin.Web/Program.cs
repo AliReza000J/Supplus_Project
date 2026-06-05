@@ -24,7 +24,9 @@ using PharmaAdmin.Web.Filters;
 using PharmaAdmin.Web.Middleware;
 using PharmaShared.Web.Services;
 using PharmaShared.Web.Middlewares;
+using AspNetCoreRateLimit;
 using PharmaShared.Web;
+using _01_PharmaPlusQuery.Contracts.AdminNotification;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -74,25 +76,29 @@ BlogManagementBootstrapper.Configure(builder.Services, connectionString);
 CommentManagementBootstrapper.Configure(builder.Services, connectionString);
 AccountManagementBootstrapper.Configure(builder.Services, connectionString);
 
-// --- 4. Caching & Hangfire & PDF ---
+// --- 4. Caching & Hangfire & PDF & IPRateLimiter ---
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
-builder.Services.AddHangfire(config => config.UseSqlServerStorage(builder.Configuration.GetConnectionString("Hangfire")));
+builder.Services.AddHangfire(c => c.UseSqlServerStorage(config.GetConnectionString("Hangfire")));
 builder.Services.AddHangfireServer();
 
 QuestPDF.Settings.License = LicenseType.Community;
 
+builder.Services.Configure<IpRateLimitOptions>(config.GetSection("IpRateLimiting"));
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
 // --- 5. Application Services ---
 builder.Services.AddTransient<IFileUploader, FileUploader>();
 builder.Services.AddTransient<IDashboardQuery, DashboardQuery>();
+builder.Services.AddTransient<IAdminNotificationQuery, AdminNotificationQuery>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthHelper, AuthHelper>();
 builder.Services.AddSingleton(HtmlEncoder.Create(UnicodeRanges.BasicLatin, UnicodeRanges.Arabic));
 
-builder.Services.AddSingleton<IPasswordResetRateLimiter, PasswordResetRateLimiter>();
-builder.Services.AddSingleton<IOtpRateLimiter, OtpRateLimiter>();
-builder.Services.AddScoped<IAdminSmsRateLimiter, AdminSmsRateLimiter>();
+//builder.Services.AddSingleton<IOtpRateLimiter, OtpRateLimiter>();
+builder.Services.AddSingleton<IAdminSmsRateLimiter, AdminSmsRateLimiter>();
 
 builder.Services.AddTransient<IZibalService, ZibalService>();
 builder.Services.AddTransient<IJwtService, JwtService>();
@@ -130,7 +136,7 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2)));
     options.AddPolicy("Support", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3)));
-    options.AddPolicy("ContentUploader", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3), Roles.GetRoleBy(4)));
+    options.AddPolicy("ContentCreator", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3), Roles.GetRoleBy(4)));
 });
 
 // --- 7. Razor Pages ---
@@ -143,15 +149,24 @@ builder.Services.AddRazorPages()
         options.Conventions.AuthorizeAreaFolder("Admin", "/Shop", "Support");
         options.Conventions.AuthorizeAreaFolder("Admin", "/Inventory", "Support");
         options.Conventions.AuthorizeAreaFolder("Admin", "/Discounts", "Support");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Comments", "ContentUploader");
-        options.Conventions.AuthorizeAreaFolder("Admin", "/Blog", "ContentUploader");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Comments", "ContentCreator");
+        options.Conventions.AuthorizeAreaFolder("Admin", "/Blog", "ContentCreator");
     });
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy => policy.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("ApiCors", policy => policy.WithOrigins("https://pharmaplus.ir").AllowAnyMethod().AllowAnyHeader());
+});
 
 var app = builder.Build();
 
 // --- Pipeline ---
+await DatabaseSeeder.SeedAsync(app.Services);
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseRouting();
+app.UseMiddleware<SetupBlockerMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCookiePolicy();
@@ -161,6 +176,7 @@ app.UseStaticFiles();
 if (app.Environment.IsDevelopment())
 {
     app.UseHangfireDashboard("/hangfire");
+    app.UseCors("AllowAll");
 }
 else
 {
@@ -168,8 +184,10 @@ else
     {
         Authorization = new[] { new HangfireAuthorizationFilter() }
     });
+    app.UseCors("ApiCors");
 }
 
+app.UseIpRateLimiting();
 app.MapRazorPages();
 app.MapDefaultControllerRoute();
 

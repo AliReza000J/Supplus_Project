@@ -17,7 +17,9 @@ using System.Text;
 using PharmaStore.WebApi.Middlewares;
 using PharmaShared.Web.Services;
 using PharmaShared.Web.Middlewares;
+using AspNetCoreRateLimit;
 using PharmaShared.Web;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -51,9 +53,15 @@ BlogManagementBootstrapper.Configure(builder.Services, connectionString);
 CommentManagementBootstrapper.Configure(builder.Services, connectionString);
 AccountManagementBootstrapper.Configure(builder.Services, connectionString);
 
-// --- 4. Caching ---
+// --- 4. Caching & IPRateLimiter ---
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
+
+QuestPDF.Settings.License = LicenseType.Community;
+
+builder.Services.Configure<IpRateLimitOptions>(config.GetSection("IpRateLimiting"));
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
 // --- 5. Application Services ---
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
@@ -63,8 +71,8 @@ builder.Services.AddScoped<CustomJwtEvents>();
 builder.Services.AddTransient<IFileUploader, FileUploader>();
 builder.Services.AddTransient<IAuthHelper, AuthHelper>();
 
-builder.Services.AddSingleton<IPasswordResetRateLimiter, PasswordResetRateLimiter>();
 builder.Services.AddSingleton<IOtpRateLimiter, OtpRateLimiter>();
+builder.Services.AddSingleton<IActionRateLimiter, InMemoryRateLimiter>();
 
 builder.Services.AddTransient<IEmailService, EmailService>();
 
@@ -86,7 +94,7 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy => policy.WithOrigins("https://localhost:5173").AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("AllowAll", policy => policy.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader());
     options.AddPolicy("ApiCors", policy => policy.WithOrigins("https://pharmaplus.ir").AllowAnyMethod().AllowAnyHeader());
 });
 
@@ -144,6 +152,8 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseRouting();
 
+app.UseMiddleware<SetupBlockerMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseCors("AllowAll");
@@ -159,7 +169,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseStaticFiles();
-
+app.UseIpRateLimiting();
 app.MapControllers();
 
 app.Run();

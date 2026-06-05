@@ -1,10 +1,9 @@
 ﻿using _0_Framework.Domain;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using System.Text.RegularExpressions;
 
 namespace ShopManagement.Domain.CartAgg
 {
-    public class Cart : BaseEntity
+    public class Cart : EntityBase
     {
         public long? UserId { get; private set; } = 0; // user id
         public string CartKey { get; private set; } // e.g. "user:123" or "anon:GUID"

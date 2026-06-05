@@ -5,7 +5,7 @@ using AccountManagement.Application.Contracts.Account.ApplicationDTOs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PharmaShared.Web.Filters;
+using Microsoft.Extensions.Caching.Memory;
 using ShopManagement.Application.Contracts.Product;
 using System.Security.Claims;
 
@@ -18,18 +18,20 @@ namespace PharmaStore.WebApi.Controllers.Shop
     [ApiController]
     public class ProductController : ControllerBase
     {
+        private readonly IMemoryCache _cache;
         private readonly IProductQuery _productQuery;
         private readonly IProductApplication _productApplication;
         private readonly IProductCategoryQuery _productCategoryQuery;
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(IProductQuery productQuery,
-            ILogger<ProductController> logger, IProductCategoryQuery productCategoryQuery, IProductApplication productApplication)
+            ILogger<ProductController> logger, IProductCategoryQuery productCategoryQuery, IProductApplication productApplication, IMemoryCache cache)
         {
             _productQuery = productQuery;
             _logger = logger;
             _productCategoryQuery = productCategoryQuery;
             _productApplication = productApplication;
+            _cache = cache;
         }
 
         /// <summary>
@@ -89,28 +91,30 @@ namespace PharmaStore.WebApi.Controllers.Shop
             if (productId <= 0)
                 return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "شناسه محصول معتبر نیست."));
 
-            string cookieName = $"pv_{productId}";
+            var deviceId = Request.Headers["X-Device-Id"].ToString();
 
-            var usernname = User.FindFirst(ClaimTypes.Name)?.Value ?? "ANON";
-
-            if (!Request.Cookies.ContainsKey(cookieName))
+            string clientIdentifier;
+            if (userId > 0)
             {
-                var now = DateTime.UtcNow;
+                clientIdentifier = $"U_{userId}";
+            }
+            else if (!string.IsNullOrEmpty(deviceId))
+            {
+                clientIdentifier = $"D_{deviceId}";
+            }
+            else
+            {
+                clientIdentifier = $"IP_{HttpContext.Connection.RemoteIpAddress}";
+            }
 
+            string cacheKey = $"pv_{productId}_{clientIdentifier}";
+
+            if (!_cache.TryGetValue(cacheKey, out _))
+            {
                 var op = await _productApplication.IncreaseProductViewCountAsync(productId, userId, cancellationToken);
                 if (op.IsSucceeded)
                 {
-                    Response.Cookies.Append(
-                    cookieName,
-                    $"1ck-{usernname}_{now}",
-                    new CookieOptions
-                    {
-                        Expires = DateTimeOffset.UtcNow.AddHours(16),
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Lax
-                    }
-                );
+                    _cache.Set(cacheKey, true, TimeSpan.FromHours(16));
                 }
             }
 
@@ -121,7 +125,7 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// Adds a specific product to the authenticated user's favorites list.
         /// </summary>
         /// <remarks>
-        /// Requires a valid JWT token. Rate limited to 3 requests per 60 seconds to prevent abuse.
+        /// Requires a valid JWT token.
         /// </remarks>
         /// <param name="productId">The unique identifier of the product to favorite.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -132,7 +136,6 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// <response code="404">If the specified product does not exist.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpPost("favorite/{productId}")]
-        [RateLimit(Limit = 3, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<AccountViewModel>), StatusCodes.Status401Unauthorized)]
@@ -168,7 +171,7 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// Removes a specific product from the authenticated user's favorites list.
         /// </summary>
         /// <remarks>
-        /// Requires a valid JWT token. Rate limited to 3 requests per 60 seconds.
+        /// Requires a valid JWT token.
         /// </remarks>
         /// <param name="productId">The unique identifier of the product to remove from favorites.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -179,7 +182,6 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// <response code="404">If the specified product does not exist.</response>
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [HttpDelete("favorite/{productId}")]
-        [RateLimit(Limit = 3, Seconds = 60)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<AccountViewModel>), StatusCodes.Status401Unauthorized)]
@@ -220,51 +222,46 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// <response code="404">If no products are found in the system.</response>
         [AllowAnonymous]
         [HttpGet("latest-arrivals")]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> GetLatestArrivals(CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ApiResponse<List<ProductCardModel>>>> GetLatestArrivals(CancellationToken cancellationToken)
         {
             var products = await _productQuery.GetLatestArrivals(cancellationToken);
 
             if (products == null || !products.Any())
-                return NotFound(ApiResponse<List<ProductQueryModel>>
+                return NotFound(ApiResponse<List<ProductCardModel>>
                     .Fail(message: "هیچ محصولی یافت نشد."));
 
-            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(data: products));
+            return Ok(ApiResponse<List<ProductCardModel>>.Ok(data: products));
         }
 
         /// <summary>
         /// Searches for products based on a specified keyword value.
         /// </summary>
         /// <remarks>
-        /// Rate limited to 30 requests per 60 seconds. Supports pagination.
+        /// Supports pagination.
         /// </remarks>
-        /// <param name="value">The keyword or phrase to search for.</param>
-        /// <param name="page">The current page number (default is 1).</param>
-        /// <param name="pageSize">The number of items per page (default is 10).</param>
+        /// <param name="request"></param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A paginated list of products matching the search criteria.</returns>
         /// <response code="200">Returns the paginated search results.</response>
         /// <response code="400">If the search value is null or empty.</response>
         [AllowAnonymous]
         [HttpGet("search")]
-        [RateLimit(Limit = 30, Seconds = 60)]
-        [ProducesResponseType(typeof(ApiResponse<PagedResult<ProductQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<PagedResult<ProductQueryModel>>), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ApiResponse<PagedResult<ProductQueryModel>>>> Search(
-            string value, int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<ProductCardModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<ProductCardModel>>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<PagedResult<ProductCardModel>>>> Search(
+        [FromQuery] ProductFilterRequest request,
+        CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return BadRequest(ApiResponse<PagedResult<ProductQueryModel>>
-                    .Fail("عبارت جستجو نمی‌تواند خالی باشد."));
+            // محدودیت برای جلوگیری از لود سنگین
+            if (request.PageSize > 50) request.PageSize = 50;
 
-            var result = await _productQuery.Search(value, page, pageSize, cancellationToken);
+            var result = await _productQuery.Search(request, cancellationToken);
 
-            return Ok(ApiResponse<PagedResult<ProductQueryModel>>.Ok(
+            return Ok(ApiResponse<PagedResult<ProductCardModel>>.Ok(
                 result,
-                result.Items.Any()
-                    ? "جستجو با موفقیت انجام شد."
-                    : $"هیچ محصولی برای عبارت «{value}» یافت نشد."
+                result.Items.Any() ? "جستجو با موفقیت انجام شد." : "محصولی یافت نشد."
             ));
         }
 
@@ -278,17 +275,17 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// <response code="404">If no products are found.</response>
         [AllowAnonymous]
         [HttpGet("random-recommendations")]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> RandomRecommendations(int take = 10, CancellationToken cancellationToken = default)
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ApiResponse<List<ProductCardModel>>>> RandomRecommendations(int take = 10, CancellationToken cancellationToken = default)
         {
             var products = await _productQuery.GetRandomRecommendations(take, cancellationToken);
 
             if (products == null || !products.Any())
-                return NotFound(ApiResponse<List<ProductQueryModel>>
+                return NotFound(ApiResponse<List<ProductCardModel>>
                     .Fail(message: "هیچ محصولی یافت نشد."));
 
-            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(data: products));
+            return Ok(ApiResponse<List<ProductCardModel>>.Ok(data: products));
         }
 
         /// <summary>
@@ -301,17 +298,17 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// <response code="404">If no products are found.</response>
         [AllowAnonymous]
         [HttpGet("top-rated")]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> TopRatedProducts(int take = 10, CancellationToken cancellationToken = default)
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ApiResponse<List<ProductCardModel>>>> TopRatedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
             var products = await _productQuery.GetTopRatedProducts(take, cancellationToken);
 
             if (products == null || !products.Any())
-                return NotFound(ApiResponse<List<ProductQueryModel>>
+                return NotFound(ApiResponse<List<ProductCardModel>>
                     .Fail(message: "هیچ محصولی یافت نشد."));
 
-            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(data: products));
+            return Ok(ApiResponse<List<ProductCardModel>>.Ok(data: products));
         }
 
         /// <summary>
@@ -324,17 +321,17 @@ namespace PharmaStore.WebApi.Controllers.Shop
         /// <response code="404">If no products are found.</response>
         [AllowAnonymous]
         [HttpGet("most-viewed")]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<List<ProductQueryModel>>), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<ApiResponse<List<ProductQueryModel>>>> MostViewedProducts(int take = 10, CancellationToken cancellationToken = default)
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<ProductCardModel>>), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ApiResponse<List<ProductCardModel>>>> MostViewedProducts(int take = 10, CancellationToken cancellationToken = default)
         {
             var products = await _productQuery.GetMostViewedProducts(take, cancellationToken);
 
             if (products == null || !products.Any())
-                return NotFound(ApiResponse<List<ProductQueryModel>>
+                return NotFound(ApiResponse<List<ProductCardModel>>
                     .Fail(message: "هیچ محصولی یافت نشد."));
 
-            return Ok(ApiResponse<List<ProductQueryModel>>.Ok(data: products));
+            return Ok(ApiResponse<List<ProductCardModel>>.Ok(data: products));
         }
     }
 }
