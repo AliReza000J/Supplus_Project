@@ -101,6 +101,13 @@ namespace DiscountManagement.Infrastructure.EFCore.Repository
             return discounts;
         }
 
+        public async Task<Discount?> GetWithTargetsAsync(long id, CancellationToken cancellation)
+        {
+            return await _context.Discounts
+            .Include(x => x.Targets)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellation);
+        }
+
         public async Task<EditDiscount?> GetDetails(long id, CancellationToken cancellation)
         {
             return await _context.Discounts

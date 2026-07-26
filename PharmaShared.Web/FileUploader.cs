@@ -10,12 +10,14 @@ namespace PharmaShared.Web
     public class FileUploader : IFileUploader
     {
         private readonly IConfiguration _config;
+        private readonly IWebHostEnvironment _environment;
         private readonly ILogger<FileUploader> _logger;
 
-        public FileUploader(ILogger<FileUploader> logger, IConfiguration config)
+        public FileUploader(ILogger<FileUploader> logger, IConfiguration config, IWebHostEnvironment environment)
         {
             _logger = logger;
             _config = config;
+            _environment = environment;
         }
 
         public async Task<string> UploadAsync(IFormFile? file, string folder, CancellationToken cancellation)
@@ -56,6 +58,18 @@ namespace PharmaShared.Web
                 Directory.CreateDirectory(directoryPath);
 
             var filePath = Path.Combine(directoryPath, fileName);
+
+            _logger.LogInformation(
+                "CurrentDirectory: {Path}",
+                Directory.GetCurrentDirectory());
+
+            _logger.LogInformation(
+                "BaseDirectory: {Path}",
+                AppContext.BaseDirectory);
+
+            _logger.LogInformation(
+                "ContentRoot: {Path}",
+                _environment.ContentRootPath);
 
             await using var stream =
                 new FileStream(filePath, FileMode.CreateNew,

@@ -15,16 +15,14 @@ namespace PharmaStore.WebApi.Controllers
     [ApiController]
     public class CommentController : ControllerBase
     {
-        private readonly ILogger<CommentController> _logger;
         private readonly ICommentApplication _commentApplication;
 
         /// <summary>
         /// Initializes a new instance of the CommentController.
         /// </summary>
-        public CommentController(ICommentApplication commentApplication, ILogger<CommentController> logger)
+        public CommentController(ICommentApplication commentApplication)
         {
             _commentApplication = commentApplication;
-            _logger = logger;
         }
 
         /// <summary>

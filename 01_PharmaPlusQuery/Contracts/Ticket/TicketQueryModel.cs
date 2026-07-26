@@ -2,6 +2,7 @@
 {
     public class TicketQueryModel
     {
+        public long Id { get; set; }
         public long UserId { get; set; }
         public string Subject { get; set; }
         public string Message { get; set; }

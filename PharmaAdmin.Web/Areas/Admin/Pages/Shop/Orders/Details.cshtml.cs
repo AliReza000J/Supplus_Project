@@ -21,6 +21,12 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Orders
         public ConfirmPaymentManually ConfirmPayment { get; set; }
 
         [BindProperty]
+        public ApproveReturnCommand ApproveReturn { get; set; }
+
+        [BindProperty]
+        public RejectReturnCommand RejectReturn { get; set; }
+
+        [BindProperty]
         public ShipCommand Ship { get; set; }
 
         private readonly IOrderApplication _orderApplication;
@@ -42,6 +48,8 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Orders
 
             RejectPayment = new RejectPaymentManually { OrderId = id };
             ConfirmPayment = new ConfirmPaymentManually { OrderId = id };
+            ApproveReturn = new ApproveReturnCommand { OrderId = id };
+            RejectReturn = new RejectReturnCommand { OrderId = id };
             Ship = new ShipCommand { OrderId = id, Mobile = Order.ReceiverMobile ?? "" };
 
             return Page();
@@ -73,6 +81,26 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Shop.Orders
             TempData["Toast.Success"] = op.IsSucceeded;
             TempData["Toast.Message"] = op.Message;
             return RedirectToPage(new { id = orderId });
+        }
+
+        public async Task<IActionResult> OnPostRejectReturn(CancellationToken cancellation)
+        {
+            RejectReturn.AdminId = _authHelper.CurrentUserId();
+            var op = await _orderApplication.RejectReturnAsync(RejectReturn, cancellation);
+
+            TempData["Toast.Success"] = op.IsSucceeded;
+            TempData["Toast.Message"] = op.Message;
+            return RedirectToPage(new { id = RejectReturn.OrderId });
+        }
+
+        public async Task<IActionResult> OnPostApproveReturn(CancellationToken cancellation)
+        {
+            ApproveReturn.AdminId = _authHelper.CurrentUserId();
+            var op = await _orderApplication.ApproveReturnAsync(ApproveReturn, cancellation);
+
+            TempData["Toast.Success"] = op.IsSucceeded;
+            TempData["Toast.Message"] = op.Message;
+            return RedirectToPage(new { id = ApproveReturn.OrderId });
         }
 
         public async Task<IActionResult> OnPostProccessing(long orderId, CancellationToken cancellation)

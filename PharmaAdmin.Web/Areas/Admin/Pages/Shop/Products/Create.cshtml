@@ -78,7 +78,7 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group no-margin">
-                                <label asp-for="Command.ShortDescription" class="control-label">توضیحات کوتاه</label>
+                                <label asp-for="Command.ShortDescription" class="control-label">توضیحات کوتاه (معرفی محصول)</label>
                                 <textarea class="form-control autogrow" id="ShortDescription" asp-for="Command.ShortDescription" onchange="fillField('ShortDescription', 'MetaDescription')"
                                           style="overflow: hidden; word-wrap: break-word; resize: vertical; height: 104px;"></textarea>
                                 <span asp-validation-for="Command.ShortDescription" class="error"></span>
@@ -89,7 +89,7 @@
                         <div class="col-md-12">
                             <div class="form-group no-margin">
                                 <label asp-for="Command.Description" class="control-label">توضیحات</label>
-                                <textarea class="form-control" asp-for="Command.Description" id="descEditor"></textarea>
+                                <textarea class="form-control" id="descEditor" asp-for="Command.Description" data-module="Products"></textarea>
                                 <span asp-validation-for="Command.Description" class="error"></span>
                             </div>
                         </div>
@@ -98,7 +98,7 @@
                         <div class="col-md-12">
                             <div class="panel panel-border panel-info">
                                 <div class="panel-heading">
-                                    <h3 class="panel-title">مشخصات محصول (Specifications)</h3>
+                                    <h3 class="panel-title">مشخصات محصول</h3>
                                 </div>
                                 <div class="panel-body">
                                     <div class="row">
@@ -118,13 +118,11 @@
                                     <hr />
                                     <h5 class="m-b-20">مشخصات پویا</h5>
                                     <div id="dynamic-attributes-container">
-                                        <!-- ردیف‌های پویا در اینجا اضافه می‌شوند -->
                                     </div>
                                     <button type="button" id="btn-add-attribute" class="btn btn-info btn-sm m-t-10">
                                         <i class="fa fa-plus"></i> افزودن مشخصه جدید
                                     </button>
 
-                                    <!-- فیلد مخفی برای ارسال کل دیتای JSON به بک‌اند -->
                                     <input type="hidden" asp-for="Command.Specifications" id="hidden-specifications" />
                                 </div>
                             </div>
@@ -235,5 +233,3 @@
         });
     </script>
 }
-
-</script>

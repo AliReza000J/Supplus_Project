@@ -12,6 +12,9 @@ using _0_Framework.Infrastructure;
 using AccountManagement.Configuration.Permissions;
 using AccountManagement.Domain.ShippingInfoAgg;
 using AccountManagement.Application.Contracts.ShippingInfo;
+using _01_PharmaPlusQuery.Query;
+using _01_PharmaPlusQuery.Contracts.Account;
+
 
 namespace AccountManagement.Configuration
 {
@@ -29,6 +32,8 @@ namespace AccountManagement.Configuration
 
             services.AddScoped<IShippingInfoRepository, ShippingInfoRepository>();
             services.AddScoped<IShippingInfoApplication, ShippingInfoApplication>();
+
+            services.AddTransient<IAccountQuery, AccountQuery>();
 
             services.AddTransient<IPermissionExposer, AccountPermissionExposer>();
             services.AddDbContext<AccountContext>(x => x.UseSqlServer(connectionString));

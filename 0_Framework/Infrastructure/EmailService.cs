@@ -35,8 +35,11 @@ namespace _0_Framework.Infrastructure
                 var host = _configuration["SmtpConfig:Host"];
                 var port = int.TryParse(_configuration["SmtpConfig:Port"], out var p) ? p : 0;
                 var password = _configuration["SmtpConfig:Password"];
+                var secure = port == 465
+                   ? SecureSocketOptions.SslOnConnect
+                   : SecureSocketOptions.StartTls;
 
-                await smtp.ConnectAsync(host, port, SecureSocketOptions.StartTls);
+                await smtp.ConnectAsync(host, port, secure);
                 await smtp.AuthenticateAsync(senderEmail, password);
 
                 await smtp.SendAsync(email);

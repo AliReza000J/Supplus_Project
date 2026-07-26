@@ -1,6 +1,7 @@
 ﻿using _0_Framework.Application;
 using _0_Framework.Infrastructure;
 using AccountManagement.Configuration;
+using AspNetCoreRateLimit;
 using BlogManagement.Configuration;
 using CommentManagement.Infrastructure.Configuration;
 using DiscountManagement.Configuration;
@@ -8,23 +9,55 @@ using InventoryManagement.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PharmaShared.Web;
+using PharmaShared.Web.Middlewares;
+using PharmaShared.Web.Services;
+using PharmaStore.WebApi.Filters;
+using PharmaStore.WebApi.Middlewares;
+using Polly;
+using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Events;
 using ShopManagement.Configuration;
 using SiteManagement.Configuration;
-using PharmaStore.WebApi.Filters;
 using System.Text;
-using PharmaStore.WebApi.Middlewares;
-using PharmaShared.Web.Services;
-using PharmaShared.Web.Middlewares;
-using AspNetCoreRateLimit;
-using PharmaShared.Web;
-using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
 var config = builder.Configuration;
 
-var connectionString = config.GetConnectionString("PharmaPlusDB") ?? "";
+var forceHttps =
+    config.GetValue<bool>("Security:ForceHttps");
+
+var origins =
+    config.GetSection("Cors:Origins")
+          .Get<string[]>() ?? [];
+
+if (origins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "Cors:Origins is empty.");
+}
+
+var connectionString =
+    config.GetConnectionString("PharmaPlusDB")
+    ?? throw new InvalidOperationException(
+        "Connection string 'PharmaPlusDB' was not found.");
+
+var jwtKey =
+    config["Jwt:Key"]
+    ?? throw new InvalidOperationException(
+        "Jwt:Key is missing.");
+
+var jwtIssuer =
+    config["Jwt:Issuer"]
+    ?? throw new InvalidOperationException(
+        "Jwt:Issuer is missing.");
+
+var jwtAudience =
+    config["Jwt:Audience"]
+    ?? throw new InvalidOperationException(
+        "Jwt:Audience is missing.");
 
 // --- 1. Logging (Serilog) ---
 Log.Logger = new LoggerConfiguration()
@@ -76,9 +109,6 @@ builder.Services.AddSingleton<IActionRateLimiter, InMemoryRateLimiter>();
 
 builder.Services.AddTransient<IEmailService, EmailService>();
 
-builder.Services.AddScoped<IResetTokenGenerator, ResetTokenGenerator>();
-builder.Services.AddSingleton<IResetTokenProtector>(sp => new HmacTokenProtector(sp.GetRequiredService<IConfiguration>().GetValue<string>("PasswordReset:HmacKey")));
-
 builder.Services.AddHttpClient<IZibalService, ZibalService>();
 builder.Services.AddScoped<ISmsService, SmsService>();
 
@@ -94,8 +124,14 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy => policy.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader());
-    options.AddPolicy("ApiCors", policy => policy.WithOrigins("https://pharmaplus.ir").AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(origins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
 });
 
 // --- 7. Auth (JWT Only) ---
@@ -105,16 +141,23 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
-    options.RequireHttpsMetadata = true;
+    options.RequireHttpsMetadata = forceHttps;
+    
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidIssuer = config["Jwt:Issuer"],
-        ValidAudience = config["Jwt:Audience"],
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"])),
+
+        ValidIssuer = jwtIssuer,
+
+        ValidAudience = jwtAudience,
+
+        IssuerSigningKey =
+            new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtKey)),
+
         ClockSkew = TimeSpan.Zero
     };
     options.EventsType = typeof(CustomJwtEvents);
@@ -156,14 +199,22 @@ app.UseMiddleware<SetupBlockerMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseCors("AllowAll");
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 else
 {
-    app.UseCors("ApiCors");
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
+
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

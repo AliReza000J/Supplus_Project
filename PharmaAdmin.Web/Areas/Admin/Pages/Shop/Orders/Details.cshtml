@@ -17,7 +17,6 @@
 
 <hr />
 
-<!-- اطلاعات اصلی سفارش -->
 <div class="row">
     <div class="col-md-6">
         <div class="panel panel-info panel-border">
@@ -83,8 +82,6 @@
                 </div>
                 <div class="panel-body">
                     <div class="row">
-
-                        <!-- نام گیرنده -->
                         <div class="col-md-6">
                             <p>
                                 <strong>نام گیرنده:</strong>
@@ -92,44 +89,34 @@
                             </p>
                         </div>
 
-                        <!-- موبایل گیرنده -->
                         <div class="col-md-6">
                             <p>
                                 <strong>موبایل گیرنده:</strong>
                                 <i class="fa fa-phone text-success m-l-5"></i>
-                                <a href="tel:@Model.Order.ReceiverMobile"
-                                style="direction:ltr; display:inline-block">
+                                <a href="tel:@Model.Order.ReceiverMobile" style="direction:ltr; display:inline-block">
                                     @Model.Order.ReceiverMobile?.ToPersianNumber()
                                 </a>
                             </p>
                         </div>
 
-                        <!-- آدرس -->
                         <div class="col-md-12 m-t-10">
                             <p>
                                 <strong>آدرس گیرنده:</strong>
                                 <i class="fa fa-map-marker text-danger m-l-5"></i>
-                                <span id="receiverAddress">
-                                    @Model.Order.ReceiverAddress
-                                </span>
+                                <span id="receiverAddress">@Model.Order.ReceiverAddress</span>
 
-                                <button type="button"
-                                class="btn btn-xs btn-default m-l-10"
-                                onclick="copyReceiverAddress()">
-                                    <i class="fa fa-copy"></i>
-                                    کپی آدرس
+                                <button type="button" class="btn btn-xs btn-default m-l-10" onclick="copyReceiverAddress()">
+                                    <i class="fa fa-copy"></i> کپی آدرس
                                 </button>
                             </p>
                         </div>
 
-                        <!-- کد پستی -->
                         <div class="col-md-4 m-t-10">
                             <p>
                                 <strong>کد پستی:</strong>
                                 @Model.Order.ReceiverZipCode?.ToPersianNumber()
                             </p>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -137,8 +124,6 @@
     </div>
 }
 
-
-<!-- اطلاعات کارت به کارت -->
 @if (Model.Order.PaymentMethodInt == PaymentMethod.CardToCard)
 {
     <div class="row">
@@ -154,10 +139,54 @@
                     @if (!string.IsNullOrWhiteSpace(Model.Order.PaymentReceiptPic))
                     {
                         <p><strong>تصویر فیش:</strong></p>
-                        <img src="~/Pictures/@Model.Order.PaymentReceiptPic"
-                        class="img-thumbnail"
-                        style="max-width:300px" />
+                        <img src="~/Pictures/@Model.Order.PaymentReceiptPic" class="img-thumbnail" style="max-width:300px" />
                     }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Order.Status == OrderStatus.NeedsRefund)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-danger">
+                <div class="panel-heading">
+                    <h3 class="panel-title">اطلاعات و دلیل بازگشت وجه</h3>
+                </div>
+                <div class="panel-body">
+                    @if (!string.IsNullOrWhiteSpace(Model.Order.CanellationReason))
+                    {
+                        <ul class="list-group">
+                            @foreach (var line in Model.Order.CanellationReason.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                var parts = line.Split(':', 2);
+                                <li class="list-group-item">
+                                    @if (parts.Length == 2)
+                                    {
+                                        <strong>@parts[0].Trim()</strong>
+                                        @(": " + parts[1].Trim())
+                                    }
+                                    else
+                                    {
+                                        @line
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">دلیلی برای بازگشت وجه ثبت نشده است.</p>
+                    }
+
+                    <form method="post" asp-page-handler="Refunded" class="m-t-10">
+                        <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                        <button class="btn btn-danger">
+                            ثبت عودت مبلغ به کاربر و لغو نهایی سفارش
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -173,15 +202,69 @@
                     <h3 class="panel-title">اطلاعات و دلیل لغو سفارش</h3>
                 </div>
                 <div class="panel-body">
-                    <ul class="list-group">
-                        @foreach (var line in Model.Order.CanellationReason.Split(Environment.NewLine))
-                        {
-                            var parts = line.Split(':', 2);
-                            <li class="list-group-item">
-                                <strong>@parts[0]</strong>: @parts[1]
-                            </li>
-                        }
-                    </ul>
+                    @if (!string.IsNullOrWhiteSpace(Model.Order.CanellationReason))
+                    {
+                        <ul class="list-group">
+                            @foreach (var line in Model.Order.CanellationReason.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                var parts = line.Split(':', 2);
+                                <li class="list-group-item">
+                                    @if (parts.Length == 2)
+                                    {
+                                        <strong>@parts[0].Trim()</strong>
+                                        @(": " + parts[1].Trim())
+                                    }
+                                    else
+                                    {
+                                        @line
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">دلیلی برای لغو سفارش ثبت نشده است.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Order.Status == OrderStatus.Refunded)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    <h3 class="panel-title">علت و گزارش نهایی مرجوعی و عودت وجه</h3>
+                </div>
+                <div class="panel-body">
+                    @if (!string.IsNullOrWhiteSpace(Model.Order.CanellationReason))
+                    {
+                        <ul class="list-group">
+                            @foreach (var line in Model.Order.CanellationReason.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                var parts = line.Split(':', 2);
+                                <li class="list-group-item">
+                                    @if (parts.Length == 2)
+                                    {
+                                        <strong>@parts[0].Trim()</strong>
+                                        @(": " + parts[1].Trim())
+                                    }
+                                    else
+                                    {
+                                        @line
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">گزارشی برای مرجوع شدن سفارش ثبت نشده است.</p>
+                    }
                 </div>
             </div>
         </div>
@@ -197,8 +280,8 @@
                     <h3 class="panel-title">شماره پیگیری پست</h3>
                 </div>
                 <div class="panel-body">
-                    <p>
-                        @Model.Order.PostTrackingNumber.ToPersianNumber()
+                    <p dir="ltr" class="text-left">
+                        <strong>@Model.Order.PostTrackingNumber.ToPersianNumber()</strong>
                     </p>
                 </div>
             </div>
@@ -206,197 +289,193 @@
     </div>
 }
 
-<!-- اکشن‌ها -->
+<!-- وضعیت ۱۱: درخواست مرجوعی -->
+@if (Model.Order.Status == OrderStatus.ReturnRequested)
+{
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-warning">
+                <div class="panel-heading">
+                    <h3 class="panel-title">مدیریت درخواست مرجوعی کاربر</h3>
+                </div>
+                <div class="panel-body">
+
+                    <!-- نمایش دلیل مرجوعی کاربر -->
+                    <div class="alert alert-warning">
+                        <p><i class="fa fa-exclamation-triangle m-l-5"></i> <strong>توجه:</strong> کاربر برای این سفارش درخواست مرجوعی ثبت کرده است.</p>
+
+                        <div class="m-t-10 p-10" style="background-color: rgba(255,255,255,0.6); border-radius: 4px; border: 1px solid #faebcc;">
+                            <p class="m-b-5 text-dark"><strong>دلیل ثبت شده توسط کاربر:</strong></p>
+
+                            @if (!string.IsNullOrWhiteSpace(Model.Order.CanellationReason))
+                            {
+                                <ul class="m-b-0" style="padding-right: 20px; color: #555;">
+                                    @foreach (var line in Model.Order.CanellationReason.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+                                    {
+                                        var parts = line.Split(':', 2);
+                                        <li>
+                                            @if (parts.Length == 2)
+                                            {
+                                                <strong>@parts[0].Trim()</strong>
+                                                @(": " + parts[1].Trim())
+                                            }
+                                            else
+                                            {
+                                                @line
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <p class="text-muted m-b-0">دلیلی از سوی کاربر ثبت نشده است.</p>
+                            }
+                        </div>
+                    </div>
+
+                    <form method="post" asp-page-handler="ApproveReturn" class="m-t-10">
+                        <input type="hidden" asp-for="ApproveReturn.OrderId" />
+
+                        <div class="form-group">
+                            <label>توضیحات تایید (جهت ثبت در تاریخچه)</label>
+                            <textarea asp-for="ApproveReturn.Notes" class="form-control" rows="2" placeholder="مثال: کالا دریافت شد و نقص فنی تایید گردید."></textarea>
+                            <span asp-validation-for="ApproveReturn.Notes" class="text-danger"></span>
+                        </div>
+
+                        <button class="btn btn-success btn-block m-b-10">
+                            تایید مرجوعی (انتقال به وضعیت نیاز به عودت وجه)
+                        </button>
+                    </form>
+
+                    <hr />
+
+                    <form method="post" asp-page-handler="RejectReturn" class="m-t-10">
+                        <input type="hidden" asp-for="RejectReturn.OrderId" />
+
+                        <div class="form-group">
+                            <label>دلیل رد درخواست مرجوعی</label>
+                            <textarea asp-for="RejectReturn.RejectionReason" class="form-control" rows="3" placeholder="مثال: کالا سالم است و شرایط مرجوعی را ندارد..."></textarea>
+                            <span asp-validation-for="RejectReturn.RejectionReason" class="text-danger"></span>
+                        </div>
+
+                        <button class="btn btn-danger btn-block">
+                            رد درخواست (بازگشت به وضعیت تحویل داده شده)
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (Model.Order.Status <= OrderStatus.Shipped)
 {
     <div class="row">
         <div class="col-md-12">
             <div class="panel panel-primary">
                 <div class="panel-heading">
-                    <h3 class="panel-title">اقدامات مدیریتی</h3>
+                    <h3 class="panel-title">اقدامات مدیریتی سفارش</h3>
                 </div>
                 <div class="panel-body">
 
-                    <!-- تایید / رد پرداخت -->
-                    @if (Model.Order.PaymentMethodInt == PaymentMethod.CardToCard &&
-                  Model.Order.Status == OrderStatus.WaitingForManualVerification)
+                    @if (Model.Order.PaymentMethodInt == PaymentMethod.CardToCard && Model.Order.Status == OrderStatus.WaitingForManualVerification)
                     {
-                        <form method="post"
-                        asp-page-handler="ConfirmPayment"
-                        class="m-t-10">
+                        <form method="post" asp-page-handler="ConfirmPayment" class="m-t-10">
                             <input type="hidden" asp-for="ConfirmPayment.OrderId" />
                             <button class="btn btn-success btn-block">
-                                تایید پرداخت
+                                تایید پرداخت فیش و ارجاع به وضعیت «پرداخت موفق»
                             </button>
                         </form>
 
-                        <form method="post" asp-page-handler="RejectPayment"
-                        class="m-t-10">
+                        <form method="post" asp-page-handler="RejectPayment" class="m-t-10">
                             <input type="hidden" asp-for="RejectPayment.OrderId" />
 
                             <div class="form-group">
-                                <label>دلیل اصلی</label>
-                                <select asp-for="RejectPayment.SelectedReason"
-                                class="form-control">
+                                <label>دلیل اصلی رد فیش</label>
+                                <select asp-for="RejectPayment.SelectedReason" class="form-control">
                                     <option value="">انتخاب دلیل</option>
                                     <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
-                                    <option value="INVALID_RECEIPT">رسید نامعتبر</option>
-                                    <option value="WRONG_AMOUNT">مبلغ اشتباه</option>
+                                    <option value="INVALID_RECEIPT">رسید نامعتبر / جعلی</option>
+                                    <option value="WRONG_AMOUNT">مبلغ واریزی اشتباه</option>
                                 </select>
-                                <span asp-validation-for="RejectPayment.SelectedReason"
-                                class="text-danger"></span>
+                                <span asp-validation-for="RejectPayment.SelectedReason" class="text-danger"></span>
                             </div>
 
                             <div class="form-group">
-                                <label>دلیل رد پرداخت</label>
-                                <textarea asp-for="RejectPayment.ReasonDescription"
-                                class="form-control"
-                                rows="3"></textarea>
-                                <span asp-validation-for="RejectPayment.ReasonDescription"
-                                class="text-danger"></span>
+                                <label>دلیل رد پرداخت (توضیحات تکمیلی)</label>
+                                <textarea asp-for="RejectPayment.ReasonDescription" class="form-control" rows="3"></textarea>
+                                <span asp-validation-for="RejectPayment.ReasonDescription" class="text-danger"></span>
                             </div>
 
                             <button class="btn btn-danger btn-block">
-                                رد پرداخت
+                                رد پرداخت فیش
                             </button>
                         </form>
                     }
 
-                    <!-- تغییر به در حال پردازش -->
                     @if (Model.Order.Status == OrderStatus.Paid)
                     {
-                        <form method="post"
-                        asp-page-handler="Proccessing"
-                        class="m-t-10">
+                        <form method="post" asp-page-handler="Proccessing" class="m-t-10">
                             <input type="hidden" name="orderId" value="@Model.Order.Id" />
                             <button class="btn btn-warning">
-                                تغییر وضعیت به «در حال پردازش»
+                                تغییر وضعیت به «در حال آماده‌سازی و پردازش»
                             </button>
                         </form>
 
-                        <form method="post" asp-page-handler="RejectPayment"
-                        class="m-t-10">
+                        <form method="post" asp-page-handler="RejectPayment" class="m-t-10">
                             <input type="hidden" asp-for="RejectPayment.OrderId" />
-
                             <div class="form-group">
-                                <label>دلیل اصلی</label>
-                                <select asp-for="RejectPayment.SelectedReason"
-                                class="form-control">
-                                    <option value="">انتخاب دلیل</option>
-                                    <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
+                                <label>دلیل لغو سفارش سیستم</label>
+                                <select asp-for="RejectPayment.SelectedReason" class="form-control">
+                                    <option value="USER_CANCEL">لغو سفارش بنا به درخواست کاربر</option>
                                 </select>
-                                <span asp-validation-for="RejectPayment.SelectedReason"
-                                class="text-danger"></span>
                             </div>
-
                             <div class="form-group">
-                                <label>دلیل رد پرداخت</label>
-                                <textarea asp-for="RejectPayment.ReasonDescription"
-                                class="form-control"
-                                rows="3"></textarea>
-                                <span asp-validation-for="RejectPayment.ReasonDescription"
-                                class="text-danger"></span>
+                                <label>توضیحات لغو</label>
+                                <textarea asp-for="RejectPayment.ReasonDescription" class="form-control" rows="2"></textarea>
                             </div>
-
-                            <button class="btn btn-danger btn-block">
-                                رد پرداخت
-                            </button>
+                            <button class="btn btn-danger">لغو سفارش پرداخت شده</button>
                         </form>
                     }
 
-                    <!-- ارسال سفارش -->
                     @if (Model.Order.Status == OrderStatus.Processing)
                     {
-                        <form method="post"
-                        asp-page-handler="Ship"
-                        class="m-t-10">
+                        <form method="post" asp-page-handler="Ship" class="m-t-10">
                             <input type="hidden" asp-for="Ship.OrderId" />
                             <input type="hidden" asp-for="Ship.Mobile" />
 
                             <div class="form-group">
-                                <label>کد رهگیری پستی</label>
-                                <input asp-for="Ship.PostTrackingNo"
-                                class="form-control" dir="ltr"
-                                placeholder="1234567890" />
-                                <span asp-validation-for="Ship.PostTrackingNo"
-                                class="text-danger"></span>
+                                <label>کد رهگیری پستی مرسوله</label>
+                                <input asp-for="Ship.PostTrackingNo" class="form-control" dir="ltr" placeholder="1234567890..." />
+                                <span asp-validation-for="Ship.PostTrackingNo" class="text-danger"></span>
                             </div>
 
                             <button class="btn btn-primary">
-                                ثبت ارسال سفارش
-                            </button>
-                        </form>
-
-                        <form method="post" asp-page-handler="RejectPayment"
-                        class="m-t-10">
-                            <input type="hidden" asp-for="RejectPayment.OrderId" />
-
-                            <div class="form-group">
-                                <label>دلیل اصلی</label>
-                                <select asp-for="RejectPayment.SelectedReason"
-                                class="form-control">
-                                    <option value="">انتخاب دلیل</option>
-                                    <option value="USER_CANCEL">لغو سفارش توسط کاربر</option>
-                                </select>
-                                <span asp-validation-for="RejectPayment.SelectedReason"
-                                class="text-danger"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label>دلیل رد پرداخت</label>
-                                <textarea asp-for="RejectPayment.ReasonDescription"
-                                class="form-control"
-                                rows="3"></textarea>
-                                <span asp-validation-for="RejectPayment.ReasonDescription"
-                                class="text-danger"></span>
-                            </div>
-
-                            <button class="btn btn-danger btn-block">
-                                رد پرداخت
+                                ثبت ارسال سفارش و تحویل به پست
                             </button>
                         </form>
                     }
 
-                    @if(Model.Order.Status == OrderStatus.NeedsRefund)
-                    {
-                        <form method="post"
-                              asp-page-handler="Refunded"
-                              class="m-t-10">
-                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
-                            <button class="btn btn-danger">
-                                ثبت عودت مبلغ به کاربر و لغو نهایی سفارش
-                            </button>
-                        </form>
-                    }
-
-                    <!-- تحویل شده -->
                     @if (Model.Order.Status == OrderStatus.Shipped)
                     {
-                        <form method="post"
-                              asp-page-handler="Delivered"
-                              class="m-t-10">
+                        <form method="post" asp-page-handler="Delivered" class="m-t-10">
                             <input type="hidden" name="orderId" value="@Model.Order.Id" />
                             <button class="btn btn-success">
-                                ثبت تحویل به مشتری
+                                ثبت نهایی تحویل به مشتری (پایان فرآیند خرید)
                             </button>
                         </form>
 
                         @if (!string.IsNullOrWhiteSpace(Model.Order.PostTrackingNumber))
                         {
-                            <form method="post"
-                                  asp-page-handler="ResendTrackingSms"
-                                  class="m-t-10">
-
+                            <form method="post" asp-page-handler="ResendTrackingSms" class="m-t-10">
                                 <input type="hidden" name="orderId" value="@Model.Order.Id" />
-
-                                <button class="btn btn-warning m-t-10"
-                                        onclick="return confirm('آیا از ارسال مجدد پیامک کد رهگیری مطمئن هستید؟')">
-                                    ارسال مجدد پیامک کد رهگیری
+                                <button class="btn btn-warning m-t-10" onclick="return confirm('آیا از ارسال مجدد پیامک کد رهگیری مطمئن هستید؟')">
+                                    ارسال مجدد پیامک کد رهگیری پستی
                                 </button>
                             </form>
                         }
                     }
-
                 </div>
             </div>
         </div>
@@ -425,5 +504,4 @@
             }
         }
     </script>
-
 }

@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SiteManagement.Application.Contracts.SiteSetting;
 using SiteManagement.Application;
+using _0_Framework.Infrastructure;
+using SiteManagement.Infrastructure.Configuration.Permissions;
 
 namespace PharmaAdmin.Web.Areas.Admin.Pages.Site
 {
@@ -26,6 +28,7 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Site
             _command = command;
         }
 
+        [NeedsPermission(SiteSettingPermissions.Read)]
         public async Task OnGet(CancellationToken cancellation)
         {
             Setting = await _query.Execute(cancellation);
@@ -55,6 +58,7 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages.Site
             Command.Contact.Phones ??= new List<ContactPhoneDto>();
         }
 
+        [NeedsPermission(SiteSettingPermissions.Write)]
         public async Task<IActionResult> OnPost(CancellationToken cancellation)
         {
             //var errors = ModelState.Values.SelectMany(v => v.Errors);

@@ -1,4 +1,4 @@
-﻿namespace _01_LampshadeQuery.Contracts.Comment
+﻿namespace _01_PharmaPlusQuery.Contracts.Comment
 {
     public class CommentQueryModel
     {
@@ -8,8 +8,6 @@
         public string? Message { get; set; }
         public string CreationDate { get; set; }
         //public long ParentId { get; set; }
-        public long RecordId { get; set; }
-        public int Type { get; set; }
         public int Rate { get; set; }
         public int LikeCount { get; set; }
         public int DislikeCount { get; set; }

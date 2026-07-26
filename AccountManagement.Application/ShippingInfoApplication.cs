@@ -89,18 +89,20 @@ public class ShippingInfoApplication : IShippingInfoApplication
     {
         var op = new OperationResult();
 
+        if (userId <= 0)
+            return op.Failed("کاربر نامعتبر است.");
+
         var shippingInfo = await _shippingInfoRepository.GetAsync(id, cancellation);
-        if (shippingInfo == null) return op.Failed("خطا در بازیابی اطلاعات");
+        if (shippingInfo == null)
+            return op.Failed("خطا در بازیابی اطلاعات");
 
-        if (shippingInfo.UserId != userId) return op.Failed("عملیات مجاز نیست");
+        if (shippingInfo.UserId != userId)
+            return op.Failed("عملیات مجاز نیست");
 
-        var acc = await _accountRepository.GetAsync(userId, cancellation);
+        _shippingInfoRepository.Delete(shippingInfo);
 
-        if (userId <= 0 || acc == null)
-            return op.Failed("کاربر یافت نشد.");
-
-        _shippingInfoRepository.Delete(id);
         await _shippingInfoRepository.SaveChangesAsync(cancellation);
+
         return op.Succeeded();
     }
 

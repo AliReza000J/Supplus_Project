@@ -6,7 +6,7 @@
         public const long Admin = 2;
         public const long Support = 3;
         public const long ContentUploader = 4;
-        public const long Customer = 5;
+        public const long User = 5;
         public const long ColleagueUser = 10002;
 
         public static string GetRoleBy(long roleId)

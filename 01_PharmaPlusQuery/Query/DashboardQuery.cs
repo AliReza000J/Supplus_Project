@@ -21,7 +21,15 @@ namespace _01_PharmaPlusQuery.Query
 
         public async Task<DashboardKpiDto> GetKpisAsync(CancellationToken cancellation)
         {
-            var validSalesStatuses = new[] { OrderStatus.Paid, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered };
+            // وضعیت‌های فروش موفق (پرداخت شده تا تحویل داده شده + درخواست مرجوعی که هنوز تایید/رد نشده)
+            var validSalesStatuses = new[]
+            {
+            OrderStatus.Paid,
+            OrderStatus.Processing,
+            OrderStatus.Shipped,
+            OrderStatus.Delivered,
+            OrderStatus.ReturnRequested
+        };
 
             return new DashboardKpiDto
             {
@@ -31,8 +39,9 @@ namespace _01_PharmaPlusQuery.Query
 
                 TotalOrders = await _shopContext.Orders.CountAsync(cancellation),
 
+                // تمام سفارشاتی که پرداختشان موفق بوده است (نه فقط وضعیت 4)
                 PaidOrders = await _shopContext.Orders
-                    .CountAsync(x => x.Status == OrderStatus.Paid, cancellation),
+                    .CountAsync(x => validSalesStatuses.Contains(x.Status), cancellation),
 
                 ActiveUsers = await _accountContext.Accounts
                     .CountAsync(x => x.IsActive, cancellation),
@@ -68,30 +77,15 @@ namespace _01_PharmaPlusQuery.Query
                 0, 0, 0, 0);
 
             var rawOrders = await _shopContext.Orders
-                .Where(x =>
-                    x.CreationDate >= fromDateLastYear &&
-                    x.Status >= OrderStatus.Paid &&
-                    x.Status != OrderStatus.NeedsRefund &&
-                    x.Status != OrderStatus.Cancelled)
-                .Select(x => new
-                {
-                    x.CreationDate,
-                    x.PayAmount
-                })
+                .AsNoTracking()
+                .Where(x => x.CreationDate >= fromDateLastYear &&
+                            ((x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.Delivered) || x.Status == OrderStatus.ReturnRequested))
+                .Select(x => new { x.CreationDate, x.PayAmount })
                 .ToListAsync(cancellation);
 
             var salesByPersianMonth = rawOrders
-                .GroupBy(x => new
-                {
-                    Year = pc.GetYear(x.CreationDate),
-                    Month = pc.GetMonth(x.CreationDate)
-                })
-                .Select(g => new
-                {
-                    g.Key.Year,
-                    g.Key.Month,
-                    Total = (double)g.Sum(x => x.PayAmount)
-                })
+                .GroupBy(x => new { Year = pc.GetYear(x.CreationDate), Month = pc.GetMonth(x.CreationDate) })
+                .Select(g => new { g.Key.Year, g.Key.Month, Total = (double)g.Sum(x => x.PayAmount) })
                 .ToList();
 
             var currentYearData = new List<double>();
@@ -122,26 +116,25 @@ namespace _01_PharmaPlusQuery.Query
             }
 
             return new List<ChartDto>
+        {
+            new()
             {
-                new()
-                {
-                    Label = "سال جاری",
-                    Data = currentYearData,
-                    labels = labels,
-                    BorderColor = "#4361ee",
-                    BackgroundColor = new List<string> { "rgba(67, 97, 238, 0.1)" }
-                },
-                new()
-                {
-                    Label = "سال گذشته",
-                    Data = lastYearData,
-                    labels = labels,
-                    BorderColor = "#e63946",
-                    BackgroundColor = new List<string> { "rgba(230, 57, 70, 0.1)" }
-                }
-            };
+                Label = "سال جاری",
+                Data = currentYearData,
+                labels = labels,
+                BorderColor = "#4361ee",
+                BackgroundColor = new List<string> { "rgba(67, 97, 238, 0.1)" }
+            },
+            new()
+            {
+                Label = "سال گذشته",
+                Data = lastYearData,
+                labels = labels,
+                BorderColor = "#e63946",
+                BackgroundColor = new List<string> { "rgba(230, 57, 70, 0.1)" }
+            }
+        };
         }
-
 
         public async Task<ChartDto> GetOrderStatusChartAsync(CancellationToken cancellation)
         {
@@ -150,22 +143,35 @@ namespace _01_PharmaPlusQuery.Query
                 .Select(g => new { Status = g.Key, Count = g.Count() })
                 .ToListAsync(cancellation);
 
+            // اضافه شدن وضعیت ۱۱ به لیست کامل وضعیت‌ها
             var allStatuses = new List<int>
         {
             OrderStatus.Pending, OrderStatus.WaitingForGateway, OrderStatus.WaitingForManualVerification,
-            OrderStatus.Paid, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered, OrderStatus.NeedsRefund, OrderStatus.Cancelled
+            OrderStatus.Paid, OrderStatus.Processing, OrderStatus.Shipped, OrderStatus.Delivered,
+            OrderStatus.NeedsRefund, OrderStatus.Cancelled, OrderStatus.Refunded, OrderStatus.ReturnRequested
         };
 
             var countsDict = data.ToDictionary(x => x.Status, x => (double)x.Count);
 
             return new ChartDto
             {
-                Label = "وضعیت سفارش‌ها",
+                Label = "تعداد سفارش‌ها بر اساس وضعیت",
                 Data = allStatuses.Select(s => countsDict.ContainsKey(s) ? countsDict[s] : 0).ToList(),
                 labels = allStatuses.Select(OrderStatus.GetStatusTitleByCode).ToList(),
+                // ۱۱ رنگ جذاب و متمایز برای ۱۱ وضعیت
                 BackgroundColor = new List<string>
             {
-                "#f8d7da", "#fff3cd", "#d1ecf1", "#d4edda", "#e2e3e5", "#cce5ff", "#d2f4ea", "#f5f5f5"
+                "#f8d7da", // Pending 1
+                "#fff3cd", // Gateway 2
+                "#d1ecf1", // ManualVer 3
+                "#d4edda", // Paid 4
+                "#6c757d", // Processing 5
+                "#17a2b8", // Shipped 6
+                "#28a745", // Delivered 7
+                "#fd7e14", // NeedsRefund 8
+                "#dc3545", // Cancelled 9
+                "#343a40", // Refunded 10
+                "#007bff"  // ReturnRequested 11
             }
             };
         }
@@ -173,9 +179,9 @@ namespace _01_PharmaPlusQuery.Query
         public async Task<ChartDto> GetTopProductsDoughnutAsync(int take = 5, CancellationToken cancellation = default)
         {
             var data = await _shopContext.OrderItems
+                .AsNoTracking()
                 .Include(x => x.Order)
-                .Where(x => x.Order.Status >= OrderStatus.Paid
-                && x.Order.Status <= OrderStatus.NeedsRefund)
+                .Where(x => (x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.Delivered) || x.Order.Status == OrderStatus.ReturnRequested)
                 .GroupBy(x => x.ProductName)
                 .Select(g => new
                 {
@@ -195,8 +201,7 @@ namespace _01_PharmaPlusQuery.Query
             };
         }
 
-        public async Task<ComparisonChartDto> GetSalesComparisonAsync(
-            CancellationToken cancellation)
+        public async Task<ComparisonChartDto> GetSalesComparisonAsync(CancellationToken cancellation)
         {
             var pc = new PersianCalendar();
             var now = DateTime.Now;
@@ -204,11 +209,7 @@ namespace _01_PharmaPlusQuery.Query
             int currentPersianYear = pc.GetYear(now);
             int currentPersianMonth = pc.GetMonth(now);
 
-            var currentMonthStart = pc.ToDateTime(
-                currentPersianYear,
-                currentPersianMonth,
-                1,
-                0, 0, 0, 0);
+            var currentMonthStart = pc.ToDateTime(currentPersianYear, currentPersianMonth, 1, 0, 0, 0, 0);
 
             int previousPersianMonth = currentPersianMonth - 1;
             int previousPersianYear = currentPersianYear;
@@ -219,25 +220,17 @@ namespace _01_PharmaPlusQuery.Query
                 previousPersianYear--;
             }
 
-            var previousMonthStart = pc.ToDateTime(
-                previousPersianYear,
-                previousPersianMonth,
-                1,
-                0, 0, 0, 0);
+            var previousMonthStart = pc.ToDateTime(previousPersianYear, previousPersianMonth, 1, 0, 0, 0, 0);
 
             var currentSales = await _shopContext.Orders
-                .Where(x =>
-                    x.CreationDate >= currentMonthStart &&
-                    x.Status >= OrderStatus.Paid &&
-                    x.Status <= OrderStatus.NeedsRefund)
+                .Where(x => x.CreationDate >= currentMonthStart &&
+                            ((x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.Delivered) || x.Status == OrderStatus.ReturnRequested))
                 .SumAsync(x => (double?)x.PayAmount, cancellation) ?? 0;
 
             var previousSales = await _shopContext.Orders
-                .Where(x =>
-                    x.CreationDate >= previousMonthStart &&
-                    x.CreationDate < currentMonthStart &&
-                    x.Status >= OrderStatus.Paid &&
-                    x.Status <= OrderStatus.NeedsRefund)
+                .Where(x => x.CreationDate >= previousMonthStart &&
+                            x.CreationDate < currentMonthStart &&
+                            ((x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.Delivered) || x.Status == OrderStatus.ReturnRequested))
                 .SumAsync(x => (double?)x.PayAmount, cancellation) ?? 0;
 
             return new ComparisonChartDto
@@ -246,18 +239,23 @@ namespace _01_PharmaPlusQuery.Query
                 CurrentValue = currentSales,
                 PreviousValue = previousSales,
                 Labels = new List<string>
-                {
-                    GetPersianMonthName(previousPersianMonth),
-                    GetPersianMonthName(currentPersianMonth)
-                }
+            {
+                GetPersianMonthName(previousPersianMonth),
+                GetPersianMonthName(currentPersianMonth)
+            }
             };
         }
-
 
         public async Task<ChartDto> GetConversionRateAsync(CancellationToken cancellation)
         {
             var totalViews = await _shopContext.Products.SumAsync(x => x.ViewCount, cancellation);
-            var totalOrders = await _shopContext.Orders.CountAsync(x => x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.NeedsRefund, cancellation);
+
+            // نرخ تبدیل خرید موفق: تمام افرادی که تا مرحله پرداخت رفته‌اند
+            var totalOrders = await _shopContext.Orders
+                .CountAsync(x => (x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.Delivered)
+                                 || x.Status == OrderStatus.ReturnRequested
+                                 || x.Status == OrderStatus.NeedsRefund
+                                 || x.Status == OrderStatus.Refunded, cancellation);
 
             double conversionRate = totalViews > 0 ? Math.Round((double)totalOrders / totalViews * 100, 2) : 0;
 
@@ -265,7 +263,7 @@ namespace _01_PharmaPlusQuery.Query
             {
                 Label = "نرخ تبدیل",
                 Data = new List<double> { conversionRate, 100 - conversionRate },
-                labels = new List<string> { "تبدیل به خرید", "فقط بازدید" },
+                labels = new List<string> { "تبدیل به خرید (فروش)", "فقط بازدید" },
                 BackgroundColor = new List<string> { "#00b894", "#dfe6e9" }
             };
         }
@@ -274,7 +272,7 @@ namespace _01_PharmaPlusQuery.Query
         {
             var salesData = await _shopContext.OrderItems
                 .Include(x => x.Order)
-                .Where(x => x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.NeedsRefund)
+                .Where(x => (x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.Delivered) || x.Order.Status == OrderStatus.ReturnRequested)
                 .GroupBy(x => x.ProductId)
                 .Select(g => new
                 {
@@ -323,7 +321,7 @@ namespace _01_PharmaPlusQuery.Query
         {
             var salesData = await _shopContext.OrderItems
                 .Include(x => x.Order)
-                .Where(x => x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.NeedsRefund)
+                .Where(x => (x.Order.Status >= OrderStatus.Paid && x.Order.Status <= OrderStatus.Delivered) || x.Order.Status == OrderStatus.ReturnRequested)
                 .GroupBy(x => x.ProductId)
                 .Select(g => new
                 {
@@ -374,7 +372,7 @@ namespace _01_PharmaPlusQuery.Query
         public async Task<List<TopCustomerDto>> GetTopCustomersAsync(int take = 5, CancellationToken cancellation = default)
         {
             var topBuyers = await _shopContext.Orders
-                .Where(x => x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.NeedsRefund)
+                .Where(x => (x.Status >= OrderStatus.Paid && x.Status <= OrderStatus.Delivered) || x.Status == OrderStatus.ReturnRequested)
                 .GroupBy(x => x.UserId)
                 .Select(g => new
                 {
@@ -400,6 +398,17 @@ namespace _01_PharmaPlusQuery.Query
                 OrderCount = buyer.OrderCount,
                 Username = accounts.FirstOrDefault(a => a.Id == buyer.AccountId)?.Username ?? "کاربر ناشناس"
             }).ToList();
+        }
+        private static string GetPersianMonthName(int month)
+        {
+            string[] monthNames =
+            {
+                "فروردین", "اردیبهشت", "خرداد", "تیر",
+                "مرداد", "شهریور", "مهر", "آبان",
+                "آذر", "دی", "بهمن", "اسفند"
+            };
+
+            return monthNames[month - 1];
         }
 
         public async Task<List<RecentOrderDto>> GetRecentOrdersAsync(int take = 5, CancellationToken cancellation = default)
@@ -428,20 +437,7 @@ namespace _01_PharmaPlusQuery.Query
             {
                 order.CustomerUsername = accounts.FirstOrDefault(a => a.Id == order.AccountId)?.Username ?? "ناشناس";
             }
-
             return recentOrders;
-        }
-
-        private static string GetPersianMonthName(int month)
-        {
-            string[] monthNames =
-            {
-                "فروردین", "اردیبهشت", "خرداد", "تیر",
-                "مرداد", "شهریور", "مهر", "آبان",
-                "آذر", "دی", "بهمن", "اسفند"
-            };
-
-            return monthNames[month - 1];
         }
     }
 }

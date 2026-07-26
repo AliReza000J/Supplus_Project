@@ -21,6 +21,10 @@ namespace ShopManagement.Application.Contracts.Order
         Task<List<OrderViewModel>> SearchAsync(OrderSearchModel searchModel, CancellationToken cancellation);
         Task<OrderViewModel?> GetDetails(long orderId, CancellationToken cancellation);
 
+        Task<OperationResult> RejectReturnAsync(RejectReturnCommand command, CancellationToken cancellation);
+        Task<OperationResult> ApproveReturnAsync(ApproveReturnCommand command, CancellationToken cancellation);
+        Task<OperationResult> RequestReturnAsync(RequestReturnCommand command, CancellationToken cancellation);
+
         List<OrderStatusDto> GetStatuses();
         Task<bool> UserOwnsOrder(long userId, long orderId, CancellationToken cancellation);
     }

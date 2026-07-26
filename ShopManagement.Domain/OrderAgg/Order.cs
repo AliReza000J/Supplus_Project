@@ -128,7 +128,7 @@ namespace ShopManagement.Domain.OrderAgg
 
         public void RefundAndCancel ()
         {
-            Status = OrderStatus.Cancelled;
+            Status = OrderStatus.Refunded;
             CancellationReason += $"{Environment.NewLine}[تاریخ عودت]: {DateTime.Now.ToFarsiFull().ToPersianNumber()}";
             Touch();
         }
@@ -152,6 +152,28 @@ namespace ShopManagement.Domain.OrderAgg
         {
             ShippingCost = shippingCost;
             PayAmount += shippingCost;
+        }
+
+        public void RequestReturn(string reason)
+        {
+            if (Status != OrderStatus.Delivered)
+                throw new InvalidOperationException("فقط سفارش‌های تحویل داده شده می‌توانند مرجوع شوند.");
+
+            Status = OrderStatus.ReturnRequested;
+
+            CancellationReason = reason;
+            Touch();
+        }
+
+        public void RejectReturn(string adminNotes)
+        {
+            if (Status != OrderStatus.ReturnRequested)
+                throw new InvalidOperationException("این سفارش در وضعیت درخواست مرجوعی قرار ندارد.");
+
+            Status = OrderStatus.Delivered;
+
+            CancellationReason = adminNotes;
+            Touch();
         }
     }
 }

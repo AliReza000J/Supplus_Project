@@ -1,37 +1,51 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http.Features;
-using Serilog;
-using Serilog.Events;
-using Hangfire;
-using QuestPDF.Infrastructure;
-using System.Text.Encodings.Web;
-using System.Text.Unicode;
-using ShopManagement.Configuration;
-using SiteManagement.Configuration;
-using DiscountManagement.Configuration;
-using InventoryManagement.Configuration;
+﻿using _0_Framework.Application;
+using _0_Framework.Infrastructure;
+using _01_PharmaPlusQuery.Contracts.AdminNotification;
+using _01_PharmaPlusQuery.Contracts.Dashbord;
+using _01_PharmaPlusQuery.Query;
+using AccountManagement.Configuration;
+using AccountManagement.Domain.RoleAgg;
+using AccountManagement.Infrastructure.EFCore;
+using AspNetCoreRateLimit;
 using BlogManagement.Configuration;
 using CommentManagement.Infrastructure.Configuration;
-using AccountManagement.Configuration;
-using _0_Framework.Application;
-using _01_PharmaPlusQuery.Contracts.Dashbord;
-using _0_Framework.Infrastructure;
-using _01_PharmaPlusQuery.Query;
-using Polly;
-using AccountManagement.Domain.RoleAgg;
-using PharmaAdmin.Web.Services;
+using DiscountManagement.Configuration;
+using Hangfire;
+using InventoryManagement.Configuration;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http.Features;
 using PharmaAdmin.Web.Filters;
 using PharmaAdmin.Web.Middleware;
-using PharmaShared.Web.Services;
-using PharmaShared.Web.Middlewares;
-using AspNetCoreRateLimit;
+using PharmaAdmin.Web.Services;
 using PharmaShared.Web;
-using _01_PharmaPlusQuery.Contracts.AdminNotification;
+using PharmaShared.Web.Middlewares;
+using PharmaShared.Web.Services;
+using PharmaShared.Web.Services.ImageCleanup;
+using Polly;
+using QuestPDF.Infrastructure;
+using Serilog;
+using Serilog.Events;
+using ShopManagement.Configuration;
+using SiteManagement.Configuration;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 var builder = WebApplication.CreateBuilder(args);
+
 var config = builder.Configuration;
 
-var connectionString = config.GetConnectionString("PharmaPlusDB") ?? "";
+var forceHttps = config.GetValue<bool>("Security:ForceHttps");
+
+var origins =
+    config.GetSection("Cors:Origins")
+          .Get<string[]>() ?? [];
+
+var connectionString =
+    config.GetConnectionString("PharmaPlusDB")
+    ?? throw new InvalidOperationException(
+        "Connection string 'PharmaPlusDB' was not found.");
 
 // --- 1. Logging (Serilog) ---
 Log.Logger = new LoggerConfiguration()
@@ -59,7 +73,6 @@ builder.Services.AddHttpClient("SmsIr", client =>
         handledEventsAllowedBeforeBreaking: 5,
         durationOfBreak: TimeSpan.FromMinutes(2)));
 
-builder.Services.AddHttpClient("SmsIr", client => { client.Timeout = TimeSpan.FromSeconds(10); });
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.Configure<FormOptions>(options =>
@@ -80,8 +93,12 @@ AccountManagementBootstrapper.Configure(builder.Services, connectionString);
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
-builder.Services.AddHangfire(c => c.UseSqlServerStorage(config.GetConnectionString("Hangfire")));
-builder.Services.AddHangfireServer();
+builder.Services.AddHangfire(c =>
+    c.UseSqlServerStorage(connectionString)); 
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = 2;
+});
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -104,15 +121,16 @@ builder.Services.AddTransient<IZibalService, ZibalService>();
 builder.Services.AddTransient<IJwtService, JwtService>();
 builder.Services.AddTransient<IEmailService, EmailService>();
 
-builder.Services.AddScoped<IResetTokenGenerator, ResetTokenGenerator>();
-builder.Services.AddSingleton<IResetTokenProtector>(sp => new HmacTokenProtector(sp.GetRequiredService<IConfiguration>().GetValue<string>("PasswordReset:HmacKey")));
-
 builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddScoped<PostTrackingSmsJob>();
 
 // Background tasks
 builder.Services.AddScoped<ITokenCleanupService, TokenCleanupService>();
 builder.Services.AddHostedService<TokenCleanupBackgroundService>();
+builder.Services.AddScoped<IModuleImageCleanupService, BlogImageCleanupService>();
+builder.Services.AddScoped<IModuleImageCleanupService, ShopImageCleanupService>();
+builder.Services.AddScoped<IModuleImageCleanupService, AccountImageCleanupService>();
+builder.Services.AddHostedService<OrphanedImagesBackgroundService>();
 
 // --- 6. Auth (Cookie Only) ---
 builder.Services.AddAuthentication(options =>
@@ -124,12 +142,42 @@ builder.Services.AddAuthentication(options =>
     options.LoginPath = "/Admin/Login";
     options.LogoutPath = "/Admin/Logout";
     options.AccessDeniedPath = "/Admin/AccessDenied";
+
     options.Cookie.Name = "PharmaPlusShopAuth";
     options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+
     options.ExpireTimeSpan = TimeSpan.FromDays(3);
-    options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.SlidingExpiration = true;
+
+    options.Cookie.SecurePolicy =
+        forceHttps
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
 });
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.HttpOnly = HttpOnlyPolicy.Always;
+
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+
+    options.Secure = 
+        forceHttps
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
+});
+
+var keysPath = Path.Combine(builder.Environment.ContentRootPath, "Keys");
+
+Directory.CreateDirectory(keysPath);
+Log.Information("DataProtection keys path: {Path}", keysPath);
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
+    .SetApplicationName("PharmaPlus.Admin")
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 // Authorization policies
 builder.Services.AddAuthorization(options =>
@@ -153,10 +201,24 @@ builder.Services.AddRazorPages()
         options.Conventions.AuthorizeAreaFolder("Admin", "/Blog", "ContentCreator");
     });
 
+// --- 7. Controllers ---
+builder.Services.AddControllers();
+
+if (origins.Length == 0)
+{
+    throw new InvalidOperationException(
+        "Cors:Origins is empty.");
+}
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy => policy.WithOrigins("http://localhost:5173").AllowAnyMethod().AllowAnyHeader());
-    options.AddPolicy("ApiCors", policy => policy.WithOrigins("https://pharmaplus.ir").AllowAnyMethod().AllowAnyHeader());
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy.WithOrigins(origins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
@@ -165,30 +227,45 @@ var app = builder.Build();
 await DatabaseSeeder.SeedAsync(app.Services);
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
 app.UseRouting();
+
 app.UseMiddleware<SetupBlockerMiddleware>();
+
+var dashboardOptions = new DashboardOptions
+{
+    Authorization =
+        app.Environment.IsDevelopment()
+            ? []
+            : new[] { new HangfireAuthorizationFilter() }
+};
+
+app.UseHangfireDashboard("/hangfire", dashboardOptions);
+
+app.UseCors("Frontend");
+
+if (forceHttps)
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseCookiePolicy();
 app.UseMiddleware<OrderImagesAuthorizationMiddleware>();
+
 app.UseStaticFiles();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseHangfireDashboard("/hangfire");
-    app.UseCors("AllowAll");
-}
-else
-{
-    app.UseHangfireDashboard("/admin/hangfire", new DashboardOptions
-    {
-        Authorization = new[] { new HangfireAuthorizationFilter() }
-    });
-    app.UseCors("ApiCors");
-}
-
 app.UseIpRateLimiting();
+
+RecurringJob.AddOrUpdate<AutoCancelPendingOrdersJob>(
+    "Auto-Cancel-Pending-Orders",
+    job => job.ProcessAsync(),
+    "*/30 * * * *"
+);
+
 app.MapRazorPages();
+app.MapControllers();
 app.MapDefaultControllerRoute();
 
 app.Run();

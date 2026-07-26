@@ -1,4 +1,6 @@
 ﻿using _0_Framework.Application;
+using _01_PharmaPlusQuery.Contracts.Comment;
+using _01_PharmaPlusQuery.Contracts.Account;
 using _01_PharmaPlusQuery.Contracts.Order;
 using _01_PharmaPlusQuery.Contracts.Product;
 using _01_PharmaPlusQuery.Contracts.Ticket;
@@ -9,6 +11,7 @@ using AccountManagement.Application.Contracts.ShippingInfo;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ShopManagement.Application.Contracts.Order;
 using System.Security.Claims;
 
 namespace PharmaStore.WebApi.Controllers.Account
@@ -22,10 +25,13 @@ namespace PharmaStore.WebApi.Controllers.Account
     public class AccountController : ControllerBase
     {
         private readonly IAccountApplication _accountApp;
+        private readonly IOrderApplication _orderApp;
         private readonly IShippingInfoApplication _shippingInfoApp;
+        private readonly IAccountQuery _accountQuery;
         private readonly IProductQuery _productQuery;
         private readonly IOrderQuery _orderQuery;
         private readonly ITicketQuery _ticketQuery;
+        private readonly ICommentQuery _commentQuery;
         private readonly IOtpRateLimiter _otpRateLimiter;
         private readonly IActionRateLimiter _rateLimiter;
 
@@ -38,7 +44,10 @@ namespace PharmaStore.WebApi.Controllers.Account
             ITicketQuery ticketQuery,
             IShippingInfoApplication shippingInfoApp,
             IOtpRateLimiter otpRateLimiter,
-            IActionRateLimiter rateLimiter)
+            IActionRateLimiter rateLimiter,
+            IAccountQuery accountQuery,
+            IOrderApplication orderApp,
+            ICommentQuery commentQuery)
         {
             _accountApp = accountApp;
             _productQuery = productQuery;
@@ -47,6 +56,9 @@ namespace PharmaStore.WebApi.Controllers.Account
             _shippingInfoApp = shippingInfoApp;
             _otpRateLimiter = otpRateLimiter;
             _rateLimiter = rateLimiter;
+            _accountQuery = accountQuery;
+            _orderApp = orderApp;
+            _commentQuery = commentQuery;
         }
 
         /// <summary>
@@ -181,6 +193,32 @@ namespace PharmaStore.WebApi.Controllers.Account
             ));
         }
 
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpPost("request-return")]
+        [ProducesResponseType(typeof(ApiResponse<OperationResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OperationResult>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<OperationResult>>> RequestReturn([FromBody] RequestReturnDto dto, CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<OrderQueryModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<OrderQueryModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var command = new RequestReturnCommand
+            {
+                OrderId = dto.OrderId,
+                Reason = dto.Reason,
+                UserId = userId
+            };
+            var op = await _orderApp.RequestReturnAsync(command, cancellation);
+
+            return op.IsSucceeded
+                ? Ok(ApiResponse<object>.Ok(new(), message: op.Message))
+                : BadRequest(ApiResponse<object>.Fail(op.Message));
+        }
 
         /// <summary>
         /// Retrieves the support tickets created by the authenticated user.
@@ -251,6 +289,29 @@ namespace PharmaStore.WebApi.Controllers.Account
                     .Fail("موردی یافت نشد."));
 
             return Ok(ApiResponse<TicketQueryModel>.Ok(result));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("comments")]
+        [ProducesResponseType(typeof(ApiResponse<List<UserCommentQueryModel>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<UserCommentQueryModel>>), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ApiResponse<List<UserCommentQueryModel>>>> RequestReturn(CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<List<UserCommentQueryModel>>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<List<UserCommentQueryModel>>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var result = await _commentQuery.GetUserComments(userId, cancellation);
+
+            if (result == null || !result.Any())
+                return NotFound(ApiResponse<List<UserCommentQueryModel>>
+                    .Fail("موردی یافت نشد."));
+
+            return Ok(ApiResponse<List<UserCommentQueryModel>>.Ok(result));
         }
 
         /// <summary>
@@ -578,6 +639,23 @@ namespace PharmaStore.WebApi.Controllers.Account
             return result.IsSucceeded
                 ? Ok(ApiResponse<object>.Ok(new(), message: "آدرس با موفقیت حذف شد."))
                 : BadRequest(ApiResponse<object>.Fail(result.Message));
+        }
+
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpGet("overview")]
+        public async Task<ActionResult<ApiResponse<AccountOverviewQueryModel>>> GetUserOverview(CancellationToken cancellation)
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrWhiteSpace(idClaim))
+                return Unauthorized(ApiResponse<AccountOverviewQueryModel>.Fail("شناسه کاربر یافت نشد."));
+
+            if (!long.TryParse(idClaim, out var userId))
+                return Unauthorized(ApiResponse<AccountOverviewQueryModel>.Fail($"شناسه کاربری {userId} نامعتبر است."));
+
+            var overview = await _accountQuery.GetUserOverview(userId, cancellation);
+
+            return Ok(ApiResponse<AccountOverviewQueryModel>.Ok(overview));
         }
     }
 }

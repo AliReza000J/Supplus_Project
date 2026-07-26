@@ -325,7 +325,8 @@ namespace ShopManagement.Application
                 new() { Id = OrderStatus.Shipped, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Shipped) },
                 new() { Id = OrderStatus.Delivered, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Delivered) },
                 new() { Id = OrderStatus.NeedsRefund, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.NeedsRefund) },
-                new() { Id = OrderStatus.Cancelled, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Cancelled) }
+                new() { Id = OrderStatus.Cancelled, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Cancelled) },
+                new() { Id = OrderStatus.Refunded, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Refunded) }
             };
         }
 
@@ -537,10 +538,9 @@ namespace ShopManagement.Application
                         return (null, op.Failed("اطلاعات کارت به کارت ناقص است."));
                     }
 
-                    var fileExtension = Path.GetExtension(command.PaymentReceiptPic.FileName);
-                    var receiptFileName = $"{Guid.NewGuid()}{fileExtension}";
-                    var receiptPath = $"Orders/{receiptFileName}";
-                    var uploadedReceiptName = await fileUploader.UploadAsync(command.PaymentReceiptPic, receiptPath, cancellation);
+                    var folderName = "Orders";
+
+                    var uploadedReceiptName = await fileUploader.UploadAsync(command.PaymentReceiptPic, folderName, cancellation);
 
                     order.AddCardPaymentInfo(command.CardOwnerName, command.NationalCode, uploadedReceiptName);
                     order.StartManualPayment();
@@ -686,5 +686,76 @@ namespace ShopManagement.Application
             NeedsRefund
         }
 
+        public async Task<OperationResult> RequestReturnAsync(RequestReturnCommand command, CancellationToken cancellation)
+        {
+            var op = new OperationResult();
+            var order = await _orderRepository.GetAsync(command.OrderId, cancellation);
+
+            if (order == null)
+                return op.Failed("سفارش یافت نشد.");
+
+            if (order.UserId != command.UserId)
+                return op.Failed("کاربر یافت نشد.");
+
+            if ((order.Status != OrderStatus.Delivered) || (DateTime.Now - order.LastModifiedDate).TotalDays > 7)
+                return op.Failed("این سفارش در وضعیتی نیست که بتوان آن را مرجوع کرد.");
+
+            var returnReason =
+                $"[کد]: USER_RETURN_REQUEST{Environment.NewLine}" +
+                $"[توضیحات کاربر]: {command.Reason}{Environment.NewLine}" +
+                $"[شناسه کاربر]: {order.UserId.ToString().ToPersianNumber()}{Environment.NewLine}" +
+                $"[تاریخ درخواست]: {DateTime.Now.ToFarsiFull().ToPersianNumber()}";
+
+            order.RequestReturn(returnReason);
+            await _orderRepository.SaveChangesAsync(cancellation);
+
+            return op.Succeeded("درخواست مرجوعی شما با موفقیت ثبت شد. نتیجه از طریق پنل اطلاع‌رسانی خواهد شد.");
+        }
+
+        public async Task<OperationResult> RejectReturnAsync(RejectReturnCommand command, CancellationToken cancellation)
+        {
+            var op = new OperationResult();
+            var order = await _orderRepository.GetAsync(command.OrderId, cancellation);
+
+            if (order == null) return op.Failed("سفارش یافت نشد.");
+
+            if (order.Status != OrderStatus.ReturnRequested)
+                return op.Failed("این سفارش در وضعیت درخواست مرجوعی قرار ندارد.");
+
+            var finalReason =
+                $"{order.CancellationReason}{Environment.NewLine}" +
+                $"[عملیات]: رد مرجوعی{Environment.NewLine}" +
+                $"[دلیل رد]: {command.RejectionReason}{Environment.NewLine}" +
+                $"[توسط]: Admin (Id: {command.AdminId.ToString().ToPersianNumber()}){Environment.NewLine}" +
+                $"[تاریخ رد]: {DateTime.Now.ToFarsiFull().ToPersianNumber()}";
+
+            order.RejectReturn(finalReason);
+            await _orderRepository.SaveChangesAsync(cancellation);
+
+            return op.Succeeded("درخواست مرجوعی کاربر رد شد و سفارش به وضعیت 'تحویل داده شده' بازگشت.");
+        }
+
+        public async Task<OperationResult> ApproveReturnAsync(ApproveReturnCommand command, CancellationToken cancellation)
+        {
+            var op = new OperationResult();
+            var order = await _orderRepository.GetAsync(command.OrderId, cancellation);
+
+            if (order == null) return op.Failed("سفارش یافت نشد.");
+
+            if (order.Status != OrderStatus.ReturnRequested)
+                return op.Failed("این سفارش در وضعیت درخواست مرجوعی قرار ندارد.");
+
+            var finalReason =
+                $"{order.CancellationReason}{Environment.NewLine}" +
+                $"[عملیات]: تایید مرجوعی{Environment.NewLine}" +
+                $"[توضیحات ادمین]: {command.Notes}{Environment.NewLine}" +
+                $"[توسط]: Admin (Id: {command.AdminId.ToString().ToPersianNumber()}){Environment.NewLine}" +
+                $"[تاریخ تایید]: {DateTime.Now.ToFarsiFull().ToPersianNumber()}";
+
+            order.MarkAsNeedsRefund(finalReason);
+
+            await _orderRepository.SaveChangesAsync(cancellation);
+            return op.Succeeded("درخواست مرجوعی با موفقیت تایید و سفارش به وضعیت مرجوع‌شده تغییر یافت.");
+        }
     }
 }

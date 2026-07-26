@@ -1,5 +1,5 @@
 ﻿using _0_Framework.Application;
-using _01_LampshadeQuery.Contracts.Comment;
+using _01_PharmaPlusQuery.Contracts.Comment;
 using _01_PharmaPlusQuery.Contracts.Article;
 using BlogManagement.Infrastructure.EFCore;
 using CommentManagement.Domain.CommentAgg;

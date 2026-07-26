@@ -138,7 +138,6 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            // تابعی برای تنظیم وضعیت اولیه نمایش فیلدها در هنگام لود صفحه
             function initToggles() {
                 if ($('#DiscountType').val() == "2") $('#CouponCodeDiv').show();
                 else $('#CouponCodeDiv').hide();
@@ -147,10 +146,8 @@
                 else $('#TargetsDiv').hide();
             }
 
-            // اجرای اولیه در هنگام لود
             initToggles();
 
-            // مدیریت تغییرات توسط کاربر
             $('#DiscountType').change(function () {
                 if ($(this).val() == "2") $('#CouponCodeDiv').fadeIn();
                 else $('#CouponCodeDiv').fadeOut();

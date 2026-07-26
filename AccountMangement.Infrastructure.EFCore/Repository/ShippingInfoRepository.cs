@@ -12,9 +12,8 @@ namespace AccountManagement.Infrastructure.EFCore.Repository
             _context = context;
         }
 
-        public void Delete(long id)
+        public void Delete(ShippingInfo entity)
         {
-            var entity = new ShippingInfo { Id = id };
             _context.ShippingInfos.Remove(entity);
         }
 

@@ -26,12 +26,12 @@ namespace _01_PharmaPlusQuery.Query
                 .CountAsync(x => !x.IsAnswered && x.CreationDate >= twoWeeksAgo);
 
             var pendingOrders = await _shopContext.Orders.AsNoTracking()
-                .CountAsync(x => x.Status >= OrderStatus.WaitingForManualVerification
+                .CountAsync(x => x.Status >= OrderStatus.Pending
                               && x.Status <= OrderStatus.Paid
                               && x.CreationDate >= twoWeeksAgo);
 
             var refundRequests = await _shopContext.Orders.AsNoTracking()
-                .CountAsync(x => x.Status == OrderStatus.NeedsRefund);
+                .CountAsync(x => x.Status == OrderStatus.NeedsRefund || x.Status == OrderStatus.ReturnRequested);
 
             var recentTickets = await _siteContext.Tickets.AsNoTracking()
                 .Where(x => !x.IsAnswered && x.CreationDate >= twoWeeksAgo)
@@ -50,26 +50,30 @@ namespace _01_PharmaPlusQuery.Query
                 .ToListAsync();
 
             var recentOrders = await _shopContext.Orders.AsNoTracking()
-                .Where(x => ((x.Status >= OrderStatus.WaitingForManualVerification && x.Status <= OrderStatus.Paid)
-                         || x.Status == OrderStatus.NeedsRefund)
+                .Where(x => ((x.Status >= OrderStatus.Pending && x.Status <= OrderStatus.Paid)
+                          || x.Status == OrderStatus.NeedsRefund
+                          || x.Status == OrderStatus.ReturnRequested) // اضافه شدن وضعیت 11
                          && x.CreationDate >= twoWeeksAgo)
                 .OrderByDescending(x => x.CreationDate)
                 .Take(3)
                 .Select(x => new NotificationItemDto
                 {
                     Id = x.Id,
-                    Title = x.Status == OrderStatus.NeedsRefund ? "درخواست مرجوعی" : "سفارش جدید",
+                    Title = x.Status == OrderStatus.ReturnRequested ? "درخواست مرجوعی جدید" :
+                            x.Status == OrderStatus.NeedsRefund ? "نیازمند بازگشت وجه" : "سفارش جدید",
                     Message = $"سفارش شماره {x.Id}",
                     CreationDate = x.CreationDate.ToFarsiFull(),
-                    IconClass = x.Status == OrderStatus.NeedsRefund ? "fa fa-undo" : "fa fa-shopping-cart",
-                    ColorClass = x.Status == OrderStatus.NeedsRefund ? "text-danger" : "text-success",
+                    IconClass = x.Status == OrderStatus.ReturnRequested ? "fa fa-exchange" :
+                                x.Status == OrderStatus.NeedsRefund ? "fa fa-undo" : "fa fa-shopping-cart",
+                    ColorClass = x.Status == OrderStatus.ReturnRequested ? "text-primary" :
+                                 x.Status == OrderStatus.NeedsRefund ? "text-danger" : "text-success",
                     Link = $"/Admin/Shop/Orders/Details/{x.Id}"
                 })
                 .ToListAsync();
 
             var combinedRecentNotifications = recentTickets
-        .Concat(recentOrders)
-        .ToList();
+                .Concat(recentOrders)
+                .ToList();
 
             var dto = new AdminNotificationDto
             {
@@ -81,6 +85,7 @@ namespace _01_PharmaPlusQuery.Query
 
             return dto;
         }
+
 
         public async Task<List<NotificationItemDto>> GetAllAdminNotifications()
         {
@@ -103,20 +108,24 @@ namespace _01_PharmaPlusQuery.Query
             }).ToList();
 
             var orders = await _shopContext.Orders.AsNoTracking()
-                .Where(x => ((x.Status >= OrderStatus.WaitingForManualVerification && x.Status <= OrderStatus.Paid)
-                         || x.Status == OrderStatus.NeedsRefund)
+                .Where(x => ((x.Status >= OrderStatus.Pending && x.Status <= OrderStatus.Paid)
+                          || x.Status == OrderStatus.NeedsRefund
+                          || x.Status == OrderStatus.ReturnRequested) // اضافه شدن وضعیت 11
                          && x.CreationDate >= sixMonthsAgo)
                 .ToListAsync();
 
             var orderDtos = orders.Select(x => new NotificationItemDto
             {
                 Id = x.Id,
-                Title = x.Status == OrderStatus.NeedsRefund ? "درخواست مرجوعی" : "سفارش جدید",
+                Title = x.Status == OrderStatus.ReturnRequested ? "درخواست مرجوعی جدید" :
+                        x.Status == OrderStatus.NeedsRefund ? "نیازمند بازگشت وجه" : "سفارش جدید",
                 Message = $"سفارش شماره {x.Id}",
                 CreationDate = x.CreationDate.ToFarsiFull(),
                 ActualDate = x.CreationDate,
-                IconClass = x.Status == OrderStatus.NeedsRefund ? "fa fa-undo" : "fa fa-shopping-cart",
-                ColorClass = x.Status == OrderStatus.NeedsRefund ? "text-danger" : "text-success",
+                IconClass = x.Status == OrderStatus.ReturnRequested ? "fa fa-exchange" :
+                            x.Status == OrderStatus.NeedsRefund ? "fa fa-undo" : "fa fa-shopping-cart",
+                ColorClass = x.Status == OrderStatus.ReturnRequested ? "text-primary" :
+                             x.Status == OrderStatus.NeedsRefund ? "text-danger" : "text-success",
                 Link = $"/Admin/Shop/Orders/Details/{x.Id}"
             }).ToList();
 
@@ -124,6 +133,5 @@ namespace _01_PharmaPlusQuery.Query
 
             return combinedNotifications.OrderByDescending(x => x.ActualDate).ToList();
         }
-
     }
 }

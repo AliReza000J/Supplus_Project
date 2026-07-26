@@ -1,4 +1,4 @@
-﻿using _01_LampshadeQuery.Contracts.Comment;
+﻿using _01_PharmaPlusQuery.Contracts.Comment;
 
 namespace _01_PharmaPlusQuery.Contracts.Article
 {

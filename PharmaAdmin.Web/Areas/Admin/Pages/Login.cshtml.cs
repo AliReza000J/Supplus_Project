@@ -40,7 +40,7 @@ namespace PharmaAdmin.Web.Areas.Admin.Pages
         public async Task<IActionResult> OnPostLoginAsync(LoginViaUserPass command, CancellationToken cancellation)
         {
             var roleId = await _accountApplication.GetRoleIdByUsername(command.Username, cancellation);
-            if (roleId != Roles.Customer)
+            if (roleId != Roles.User)
             {
                 var result = await _accountApplication.LoginToAdminPanel(command, cancellation);
                 if (result.IsSucceeded)

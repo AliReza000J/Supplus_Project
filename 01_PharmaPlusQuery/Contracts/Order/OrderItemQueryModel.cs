@@ -1,4 +1,6 @@
-﻿namespace _01_PharmaPlusQuery.Contracts.Order
+﻿using System.Text.Json.Serialization;
+
+namespace _01_PharmaPlusQuery.Contracts.Order
 {
     public class OrderItemQueryModel
     {
@@ -12,12 +14,15 @@
 
         public int Qty { get; set; }
 
+        [JsonIgnore]
         public double UnitPrice { get; set; }
         public string? UnitPriceDisplay { get; set; }
 
+        [JsonIgnore]
         public int DiscountRate { get; set; }
         public string? DiscountRateDisplay { get; set; }
 
+        [JsonIgnore]
         public double TotalPriceWithDiscount { get; set; }
         public string? TotalPriceWithDiscountDisplay { get; set; }
     }

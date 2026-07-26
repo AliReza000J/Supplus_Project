@@ -1,9 +1,7 @@
 ﻿using _0_Framework.Application;
-using AccountManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
-using System;
 
-namespace _0_Framework.Infrastructure
+namespace AccountManagement.Infrastructure.EFCore
 {
     public class TokenCleanupService : ITokenCleanupService
     {

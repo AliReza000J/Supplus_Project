@@ -125,7 +125,8 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
             if (searchModel.Status >= 0 && searchModel.Status != null)
                 query = query.Where(x => x.Status == searchModel.Status);
             else
-                query = query.Where(x => x.Status >= OrderStatus.WaitingForManualVerification);
+                query = query.Where(x => x.Status >= OrderStatus.WaitingForManualVerification
+                && x.Status != OrderStatus.Cancelled && x.Status != OrderStatus.Refunded);
 
             if (!string.IsNullOrWhiteSpace(searchModel.FromDate))
             {

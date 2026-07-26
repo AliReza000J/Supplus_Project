@@ -14,6 +14,5 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         //Task<SearchByBrandResult?> GetProductsByBrand(string brandName, int page, int pageSize, CancellationToken cancellationToken = default);
         Task<List<FaveProductsCardModel>> GetUserFavoriteList(long userId, CancellationToken cancellationToken = default);
         Task<bool> Exists(long productId, CancellationToken cancellationToken = default);
-
     }
 }

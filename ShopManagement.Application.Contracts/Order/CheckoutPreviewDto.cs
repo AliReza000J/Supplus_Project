@@ -16,5 +16,4 @@
 
         public double FinalPayAmount { get; set; }
     }
-
 }

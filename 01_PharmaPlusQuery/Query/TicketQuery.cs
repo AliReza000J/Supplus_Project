@@ -22,6 +22,7 @@ namespace _01_PharmaPlusQuery.Query
                 )
                 .Select(t => new TicketQueryModel
                 {
+                    Id = t.Id,
                     AdminReply = t.AdminReply,
                     CreationDate = t.CreationDate.ToFarsiFull(),
                     IsAnswered = t.IsAnswered,
@@ -44,6 +45,7 @@ namespace _01_PharmaPlusQuery.Query
                 .OrderByDescending(t => t.Id)
                 .Select(t => new TicketQueryModel
                 {
+                    Id = t.Id,
                     TrackingCode = t.TrackingCode,
                     Subject = t.Subject,
                     //Message = t.Message,

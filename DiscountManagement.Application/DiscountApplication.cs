@@ -196,7 +196,7 @@ namespace DiscountManagement.Application
         {
             var operation = new OperationResult();
 
-            var discount = await _discountRepository.GetAsync(command.Id, cancellation);
+            var discount = await _discountRepository.GetWithTargetsAsync(command.Id, cancellation);
             if (discount == null)
                 return operation.Failed("رکورد مورد نظر یافت نشد.");
 
@@ -257,7 +257,7 @@ namespace DiscountManagement.Application
 
         public async Task IncreaseUsage(long discountId, long userId, CancellationToken cancellation)
         {
-            var discount = await _discountRepository.GetAsync(discountId, cancellation);
+            var discount = await _discountRepository.GetWithTargetsAsync(discountId, cancellation);
             if (discount != null)
             {
                 discount.IncreaseUsage(userId);
@@ -273,7 +273,7 @@ namespace DiscountManagement.Application
         public async Task<OperationResult> ToggleActiveStatus(long id, CancellationToken cancellation)
         {
             var operation = new OperationResult();
-            var discount = await _discountRepository.GetAsync(id, cancellation);
+            var discount = await _discountRepository.GetWithTargetsAsync(id, cancellation);
             if (discount == null) return operation.Failed("رکورد یافت نشد.");
 
             discount.ToggleActive();

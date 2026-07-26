@@ -5,6 +5,6 @@ namespace AccountManagement.Domain.ShippingInfoAgg
     public interface IShippingInfoRepository : IRepository<long, ShippingInfo>
     {
         Task<List<ShippingInfo>> GetAllByUserIdAsync(long userId, CancellationToken cancellation);
-        void Delete(long id);
+        void Delete(ShippingInfo entity);
     }
 }

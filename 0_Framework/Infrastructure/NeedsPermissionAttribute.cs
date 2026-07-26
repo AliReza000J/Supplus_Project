@@ -1,5 +1,6 @@
 ﻿namespace _0_Framework.Infrastructure
 {
+    [AttributeUsage(AttributeTargets.All)]
     public class NeedsPermissionAttribute : Attribute
     {
         public int Permission { get; set; }

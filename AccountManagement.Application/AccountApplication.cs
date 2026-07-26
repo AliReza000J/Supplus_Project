@@ -391,7 +391,7 @@ namespace AccountManagement.Application
                 return operation.Failed("لینک بازیابی نامعتبر یا منقضی شده است.");
 
             var account = await _accountRepository.GetByEmailAsync(command.Email.ToLower(), cancellation);
-            if (account == null || !_authHelper.IsSuperAdmin())
+            if (account == null || account.RoleId != Roles.SuperAdmin)
                 return operation.Failed("حساب کاربری نامعتبر است.");
 
             var hashPassword = _passwordHasher.Hash(command.NewPassword);
@@ -425,7 +425,7 @@ namespace AccountManagement.Application
 
             if (account == null)
             {
-                var roleName = Roles.GetRoleBy(Roles.Customer);
+                var roleName = Roles.GetRoleBy(Roles.User);
                 var path = $"ProfilePhotos/{roleName}";
 
                 var seed = Guid.NewGuid().ToString("N");
@@ -466,7 +466,7 @@ namespace AccountManagement.Application
             if (!account.IsActive)
                 return (op.Failed("حساب کاربری شما غیرفعال است."), null);
 
-            if (!account.IsCompleted() || string.IsNullOrWhiteSpace(account.Password))
+            if (string.IsNullOrWhiteSpace(account.Password))
                 return (op.Failed("شما هنوز رمز عبور ندارید. لطفا ابتدا با شماره موبایل (OTP) وارد شوید و پروفایل خود را تکمیل کنید."), null);
 
             var (verified, needsUpgrade) = _passwordHasher.Check(account.Password, command.Password);
@@ -683,6 +683,7 @@ namespace AccountManagement.Application
                 Fullname = account.Fullname,
                 Mobile = account.Mobile,
                 Username = account.Username.ToLower(),
+                Email = account.Email?.ToLower(),
                 RoleName = Roles.GetRoleBy(account.RoleId),
                 IsActive = account.IsActive,
                 IsCompleted = account.IsCompleted(),

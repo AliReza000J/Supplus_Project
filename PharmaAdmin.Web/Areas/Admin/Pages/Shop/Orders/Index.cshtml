@@ -27,11 +27,11 @@
                 <form class="form-inline" role="form" method="get">
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.FromDate"></label>
-                        <input class="form-control persianDateInput" dir="ltr" asp-for="SearchModel.FromDate">
+                        <input class="form-control persianDateInput" asp-for="SearchModel.FromDate" placeholder="از تاریخ..." autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.ToDate"></label>
-                        <input class="form-control persianDateInput" dir="ltr" asp-for="SearchModel.ToDate">
+                        <input class="form-control persianDateInput" asp-for="SearchModel.ToDate" placeholder="تا تاریخ..." autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="sr-only" asp-for="SearchModel.UserId"></label>
@@ -82,7 +82,8 @@
                                         <tr class="@(
                                                 item.Status <= OrderStatus.WaitingForManualVerification ? "pending-order" :
                                                 item.Status == OrderStatus.NeedsRefund ? "needRefund-order" :
-                                                item.Status == OrderStatus.Cancelled ? "cancelled-order" :
+                                                item.Status == OrderStatus.ReturnRequested ? "returnRequest-order" :
+                                                item.Status >= OrderStatus.Cancelled ? "cancelled-order" :
                                                 item.Status == OrderStatus.Paid ? "paid-order" : "default-order"
                                                 )">
                                             <td>@item.Id</td>
@@ -104,7 +105,34 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <span> @OrderStatus.GetStatusTitleByCode(item.Status)</span>
+                                                <span>
+                                                    @if (item.Status <= OrderStatus.WaitingForManualVerification)
+                                                    {
+                                                        <span class="m-l-5">⏳</span>
+                                                    }
+                                                    else if (item.Status == OrderStatus.NeedsRefund)
+                                                    {
+                                                        <span class="m-l-5">💸</span>
+                                                    }
+                                                    else if (item.Status == OrderStatus.ReturnRequested)
+                                                    {
+                                                        <span class="m-l-5">📦</span>
+                                                    }
+                                                    else if (item.Status >= OrderStatus.Cancelled)
+                                                    {
+                                                        <span class="m-l-5">❌</span>
+                                                    }
+                                                    else if (item.Status == OrderStatus.Paid)
+                                                    {
+                                                        <span class="m-l-5">✅</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="m-l-5">📄</span>
+                                                    }
+
+                                                    @OrderStatus.GetStatusTitleByCode(item.Status)
+                                                </span>
                                             </td>
                                             <td>
                                                 <a Permission="@ShopPermissions.ActionOrders"

@@ -11,6 +11,8 @@
         public const int Delivered = 7;
         public const int NeedsRefund = 8;
         public const int Cancelled = 9;
+        public const int Refunded = 10;
+        public const int ReturnRequested = 11;
 
         public static string GetStatusTitleByCode(int code)
         {
@@ -25,6 +27,8 @@
                 7 => "تحویل داده شده",
                 8 => "نیازمند بازگشت وجه",
                 9 => "لغو شده",
+                10 => "مرجوع شده",
+                11 => "درخواست مرجوعی",
                 _ => "",
             };
         }

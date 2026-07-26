@@ -1,6 +1,7 @@
 ﻿using _0_Framework.Application;
 using _01_PharmaPlusQuery.Contracts.Order;
 using _01_PharmaPlusQuery.Contracts.Product;
+using AccountManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Domain.OrderAgg;
 using ShopManagement.Infrastructure.EFCore;
@@ -10,10 +11,12 @@ namespace _01_PharmaPlusQuery.Query
     public class OrderQuery : IOrderQuery
     {
         private readonly ShopContext _shopContext;
+        private readonly AccountContext _accountContext;
 
-        public OrderQuery(ShopContext orderContext)
+        public OrderQuery(ShopContext orderContext, AccountContext accountContext)
         {
             _shopContext = orderContext;
+            _accountContext = accountContext;
         }
 
         public async Task<OrderQueryModel> GetOrderDetailsAsync(long orderId, long userId, CancellationToken cancellation = default)
@@ -36,6 +39,10 @@ namespace _01_PharmaPlusQuery.Query
                     CouponCode = o.CouponCode,
                     AppliedCouponId = o.AppliedCouponId,
                     OrderCouponAmount = o.OrderCouponAmount,
+                    ReceiverAddress = o.ReceiverAddress,
+                    ReceiverFullName = o.ReceiverFullName,
+                    ReceiverMobile = o.ReceiverMobile,
+                    ReceiverZipCode = o.ReceiverZipCode,
                     Items = o.Items.Select(i => new OrderItemQueryModel
                     {
                         ProductId = i.ProductId,
@@ -43,7 +50,7 @@ namespace _01_PharmaPlusQuery.Query
                         Qty = i.Quantity,
                         DiscountRate = i.DiscountRate,
                         UnitPrice = i.UnitPrice,
-                        TotalPriceWithDiscount = i.TotalPriceWithDiscount
+                        TotalPriceWithDiscount = i.TotalPriceWithDiscount,
                     }).ToList()
                 })
                 .FirstOrDefaultAsync(cancellation);
@@ -96,7 +103,7 @@ namespace _01_PharmaPlusQuery.Query
                 .AsNoTracking()
                 .Where(o => o.UserId == userId &&
                             o.Status >= OrderStatus.Pending &&
-                            o.Status <= OrderStatus.Cancelled)
+                            o.Status <= OrderStatus.ReturnRequested)
                 .OrderByDescending(o => o.CreationDate)
                 .Select(o => new OrderSummaryQueryModel
                 {
@@ -105,7 +112,8 @@ namespace _01_PharmaPlusQuery.Query
                     TotalAmount = o.TotalAmount,
                     Status = o.Status,
                     CreationDate = o.CreationDate,
-                    PostTrackingNumber = o.ShipTrackingNo
+                    PostTrackingNumber = o.ShipTrackingNo,
+                    ItemsCount = o.Items.Count()
                 })
                 .ToListAsync(cancellation);
 
@@ -119,6 +127,5 @@ namespace _01_PharmaPlusQuery.Query
 
             return orders;
         }
-
     }
 }

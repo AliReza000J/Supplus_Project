@@ -1,4 +1,6 @@
-﻿using CommentManagement.Application;
+﻿using _01_PharmaPlusQuery.Contracts.Comment;
+using _01_PharmaPlusQuery.Query;
+using CommentManagement.Application;
 using CommentManagement.Application.Contracts.Comment;
 using CommentManagement.Domain.CommentAgg;
 using CommentManagement.Infrastructure.EFCore.Repository;
@@ -14,6 +16,8 @@ namespace CommentManagement.Infrastructure.Configuration
         {
             services.AddTransient<ICommentRepository, CommentRepository>();
             services.AddTransient<ICommentApplication, CommentApplication>();
+
+            services.AddTransient<ICommentQuery, CommentQuery>();
 
             services.AddDbContext<CommentContext>(x => x.UseSqlServer(connectionString));
         }
