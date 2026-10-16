@@ -102,6 +102,7 @@ namespace DiscountManagement.Application
             }
 
             result.TotalAmount = totalAmount;
+            result.TotalAutoDiscountAmount = totalProductDiscount;
             result.TotalDiscountAmount = totalProductDiscount;
 
             var amountAfterProductDiscounts = totalAmount - totalProductDiscount;
@@ -121,13 +122,17 @@ namespace DiscountManagement.Application
                         result.TotalDiscountAmount += orderCouponAmount;
                         result.AppliedCouponId = coupon.Id;
                         result.CouponCode = coupon.CouponCode;
+                        result.CouponRate = coupon.Percentage;
                         result.DiscountMessage = "کد تخفیف با موفقیت روی سبد خرید شما اعمال شد.";
                     }
                 }
                 else if (coupon.IsProductDiscount)
                 {
                     if (result.AppliedCouponId == coupon.Id)
+                    {
                         result.DiscountMessage = "کد تخفیف روی محصولات منتخب اعمال شد.";
+                        result.CouponRate = coupon.Percentage;
+                    }
                     else
                         result.DiscountMessage = "این کد تخفیف شامل محصولات موجود در سبد خرید شما نمی‌شود.";
                 }

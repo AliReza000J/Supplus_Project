@@ -36,7 +36,7 @@ namespace PharmaShared.Web.Services
             if (!await context.Accounts.AnyAsync(x => x.RoleId == 1))
             {
                 var superAdmin = new Account(
-                    "مدیر سیستم", "admin", "ProfilePhotos/admin-default-avatar.png", 1);
+                    "مدیر سیستم", "admin", "admin.png", 1);
 
                 context.Accounts.Add(superAdmin);
                 await context.SaveChangesAsync();

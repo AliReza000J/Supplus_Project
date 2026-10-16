@@ -25,6 +25,7 @@ namespace _01_PharmaPlusQuery.Query
                 .OrderByDescending(c => c.Id)
                 .Select(c => new UserCommentQueryModel
                 {
+                    Id = c.Id,
                     RecordId = c.RecordId,
                     Message = c.Message,
                     CreationDate = c.CreationDate.ToFarsi(),
@@ -32,11 +33,15 @@ namespace _01_PharmaPlusQuery.Query
                     LikeCount = c.LikeCount,
                     DislikeCount = c.DislikeCount,
                     Reply = c.AdminReply,
-                    ReplyDate = c.AdminReplyDate.ToFarsi()
+                    ReplyDate = c.AdminReplyDate.ToFarsi(),
+                    Status =
+                    (c.IsConfirmed && !c.IsCanceled) ? 2 :
+                    (c.IsCanceled && !c.IsConfirmed) ? 3 :
+                    (!c.IsCanceled && !c.IsConfirmed) ? 1 : 4
                 })
                 .ToListAsync(cancellation);
 
-            if (comments == null || !comments.Any())
+            if (comments == null || comments.Count == 0)
                 return comments;
 
             var productIds = comments.Select(c => c.RecordId).Distinct().ToList();

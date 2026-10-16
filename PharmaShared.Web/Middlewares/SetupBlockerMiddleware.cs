@@ -1,16 +1,22 @@
 ﻿using AccountManagement.Infrastructure.EFCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using PharmaShared.Web.Options;
 
 namespace PharmaShared.Web.Middlewares
 {
     public class SetupBlockerMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly SetupOptions _setupOptions;
 
-        public SetupBlockerMiddleware(RequestDelegate next)
+        public SetupBlockerMiddleware(
+            RequestDelegate next,
+            IOptions<SetupOptions> setupOptions)
         {
             _next = next;
+            _setupOptions = setupOptions.Value;
         }
 
         public async Task InvokeAsync(HttpContext context, AccountContext dbContext)
@@ -40,7 +46,7 @@ namespace PharmaShared.Web.Middlewares
 
             if (!SetupState.IsSetupCompleted && !isInstallPath)
             {
-                context.Response.Redirect("/install");
+                context.Response.Redirect(_setupOptions.InstallUrl);
                 return;
             }
 

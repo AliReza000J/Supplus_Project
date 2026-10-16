@@ -7,7 +7,6 @@
         public long UserId { get; set; }
         public string? Message { get; set; }
         public string CreationDate { get; set; }
-        //public long ParentId { get; set; }
         public int Rate { get; set; }
         public int LikeCount { get; set; }
         public int DislikeCount { get; set; }

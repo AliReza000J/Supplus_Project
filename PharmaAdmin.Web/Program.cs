@@ -21,6 +21,7 @@ using PharmaAdmin.Web.Middleware;
 using PharmaAdmin.Web.Services;
 using PharmaShared.Web;
 using PharmaShared.Web.Middlewares;
+using PharmaShared.Web.Options;
 using PharmaShared.Web.Services;
 using PharmaShared.Web.Services.ImageCleanup;
 using Polly;
@@ -44,6 +45,7 @@ var origins =
 
 var connectionString =
     config.GetConnectionString("PharmaPlusDB")
+    //config.GetConnectionString("Supplus_DB")
     ?? throw new InvalidOperationException(
         "Connection string 'PharmaPlusDB' was not found.");
 
@@ -94,7 +96,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 
 builder.Services.AddHangfire(c =>
-    c.UseSqlServerStorage(connectionString)); 
+    c.UseSqlServerStorage(connectionString));
 builder.Services.AddHangfireServer(options =>
 {
     options.WorkerCount = 2;
@@ -163,7 +165,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 
-    options.Secure = 
+    options.Secure =
         forceHttps
             ? CookieSecurePolicy.Always
             : CookieSecurePolicy.SameAsRequest;
@@ -180,12 +182,13 @@ builder.Services
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 // Authorization policies
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2)));
-    options.AddPolicy("Support", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3)));
-    options.AddPolicy("ContentCreator", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3), Roles.GetRoleBy(4)));
-});
+builder.Services.AddAuthorizationBuilder()
+    // Authorization policies
+    .AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2)))
+    // Authorization policies
+    .AddPolicy("Support", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3)))
+    // Authorization policies
+    .AddPolicy("ContentCreator", policy => policy.RequireRole(Roles.GetRoleBy(1), Roles.GetRoleBy(2), Roles.GetRoleBy(3), Roles.GetRoleBy(4)));
 
 // --- 7. Razor Pages ---
 builder.Services.AddRazorPages()
@@ -220,6 +223,9 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+builder.Services.Configure<SetupOptions>(
+    builder.Configuration.GetSection("Setup"));
 
 var app = builder.Build();
 

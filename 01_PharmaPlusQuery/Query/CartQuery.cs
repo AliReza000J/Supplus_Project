@@ -1,5 +1,4 @@
-﻿using _0_Framework.Application;
-using _01_PharmaPlusQuery.Contracts.Cart;
+﻿using _01_PharmaPlusQuery.Contracts.Cart;
 using DiscountManagement.Domain.DiscountAgg;
 using DiscountManagement.Infrastructure.EFCore;
 using InventoryMangement.Infrastructure.EFCore;
@@ -36,7 +35,7 @@ namespace _01_PharmaPlusQuery.Query
 
             var productInfo = await shopContext.Products
                 .Where(x => productIds.Contains(x.Id))
-                .Select(x => new { x.Id, x.Picture, x.Name, x.CategoryId, x.Brand })
+                .Select(x => new { x.Id, x.Picture, x.Name, x.CategoryId, x.Brand, x.Category.FullSlug, x.Slug })
                 .ToListAsync(cancellation);
 
             var inventoryList = await inventoryContext.Inventory
@@ -45,7 +44,7 @@ namespace _01_PharmaPlusQuery.Query
 
             var activeDiscounts = await discountContext.Discounts
                 .Include(x => x.Targets)
-                .Where(x => x.IsActive && x.Type == (Discount.DiscountType)1 
+                .Where(x => x.IsActive && x.Type == (Discount.DiscountType)1
                 && x.ApplyType == (Discount.DiscountApplyType)1) // 1: Automatic, 1: OnProduct
                 .Where(x => x.StartDate < now && x.EndDate > now)
                 .ToListAsync(cancellation);
@@ -56,6 +55,7 @@ namespace _01_PharmaPlusQuery.Query
             };
 
             double TotalAmount = 0;
+            double TotalDiscountAmount = 0;
 
             foreach (var item in cart.Items)
             {
@@ -76,6 +76,7 @@ namespace _01_PharmaPlusQuery.Query
                 var invQty = inv?.CalculateCurrentCount() ?? 0;
                 var unitPrice = inv?.UnitPrice ?? 0;
                 double totalItemAmount = 0;
+                double totalItemDiscountAmount = 0;
                 double discountedPrice = 0;
                 int discountedQty = 0;
                 int discountRate = bestDiscount?.Percentage ?? 0;
@@ -85,8 +86,6 @@ namespace _01_PharmaPlusQuery.Query
                     double discountAmount = (unitPrice * discountRate) / 100;
                     discountedPrice = unitPrice - discountAmount;
 
-                    // مدیریت سقف تعداد تخفیف (جایگزین ProductCount قدیمی)
-                    // اگر MaxDiscountQuantity نال یا صفر باشد، یعنی به کل تعداد آیتم تخفیف می‌خورد
                     int maxAllowedInDiscount = (bestDiscount.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
                         ? item.Quantity
                         : bestDiscount.MaxDiscountQuantity.Value;
@@ -94,8 +93,8 @@ namespace _01_PharmaPlusQuery.Query
                     discountedQty = Math.Min(item.Quantity, maxAllowedInDiscount);
                     int normalQty = item.Quantity - discountedQty;
 
-                    // محاسبه مجموع قیمت آیتم (بخش تخفیف‌دار + بخش بدون تخفیف)
                     totalItemAmount = (discountedQty * discountedPrice) + (normalQty * unitPrice);
+                    totalItemDiscountAmount = discountedQty * discountAmount;
                 }
                 else
                 {
@@ -106,20 +105,25 @@ namespace _01_PharmaPlusQuery.Query
                     CartKey = cartKey,
                     ProductId = prod.Id,
                     ProductName = prod.Name,
+                    ProductFullSlug = $"{prod.FullSlug}/{prod.Slug}",
                     Picture = prod.Picture,
                     Qty = item.Quantity,
-                    UnitPrice = unitPrice.ToMoney(),
-                    PriceWithDiscount = discountedQty > 0 ? discountedPrice.ToMoney() : string.Empty,
+                    UnitPrice = unitPrice,
+                    PriceWithDiscount = discountedQty > 0 ? discountedPrice : 0,
                     DiscountedQty = discountedQty,
                     InvQty = (int)invQty,
                     DiscountRate = discountRate,
-                    HasDiscount = (discountRate > 0 && discountedQty > 0)
+                    HasDiscount = (discountRate > 0 && discountedQty > 0),
+                    TotalItemPrice = totalItemAmount
                 });
 
-                TotalAmount += totalItemAmount;
+                TotalAmount += unitPrice * item.Quantity;
+                TotalDiscountAmount += totalItemDiscountAmount;
             }
 
-            vm.TotalAmount = TotalAmount.ToMoney();
+            vm.TotalAmount = TotalAmount;
+            vm.TotalDiscountAmount = TotalDiscountAmount;
+            vm.TotalFinalAmount = TotalAmount - TotalDiscountAmount;
 
             return vm;
         }

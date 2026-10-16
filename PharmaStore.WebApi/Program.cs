@@ -11,10 +11,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PharmaShared.Web;
 using PharmaShared.Web.Middlewares;
+using PharmaShared.Web.Options;
 using PharmaShared.Web.Services;
 using PharmaStore.WebApi.Filters;
 using PharmaStore.WebApi.Middlewares;
-using Polly;
+using QuestPDF.Drawing;
 using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Events;
@@ -41,6 +42,7 @@ if (origins.Length == 0)
 
 var connectionString =
     config.GetConnectionString("PharmaPlusDB")
+    //config.GetConnectionString("Supplus_DB")
     ?? throw new InvalidOperationException(
         "Connection string 'PharmaPlusDB' was not found.");
 
@@ -58,6 +60,19 @@ var jwtAudience =
     config["Jwt:Audience"]
     ?? throw new InvalidOperationException(
         "Jwt:Audience is missing.");
+
+var fontPath = Path.Combine(Directory.GetCurrentDirectory(), "Fonts", "XBNiloofar.ttf");
+if (File.Exists(fontPath))
+{
+    using var fontStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read);
+    FontManager.RegisterFont(fontStream);
+}
+var vazirmatnPath = Path.Combine(Directory.GetCurrentDirectory(), "Fonts", "Vazirmatn-Regular.ttf");
+if (File.Exists(vazirmatnPath))
+{
+    using var fontStream = new FileStream(vazirmatnPath, FileMode.Open, FileAccess.Read);
+    FontManager.RegisterFont(fontStream);
+}
 
 // --- 1. Logging (Serilog) ---
 Log.Logger = new LoggerConfiguration()
@@ -142,7 +157,7 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
     options.RequireHttpsMetadata = forceHttps;
-    
+
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -187,6 +202,9 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<SwaggerDefaultResponsesOperationFilter>();
     c.OperationFilter<AddAuthRequirementOperationFilter>();
 });
+
+builder.Services.Configure<SetupOptions>(
+    builder.Configuration.GetSection("Setup"));
 
 var app = builder.Build();
 

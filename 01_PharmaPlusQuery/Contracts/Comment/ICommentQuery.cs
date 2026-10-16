@@ -9,8 +9,10 @@ namespace _01_PharmaPlusQuery.Contracts.Comment
 
     public class UserCommentQueryModel
     {
+        public long Id { get; set; }
         public string? Message { get; set; }
         public string CreationDate { get; set; }
+        public int Status { get; set; }
         public int Rate { get; set; }
         public int LikeCount { get; set; }
         public int DislikeCount { get; set; }

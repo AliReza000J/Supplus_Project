@@ -25,18 +25,16 @@ namespace _01_PharmaPlusQuery.Contracts.Product
         public string PictureAlt { get; set; }
         public string PictureTitle { get; set; }
 
-        public double DoublePrice { get; set; }
-        public string Price { get; set; }
+        public double Price { get; set; }
 
-        public double DoublePriceWithDiscount { get; set; }
-        public string PriceWithDiscount { get; set; }
+        public double PriceWithDiscount { get; set; }
         public int DiscountRate { get; set; }
         public bool HasDiscount { get; set; }
-        public int DiscountedQty { get; set; } = 0;
+        public long DiscountedQty { get; set; } = 0;
         public string? DiscountExpireDate { get; set; }
 
         public bool IsInStock { get; set; }
-        public long InStockQty { get; set; } = 0;
+        public long InvQty { get; set; } = 0;
 
         public int CommentCount { get; set; }
         public float AvgRate { get; set; }
@@ -55,8 +53,9 @@ namespace _01_PharmaPlusQuery.Contracts.Product
 
     public class ProductSpecificationModel
     {
-        public string CountryOfOrigin { get; set; }
-        public string ProductForm { get; set; }
-        public Dictionary<string, string> Attributes { get; set; } = new Dictionary<string, string>();
+        public string CountryOfOrigin { get; set; } = string.Empty;
+        public string ProductForm { get; set; } = string.Empty;
+        public string ProductWeight { get; set; } = string.Empty;
+        public Dictionary<string, string> Attributes { get; set; } = new();
     }
 }

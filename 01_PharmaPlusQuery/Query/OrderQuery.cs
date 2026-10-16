@@ -1,6 +1,5 @@
 ﻿using _0_Framework.Application;
 using _01_PharmaPlusQuery.Contracts.Order;
-using _01_PharmaPlusQuery.Contracts.Product;
 using AccountManagement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
 using ShopManagement.Domain.OrderAgg;
@@ -34,8 +33,8 @@ namespace _01_PharmaPlusQuery.Query
                     Status = o.Status,
                     PaymentMethodInt = o.PayMethod,
                     PostTrackingNumber = o.ShipTrackingNo,
-                    CreationDate = o.CreationDate,
-                    LastModifiedDate = o.LastModifiedDate,
+                    CreationDate = o.CreationDate.ToFarsi(),
+                    LastModifiedDate = o.LastModifiedDate.ToFarsiFull(),
                     CouponCode = o.CouponCode,
                     AppliedCouponId = o.AppliedCouponId,
                     OrderCouponAmount = o.OrderCouponAmount,
@@ -50,6 +49,8 @@ namespace _01_PharmaPlusQuery.Query
                         Qty = i.Quantity,
                         DiscountRate = i.DiscountRate,
                         UnitPrice = i.UnitPrice,
+                        ProductPicture = i.Picture,
+                        OrderId = i.OrderId,
                         TotalPriceWithDiscount = i.TotalPriceWithDiscount,
                     }).ToList()
                 })
@@ -71,26 +72,14 @@ namespace _01_PharmaPlusQuery.Query
                 })
                 .ToDictionaryAsync(p => p.Id, cancellation);
 
-            order.DiscountAmountDisplay = order.DiscountAmount.ToMoney();
-            order.PayAmountDisplay = order.PayAmount.ToMoney();
-            order.OrderCouponAmountDisplay = order.OrderCouponAmount.ToMoney();
-            order.TotalAmountDisplay = order.TotalAmount.ToMoney();
-
             order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
             order.PaymentMethod = PaymentMethod.GetMethodByCode(order.PaymentMethodInt);
 
-            order.CreationDateDisplay = order.CreationDate.ToFarsi();
-            order.LastModifiedDateDisplay = order.LastModifiedDate.ToFarsiFull();
-
             foreach (var item in order.Items)
             {
-                item.UnitPriceDisplay = item.UnitPrice.ToMoney();
-                item.TotalPriceWithDiscountDisplay = item.TotalPriceWithDiscount.ToMoney();
-                item.DiscountRateDisplay = item.DiscountRate.ToString() + "%";
-
                 if (productsDict.TryGetValue(item.ProductId, out var p))
                 {
-                    item.ProductFullPath = $"{p.FullSlug}/{p.Slug}";
+                    item.ProductFullSlug = $"{p.FullSlug}/{p.Slug}";
                 }
             }
 
@@ -111,19 +100,12 @@ namespace _01_PharmaPlusQuery.Query
                     PayAmount = o.PayAmount,
                     TotalAmount = o.TotalAmount,
                     Status = o.Status,
-                    CreationDate = o.CreationDate,
+                    CreationDate = o.CreationDate.ToFarsi(),
+                    StatusTitle = OrderStatus.GetStatusTitleByCode(o.Status),
                     PostTrackingNumber = o.ShipTrackingNo,
                     ItemsCount = o.Items.Count()
                 })
                 .ToListAsync(cancellation);
-
-            foreach (var order in orders)
-            {
-                order.PayAmountDisplay = order.PayAmount.ToMoney();
-                order.TotalAmountDisplay = order.TotalAmount.ToMoney();
-                order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
-                order.CreationDateDisplay = order.CreationDate.ToFarsi();
-            }
 
             return orders;
         }

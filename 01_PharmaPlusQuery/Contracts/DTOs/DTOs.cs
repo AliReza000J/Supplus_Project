@@ -8,6 +8,7 @@ namespace _01_PharmaPlusQuery.Contracts.DTOs
         public long ProductId { get; set; }
         public double UnitPrice { get; set; }
         public bool InStock { get; set; }
+        public long InvQty { get; set; }
     }
 
     public class SearchByBrandResult

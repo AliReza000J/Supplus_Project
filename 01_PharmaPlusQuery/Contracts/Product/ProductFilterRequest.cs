@@ -7,7 +7,8 @@
         PriceDesc = 3,
         Popularity = 4,
         HighestDiscount = 5,
-        MostViewed = 6
+        MostViewed = 6,
+        TopSales = 7,
     }
     public class ProductFilterRequest
     {

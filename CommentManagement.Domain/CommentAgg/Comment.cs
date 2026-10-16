@@ -117,8 +117,7 @@ namespace CommentManagement.Domain.CommentAgg
         public void Remove()
         {
             IsCanceled = true;
-            IsConfirmed = false;
-            Message = "[این نظر توسط نویسنده آن حذف شده است]";
+            IsConfirmed = true;
             LastModified = DateTime.Now;
         }
 

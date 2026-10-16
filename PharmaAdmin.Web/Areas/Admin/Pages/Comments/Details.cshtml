@@ -31,13 +31,17 @@
             <dt class="col-md-10">@Model.Comment?.CommentDate.ToPersianNumber()</dt>
             <dt class="col-md-2">وضعیت</dt>
             <dt class="col-md-10">
-                @if (Model.Comment.IsCanceled)
+                @if (Model.Comment.IsCanceled && !Model.Comment.IsConfirmed)
                 {
                     <span class="badge badge-danger">کنسل شده</span>
                 }
-                else if (Model.Comment.IsConfirmed)
+                else if (Model.Comment.IsConfirmed && !Model.Comment.IsCanceled)
                 {
                     <span class="badge badge-success">تأیید شده</span>
+                }
+                else if (Model.Comment.IsConfirmed && Model.Comment.IsCanceled)
+                {
+                    <span class="badge badge-danger">حذف شده</span>
                 }
                 else
                 {

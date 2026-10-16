@@ -89,6 +89,7 @@ namespace ShopManagement.Application
         public async Task<OperationResult> IncreaseProductViewCountAsync(long productId, long userId = 0, CancellationToken cancellation = default)
         {
             var op = new OperationResult();
+
             var product = await _productRepository.GetAsync(productId, cancellation);
             if (product == null)
                 return op.Failed(ApplicationMessages.RecordNotFound);
@@ -97,9 +98,10 @@ namespace ShopManagement.Application
 
             _productViewRepository.Create(new ProductView(productId, userId));
 
-            await _productViewRepository.SaveChangesAsync(cancellation);
+            await _productRepository.SaveChangesAsync(cancellation);
             return op.Succeeded();
         }
+
 
         public async Task<List<ProductViewModel>> Search(ProductSearchModel searchModel, CancellationToken cancellation)
         {

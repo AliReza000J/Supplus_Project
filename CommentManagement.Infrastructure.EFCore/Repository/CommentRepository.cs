@@ -201,7 +201,7 @@ namespace CommentManagement.Infrastructure.EFCore.Repository
             x.UserId == userId &&
             x.Type == type &&
             x.RecordId == ownerRecordId &&
-            !x.IsCanceled,
+            !x.IsCanceled && x.IsConfirmed, // approved comments
             cancellation);
         }
     }

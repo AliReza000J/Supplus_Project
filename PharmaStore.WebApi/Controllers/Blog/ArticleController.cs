@@ -5,6 +5,7 @@ using BlogManagement.Application.Contracts.Article;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace PharmaStore.WebApi.Controllers.Blog
@@ -20,20 +21,22 @@ namespace PharmaStore.WebApi.Controllers.Blog
     [ApiController]
     public class ArticleController : ControllerBase
     {
-        private readonly ILogger<ArticleController> _logger;
+        private readonly IMemoryCache _cache;
         private readonly IArticleQuery _articleQuery;
         private readonly IArticleCategoryQuery _articleCategoryQuery;
         private readonly IArticleApplication _articleApplication;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ArticleController"/> class.
         /// </summary>
-        public ArticleController(IArticleQuery articleQuery, IArticleCategoryQuery articleCategoryQuery, ILogger<ArticleController> logger, IArticleApplication articleApplication)
+        public ArticleController(IArticleQuery articleQuery, IArticleCategoryQuery articleCategoryQuery, IMemoryCache cache, IArticleApplication articleApplication, IServiceScopeFactory scopeFactory)
         {
             _articleQuery = articleQuery;
             _articleCategoryQuery = articleCategoryQuery;
-            _logger = logger;
             _articleApplication = articleApplication;
+            _cache = cache;
+            _scopeFactory = scopeFactory;
         }
 
         /// <summary>
@@ -69,7 +72,10 @@ namespace PharmaStore.WebApi.Controllers.Blog
             if (category == null || article.CategorySlug != category.Slug)
                 return NotFound(ApiResponse<ArticleQueryModel>.Fail(message: "مقاله با مسیر گروه مقاله موردنظر مطابقت ندارد."));
 
-            var articleId = await _articleQuery.GetArticleIdBySlug(articleSlug, cancellation);
+            //var articleId = await _articleQuery.GetArticleIdBySlug(articleSlug, cancellation);
+            var articleId = article.Id > 0
+                ? article.Id
+                : await _articleQuery.GetArticleIdBySlug(articleSlug, cancellation);
             if (articleId <= 0)
                 return NotFound(ApiResponse<ArticleQueryModel>.Fail(message: "شناسه مقاله معتبر نیست."));
 
@@ -80,26 +86,56 @@ namespace PharmaStore.WebApi.Controllers.Blog
             if (long.TryParse(idClaim, out var parsedId))
                 userId = parsedId;
 
-            var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "ANON";
-
-            if (!Request.Cookies.ContainsKey(cookieName))
+            var userAgent = Request.Headers.UserAgent.ToString().ToLowerInvariant();
+            bool isBot = userAgent.Contains("bot") ||
+                         userAgent.Contains("crawler") ||
+                         userAgent.Contains("spider") ||
+                         userAgent.Contains("curl");
+            if (!isBot)
             {
-                var now = DateTime.UtcNow;
+                var deviceId = Request.Headers["X-Device-Id"].ToString().Trim();
+                string clientIdentifier;
 
-                var op = await _articleApplication.IncrementArticleViewCountAsync(articleId, userId, cancellation);
-                if (op.IsSucceeded)
+                if (userId > 0)
                 {
-                    Response.Cookies.Append(
-                    cookieName,
-                    $"2ck-{username}_{now}",
-                    new CookieOptions
+                    clientIdentifier = $"U_{userId}";
+                }
+                else if (!string.IsNullOrEmpty(deviceId) && deviceId.Length <= 64)
+                {
+                    clientIdentifier = $"D_{deviceId}";
+                }
+                else
+                {
+                    var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    var realIp = !string.IsNullOrWhiteSpace(forwardedFor)
+                        ? forwardedFor.Split(',')[0].Trim()
+                        : HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+
+                    clientIdentifier = $"IP_{realIp}";
+                }
+
+                string cacheKey = $"av_{articleId}_{clientIdentifier}";
+
+                if (!_cache.TryGetValue(cacheKey, out _))
+                {
+                    _cache.Set(cacheKey, true, TimeSpan.FromHours(4));
+
+                    article.ViewCount++;
+
+                    _ = Task.Run(async () =>
                     {
-                        Expires = DateTimeOffset.UtcNow.AddHours(16),
-                        HttpOnly = true,
-                        Secure = true,
-                        SameSite = SameSiteMode.Lax
-                    }
-                );
+                        using var scope = _scopeFactory.CreateScope();
+                        try
+                        {
+                            var articleApp = scope.ServiceProvider.GetRequiredService<IArticleApplication>();
+                            await articleApp.IncrementArticleViewCountAsync(articleId, userId, CancellationToken.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            var logger = scope.ServiceProvider.GetService<ILogger<ArticleController>>();
+                            logger?.LogError(ex, "Error on increasing view for article: #{ArticleId} and user: #{UserId}", articleId, userId);
+                        }
+                    });
                 }
             }
 

@@ -455,6 +455,21 @@
                                 ثبت ارسال سفارش و تحویل به پست
                             </button>
                         </form>
+
+                        <form method="post" asp-page-handler="RejectPayment" class="m-t-10">
+                            <input type="hidden" asp-for="RejectPayment.OrderId" />
+                            <div class="form-group">
+                                <label>دلیل لغو سفارش سیستم</label>
+                                <select asp-for="RejectPayment.SelectedReason" class="form-control">
+                                    <option value="USER_CANCEL">لغو سفارش بنا به درخواست کاربر</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>توضیحات لغو</label>
+                                <textarea asp-for="RejectPayment.ReasonDescription" class="form-control" rows="2"></textarea>
+                            </div>
+                            <button class="btn btn-danger">لغو سفارش</button>
+                        </form>
                     }
 
                     @if (Model.Order.Status == OrderStatus.Shipped)

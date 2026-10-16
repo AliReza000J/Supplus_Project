@@ -144,6 +144,11 @@ namespace AccountManagement.Domain.AccountAgg
             IsProfileCompleted = !string.IsNullOrWhiteSpace(Fullname);
         }
 
+        public void SetProfilePhoto(string path)
+        {
+            ProfilePhoto = path;
+        }
+
         public void ChangePassword(string newPassword)
         {
             Password = newPassword;

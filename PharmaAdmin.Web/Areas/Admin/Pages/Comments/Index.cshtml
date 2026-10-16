@@ -105,17 +105,21 @@
                                             <td>@item.Rate.ToString().ToPersianNumber()</td>
                                             <td>@item.LastModified.ToPersianNumber()</td>
                                             <td class="text-center">
-                                                @if (item.IsCanceled)
+                                                @if (item.IsCanceled && !item.IsConfirmed)
                                                 {
                                                     <span class="text-danger">رد شده</span>
                                                 }
-                                                else if (!item.IsConfirmed)
+                                                else if (item.IsConfirmed && !item.IsCanceled)
                                                 {
-                                                    <span class="text-warning">در انتظار</span>
+                                                    <span class="text-success">تایید شده</span>
+                                                }
+                                                else if (item.IsConfirmed && item.IsCanceled)
+                                                {
+                                                    <span class="text-danger">حذف شده</span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-success">تایید شده</span>
+                                                    <span class="text-warning">در انتظار</span>
                                                 }
                                             </td>
                                             <td>
@@ -133,7 +137,7 @@
                                                     <a asp-page="./Index" asp-page-handler="Cancel" asp-route-id="@item.Id"
                                                        class="btn btn-danger m-b-5">رد</a>
                                                 }
-                                                else if (item.IsCanceled)
+                                                else if (item.IsCanceled && !item.IsConfirmed)
                                                 {
                                                     <a asp-page="./Index" asp-page-handler="Confirm" asp-route-id="@item.Id"
                                                        class="btn btn-success m-b-5">تایید</a>

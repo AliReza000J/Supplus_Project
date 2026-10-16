@@ -58,13 +58,21 @@ namespace PharmaStore.WebApi.Controllers.Site
             };
             return Ok(ApiResponse<TicketTitlesDto>.Ok(result));
         }
-
         [HttpGet("faq")]
-        public async Task<ActionResult<ApiResponse<FaqDto>>> GetFaq(CancellationToken cancellation)
+        public async Task<ActionResult<ApiResponse<IEnumerable<FaqItemResponseDto>>>> GetFaq(CancellationToken cancellation)
         {
             var settings = await _query.Execute(cancellation);
-            return Ok(ApiResponse<FaqDto>.Ok(settings.Faq));
+
+            var faqListWithIds = settings.Faq.Items.Select((item, index) => new FaqItemResponseDto
+            {
+                FaqId = index + 1,
+                Question = item.Question,
+                Answer = item.Answer
+            }).ToList();
+
+            return Ok(ApiResponse<IEnumerable<FaqItemResponseDto>>.Ok(faqListWithIds));
         }
+
 
         [HttpGet("terms")]
         public async Task<ActionResult<ApiResponse<TermsAndConditionsDto>>> GetTerms(CancellationToken cancellation)

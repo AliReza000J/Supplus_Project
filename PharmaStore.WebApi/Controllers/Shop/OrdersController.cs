@@ -237,7 +237,8 @@ namespace PharmaStore.WebApi.Controllers.Shop
             if (orderViewModel == null)
                 return StatusCode(404, ApiResponse<object>.Fail("موردی یافت نشد."));
 
-            if (!(orderViewModel.Status >= OrderStatus.Paid && orderViewModel.Status <= OrderStatus.Delivered))
+            if (!(orderViewModel.Status >= OrderStatus.Paid && orderViewModel.Status <= OrderStatus.ReturnRequested &&
+                orderViewModel.Status != OrderStatus.Cancelled && orderViewModel.Status != OrderStatus.Refunded))
                 return StatusCode(404, ApiResponse<object>.Fail("موردی یافت نشد."));
 
             string logoPath = await _getLogoCommand.Execute(cancellation);

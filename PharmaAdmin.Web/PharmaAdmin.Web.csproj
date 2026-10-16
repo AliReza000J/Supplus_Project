@@ -47,7 +47,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Keys\" />
-	  <Folder Include="wwwroot\Pictures\Orders\" />
+	  <Folder Include="wwwroot\Pictures\ProfilePhotos\کاربر سایت\" />
 	</ItemGroup>
 
 </Project>

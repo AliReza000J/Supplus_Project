@@ -136,7 +136,7 @@ namespace CommentManagement.Application
         {
             var op = new OperationResult();
             var comment = await _commentRepository.GetAsync(id, cancellation);
-            if (comment == null) return op.Failed("کامنت یافت نشد.");
+            if (comment == null || comment.IsCanceled) return op.Failed("کامنت یافت نشد.");
 
             if (await _commentRepository.OwnsComment(id, userId, cancellation))
             {

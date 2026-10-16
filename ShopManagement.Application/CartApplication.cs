@@ -221,7 +221,7 @@ namespace ShopManagement.Application
             if (cart == null)
                 return op.Failed("سبد خرید یافت نشد!");
 
-            if (!cart.Items.Any() && command.Items != null && command.Items.Any())
+            if (cart.Items.Count == 0 && command.Items != null && command.Items.Count != 0)
             {
                 foreach(var item in command.Items)
                 {

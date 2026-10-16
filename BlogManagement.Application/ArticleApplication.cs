@@ -81,16 +81,20 @@ namespace BlogManagement.Application
         public async Task<OperationResult> IncrementArticleViewCountAsync(long articleId, long userId = 0, CancellationToken cancellation = default)
         {
             var op = new OperationResult();
+
             var article = await _articleRepository.GetAsync(articleId, cancellation);
             if (article == null)
                 return op.Failed(ApplicationMessages.RecordNotFound);
 
             article.AddView();
+
             _articleViewRepository.Create(new ArticleView(articleId, userId));
 
-            await _articleViewRepository.SaveChangesAsync(cancellation);
+            await _articleRepository.SaveChangesAsync(cancellation);
+
             return op.Succeeded();
         }
+
 
         public async Task<List<ArticleViewModel>> Search(ArticleSearchModel searchModel, CancellationToken cancellation)
         {

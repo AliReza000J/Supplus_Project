@@ -22,16 +22,16 @@ namespace PharmaStore.WebApi.Controllers.Shop
         private readonly IProductQuery _productQuery;
         private readonly IProductApplication _productApplication;
         private readonly IProductCategoryQuery _productCategoryQuery;
-        private readonly ILogger<ProductController> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         public ProductController(IProductQuery productQuery,
-            ILogger<ProductController> logger, IProductCategoryQuery productCategoryQuery, IProductApplication productApplication, IMemoryCache cache)
+            IServiceScopeFactory scopeFactory, IProductCategoryQuery productCategoryQuery, IProductApplication productApplication, IMemoryCache cache)
         {
             _productQuery = productQuery;
-            _logger = logger;
             _productCategoryQuery = productCategoryQuery;
             _productApplication = productApplication;
             _cache = cache;
+            _scopeFactory = scopeFactory;
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace PharmaStore.WebApi.Controllers.Shop
                     .Fail(message: "آدرس محصول ناقص است."));
 
             long userId = 0;
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (long.TryParse(idClaim, out var parsedId))
                 userId = parsedId;
 
@@ -91,30 +91,58 @@ namespace PharmaStore.WebApi.Controllers.Shop
             if (productId <= 0)
                 return NotFound(ApiResponse<ProductQueryModel>.Fail(message: "شناسه محصول معتبر نیست."));
 
-            var deviceId = Request.Headers["X-Device-Id"].ToString();
 
-            string clientIdentifier;
-            if (userId > 0)
+            var userAgent = Request.Headers.UserAgent.ToString().ToLowerInvariant();
+            bool isBot = userAgent.Contains("bot") ||
+                         userAgent.Contains("crawler") ||
+                         userAgent.Contains("spider") ||
+                         userAgent.Contains("curl");
+            if (!isBot)
             {
-                clientIdentifier = $"U_{userId}";
-            }
-            else if (!string.IsNullOrEmpty(deviceId))
-            {
-                clientIdentifier = $"D_{deviceId}";
-            }
-            else
-            {
-                clientIdentifier = $"IP_{HttpContext.Connection.RemoteIpAddress}";
-            }
+                var deviceId = Request.Headers["X-Device-Id"].ToString().Trim();
+                string clientIdentifier;
 
-            string cacheKey = $"pv_{productId}_{clientIdentifier}";
-
-            if (!_cache.TryGetValue(cacheKey, out _))
-            {
-                var op = await _productApplication.IncreaseProductViewCountAsync(productId, userId, cancellationToken);
-                if (op.IsSucceeded)
+                if (userId > 0)
                 {
-                    _cache.Set(cacheKey, true, TimeSpan.FromHours(16));
+                    clientIdentifier = $"U_{userId}";
+                }
+                else if (!string.IsNullOrEmpty(deviceId) && deviceId.Length <= 64)
+                {
+                    clientIdentifier = $"D_{deviceId}";
+                }
+                else
+                {
+                    var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    var realIp = !string.IsNullOrWhiteSpace(forwardedFor)
+                        ? forwardedFor.Split(',')[0].Trim()
+                        : HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+
+                    clientIdentifier = $"IP_{realIp}";
+                }
+
+                string cacheKey = $"pv_{productId}_{clientIdentifier}";
+
+                if (!_cache.TryGetValue(cacheKey, out _))
+                {
+                    _cache.Set(cacheKey, true, TimeSpan.FromHours(4));
+
+                    product.ViewCount++;
+
+                    _ = Task.Run(async () =>
+                    {
+                        using var scope = _scopeFactory.CreateScope();
+                        try
+                        {
+                            var productApp = scope.ServiceProvider.GetRequiredService<IProductApplication>();
+                            await productApp.IncreaseProductViewCountAsync(productId, userId, CancellationToken.None);
+                        }
+                        catch (Exception ex)
+                        {
+                            var logger = scope.ServiceProvider.GetService<ILogger<ProductController>>();
+                            logger?.LogError(ex, "Error on increasing view for product: #{ProductId} and user: #{UserId}", productId, userId);
+                        }
+                    }, cancellationToken);
+
                 }
             }
 

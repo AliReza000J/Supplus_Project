@@ -45,5 +45,14 @@
 		<ProjectReference Include="..\SiteManagement.Configuration\SiteManagement.Configuration.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Fonts\Vazirmatn-Regular.ttf">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Fonts\XB Niloofar.ttf">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 
 </Project>

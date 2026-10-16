@@ -80,15 +80,15 @@ namespace ShopManagement.Infrastructure.EFCore.Repository
                 .ToListAsync(cancellation);
         }
 
-        public async Task<List<(long ProductId, long CategoryId, string Brand, string Name, string Picture)>> GetProductDetailsByIdsAsync(List<long> productIds, CancellationToken cancellation)
+        public async Task<List<(long ProductId, long CategoryId, string Brand, string Name, string Picture, string Specifications)>> GetProductDetailsByIdsAsync(List<long> productIds, CancellationToken cancellation)
         {
             var products = await _context.Products
                 .Where(x => productIds.Contains(x.Id))
-                .Select(x => new { x.Id, x.CategoryId, x.Brand, x.Name, x.Picture })
+                .Select(x => new { x.Id, x.CategoryId, x.Brand, x.Name, x.Picture, x.Specifications })
                 .ToListAsync(cancellation);
 
             return products
-                .Select(x => (x.Id, x.CategoryId, x.Brand, x.Name, x.Picture))
+                .Select(x => (x.Id, x.CategoryId, x.Brand, x.Name, x.Picture, x.Specifications))
                 .ToList();
         }
 

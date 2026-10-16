@@ -102,16 +102,22 @@
                                 </div>
                                 <div class="panel-body">
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <div class="form-group">
                                                 <label class="control-label">کشور سازنده</label>
                                                 <input type="text" id="spec-country" class="form-control" placeholder="مثال: ایران">
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <div class="form-group">
                                                 <label class="control-label">شکل محصول</label>
                                                 <input type="text" id="spec-form" class="form-control" placeholder="مثال: قرص، شربت">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label class="control-label">وزن محصول برحسب گرم</label>
+                                                <input type="number" id="spec-weight" class="form-control" placeholder="مثال: 100 ">
                                             </div>
                                         </div>
                                     </div>
@@ -167,21 +173,30 @@
     <script>
         $(document).ready(function () {
             const existingSpecVal = $('#hidden-specifications').val();
-            let specData = { CountryOfOrigin: '', ProductForm: '', Attributes: {} };
+            let specData = { CountryOfOrigin: '', ProductForm: '', ProductWeight: '', Attributes: {} };
 
             if (existingSpecVal) {
                 try {
                     specData = JSON.parse(existingSpecVal);
                     $('#spec-country').val(specData.CountryOfOrigin || '');
                     $('#spec-form').val(specData.ProductForm || '');
+                    $('#spec-weight').val(specData.ProductWeight || '');
 
-                    if (specData.Attributes) {
-                        for (const [key, value] of Object.entries(specData.Attributes)) {
-                            addAttributeRow(key, value);
+                    if (specData.Attributes && typeof specData.Attributes === 'object') {
+                        const entries = Object.entries(specData.Attributes);
+                        if (entries.length > 0) {
+                            for (const [key, value] of entries) {
+                                addAttributeRow(key, value);
+                            }
+                        } else {
+                            addAttributeRow();
                         }
+                    } else {
+                        addAttributeRow();
                     }
                 } catch (e) {
-                    console.error("خطا در پارس کردن JSON مشخصات.");
+                    console.error("خطا در پارس کردن JSON مشخصات:", e);
+                    addAttributeRow();
                 }
             } else {
                 addAttributeRow();
@@ -199,13 +214,15 @@
                 const rowHtml = `
                     <div class="row attr-row m-b-10">
                         <div class="col-md-5">
-                            <input type="text" class="form-control attr-key" placeholder="عنوان (مثال: وزن)" value="${key}" />
+                            <input type="text" class="form-control attr-key" placeholder="عنوان مشخصه" value="${key}" />
                         </div>
                         <div class="col-md-5">
-                            <input type="text" class="form-control attr-value" placeholder="مقدار (مثال: 50 گرم)" value="${value}" />
+                            <input type="text" class="form-control attr-value" placeholder="مقدار" value="${value}" />
                         </div>
                         <div class="col-md-2">
-                            <button type="button" class="btn btn-danger btn-sm btn-remove-attr" style="margin-top: 2px;">حذف</button>
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-attr" style="margin-top: 2px;">
+                                <i class="fa fa-trash"></i> حذف
+                            </button>
                         </div>
                     </div>
                 `;
@@ -214,14 +231,15 @@
 
             $('form').on('submit', function () {
                 const finalSpec = {
-                    CountryOfOrigin: $('#spec-country').val().trim(),
-                    ProductForm: $('#spec-form').val().trim(),
+                    CountryOfOrigin: ($('#spec-country').val() || '').trim(),
+                    ProductForm: ($('#spec-form').val() || '').trim(),
+                    ProductWeight: ($('#spec-weight').val() || '').trim(),
                     Attributes: {}
                 };
 
                 $('.attr-row').each(function () {
-                    const key = $(this).find('.attr-key').val().trim();
-                    const val = $(this).find('.attr-value').val().trim();
+                    const key = ($(this).find('.attr-key').val() || '').trim();
+                    const val = ($(this).find('.attr-value').val() || '').trim();
 
                     if (key !== '') {
                         finalSpec.Attributes[key] = val;

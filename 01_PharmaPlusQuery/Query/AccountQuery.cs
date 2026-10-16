@@ -49,19 +49,13 @@ namespace _01_PharmaPlusQuery.Query
                 .Select(o => new LatestOrderQueryModel
                 {
                     Id = o.Id,
-                    CreationDate = o.CreationDate,
+                    CreationDate = o.CreationDate.ToFarsi(),
                     Status = o.Status,
                     PayAmount = o.PayAmount,
+                    StatusTitle = OrderStatus.GetStatusTitleByCode(o.Status),
                     ItemsCount = o.Items.Count()
                 })
                 .ToListAsync(cancellationToken);
-
-            foreach (var order in latestOrders)
-            {
-                order.CreationDateDisplay = order.CreationDate.ToFarsi();
-                order.StatusTitle = OrderStatus.GetStatusTitleByCode(order.Status);
-                order.PayAmountDisplay = order.PayAmount.ToMoney();
-            }
 
             return new AccountOverviewQueryModel
             {

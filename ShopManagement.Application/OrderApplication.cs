@@ -315,8 +315,8 @@ namespace ShopManagement.Application
 
         public List<OrderStatusDto> GetStatuses()
         {
-            return new List<OrderStatusDto>
-            {
+            return
+            [
                 new() { Id = OrderStatus.Pending, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Pending) },
                 new() { Id = OrderStatus.WaitingForGateway, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.WaitingForGateway) },
                 new() { Id = OrderStatus.WaitingForManualVerification, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.WaitingForManualVerification) },
@@ -327,7 +327,7 @@ namespace ShopManagement.Application
                 new() { Id = OrderStatus.NeedsRefund, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.NeedsRefund) },
                 new() { Id = OrderStatus.Cancelled, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Cancelled) },
                 new() { Id = OrderStatus.Refunded, Name = OrderStatus.GetStatusTitleByCode(OrderStatus.Refunded) }
-            };
+            ];
         }
 
         public async Task<OrderTrackingSmsDto?> GetOrderForTrackingSms(long orderId, CancellationToken cancellation)
@@ -365,7 +365,7 @@ namespace ShopManagement.Application
 
             var cartKey = $"user:{userId}";
             var cart = await _cartRepository.GetOrCreateByCartKeyAsync(cartKey, cancellation);
-            if (cart == null || !cart.Items.Any()) return (null, op.Failed("سبد خرید شما خالی است."));
+            if (cart == null || cart.Items.Count == 0) return (null, op.Failed("سبد خرید شما خالی است."));
 
             var discountModel = new DiscountCalculationModel { UserId = userId, CouponCode = couponCode };
 
@@ -397,7 +397,16 @@ namespace ShopManagement.Application
 
             var discountResult = await _discountApplication.CalculateDiscountsAsync(discountModel, cancellation);
 
-            double shippingCost = 100000;
+            var shippingItems = cart.Items.Select(item =>
+            {
+                var specs = productInfoDict.TryGetValue(item.ProductId, out var prod)
+                    ? prod.Specifications
+                    : null;
+
+                return (Specifications: specs, item.Quantity);
+            });
+
+            double shippingCost = ShippingCalculator.CalculateShippingCost(shippingItems);
 
             double finalPayAmount = discountResult.PayAmount + shippingCost;
 
@@ -409,6 +418,9 @@ namespace ShopManagement.Application
                     IsCouponApplied = false,
                     DiscountMessage = null,
                     TotalAmount = discountResult.TotalAmount,
+                    TotalAutoDiscountAmount = discountResult.TotalAutoDiscountAmount,
+                    OrderCouponAmount = discountResult.OrderCouponAmount,
+                    CouponRate = discountResult.CouponRate,
                     TotalDiscountAmount = discountResult.TotalDiscountAmount,
                     ShippingCost = shippingCost,
                     FinalPayAmount = finalPayAmount
@@ -421,6 +433,9 @@ namespace ShopManagement.Application
                 IsCouponApplied = discountResult.AppliedCouponId.HasValue && discountResult.AppliedCouponId > 0,
                 DiscountMessage = discountResult.DiscountMessage ?? null,
                 TotalAmount = discountResult.TotalAmount,
+                TotalAutoDiscountAmount = discountResult.TotalAutoDiscountAmount,
+                OrderCouponAmount = discountResult.OrderCouponAmount,
+                CouponRate = discountResult.CouponRate,
                 TotalDiscountAmount = discountResult.TotalDiscountAmount,
                 ShippingCost = shippingCost,
                 FinalPayAmount = finalPayAmount
@@ -441,7 +456,7 @@ namespace ShopManagement.Application
 
             var cartKey = $"user:{command.UserId}";
             var cart = await _cartRepository.GetOrCreateByCartKeyAsync(cartKey, cancellation);
-            if (cart == null || !cart.Items.Any())
+            if (cart == null || cart.Items.Count == 0)
                 return (null, op.Failed("سبد خرید شما خالی است."));
 
             var productIds = cart.Items.Select(x => x.ProductId).Distinct().ToList();
@@ -504,7 +519,9 @@ namespace ShopManagement.Application
                 order.ApplyOrderCoupon(discountResult.AppliedCouponId.Value, command.CouponCode, discountResult.OrderCouponAmount);
             }
 
-            double shippingCost = 100000;
+            var shippingItems = enrichedItems.Select(x => (x.Product.Specifications, x.Item.Quantity));
+            double shippingCost = ShippingCalculator.CalculateShippingCost(shippingItems);
+
             order.SetShippingCost(shippingCost);
 
             var result = new CreateOrderResult();
@@ -586,15 +603,15 @@ namespace ShopManagement.Application
                 var discountIds = order.Items.Where(x => x.DiscountId > 0)
                                        .Select(x => x.DiscountId)
                                        .Union(order.AppliedCouponId.HasValue ?
-                                             new[] { order.AppliedCouponId.Value } :
+                                             [order.AppliedCouponId.Value] :
                                              Array.Empty<long>())
                                        .ToList();
 
                 var inventories = await _inventoryRepository.GetByProductIds(productIds, cancellation);
 
-                var discounts = discountIds.Any() ?
+                var discounts = discountIds.Count != 0 ?
                     await _discountRepository.GetByIds(discountIds, cancellation) :
-                    new List<Discount>();
+                    [];
 
                 foreach (var orderItem in order.Items)
                 {
@@ -668,14 +685,12 @@ namespace ShopManagement.Application
             }
         }
 
-        public class InsufficientInventoryException : Exception
+        public class InsufficientInventoryException(string message) : Exception(message)
         {
-            public InsufficientInventoryException(string message) : base(message) { }
         }
 
-        public class DiscountCapacityExceededException : Exception
+        public class DiscountCapacityExceededException(string message) : Exception(message)
         {
-            public DiscountCapacityExceededException(string message) : base(message) { }
         }
 
         public enum OperationResultType

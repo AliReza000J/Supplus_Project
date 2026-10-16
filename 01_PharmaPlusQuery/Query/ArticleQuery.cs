@@ -89,13 +89,12 @@ namespace _01_PharmaPlusQuery.Query
                     LikeCount = x.LikeCount,
                     Rate = x.Rate,
                     ReplyDate = x.AdminReplyDate.ToFarsi(),
-                    HasEdited = x.CreationDate == x.LastModified,
+                    HasEdited = x.CreationDate != x.LastModified,
                     UserId = x.UserId,
                     LastModifedDate = x.LastModified.ToFarsi(),
                     LikedByUserIds = new List<long>(),
-                    DislikedByUserIds = new List<long>()
-                })
-                .ToListAsync(cancellation);
+                    DislikedByUserIds = new List<long>(),
+                }).ToListAsync(cancellation);
 
             var commentIds = comments.Select(c => c.Id).ToList();
 
@@ -121,15 +120,15 @@ namespace _01_PharmaPlusQuery.Query
 
                 comment.LikedByUserIds = relatedReactions
                     .Where(r => r.Reaction == ReactionType.Like)
-                    .Select(r => r.UserId)
-                    .Where(id => id > 0)
-                    .ToList();
+                            .Select(r => r.UserId)
+                            .Where(id => id > 0)
+                            .ToList();
 
                 comment.DislikedByUserIds = relatedReactions
                     .Where(r => r.Reaction == ReactionType.Dislike)
-                    .Select(r => r.UserId)
-                    .Where(id => id > 0)
-                    .ToList();
+                            .Select(r => r.UserId)
+                            .Where(id => id > 0)
+                            .ToList();
             }
 
             // -----------------------------
@@ -163,7 +162,7 @@ namespace _01_PharmaPlusQuery.Query
             article.AvgRateStr = avgRate.ToString();
             article.CommentCountStr = commentCount.ToString();
             article.RateCountStr = rateCount.ToString();
-            article.ViewsLabel = "+" + (Math.Ceiling(article.ViewCount / 10.0) * 10).ToString() 
+            article.ViewsLabel = "+" + (Math.Ceiling(article.ViewCount / 10.0) * 10).ToString()
             + " بازدید از این مقاله";
 
             return article;

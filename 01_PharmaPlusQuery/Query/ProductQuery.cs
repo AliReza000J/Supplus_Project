@@ -7,6 +7,7 @@ using CommnetManagement.Infrastructure.EFCore;
 using DiscountManagement.Infrastructure.EFCore;
 using InventoryMangement.Infrastructure.EFCore;
 using Microsoft.EntityFrameworkCore;
+using ShopManagement.Domain.ProductAgg;
 using ShopManagement.Infrastructure.EFCore;
 using System.Text.Json;
 using static DiscountManagement.Domain.DiscountAgg.Discount;
@@ -201,9 +202,16 @@ namespace _01_PharmaPlusQuery.Query
             }
 
             double unitPrice = inventory?.UnitPrice ?? 0;
+            long invQty = inventory?.CalculateCurrentCount() ?? 0;
             bool hasDiscount = discount != null;
             int discountPercentage = discount?.Percentage ?? 0;
-            int discountedQty = hasDiscount ? (inventory?.InStock == true ? 99 : 0) : 0;
+
+            long maxAllowedInDiscount = (discount?.MaxDiscountQuantity == null || discount.MaxDiscountQuantity <= 0)
+                        ? invQty
+                        : discount.MaxDiscountQuantity.Value;
+
+            long discountedQty = (discount == null || hasDiscount == false) ? 0 : Math.Min(invQty, maxAllowedInDiscount);
+
             double priceWithDiscount = hasDiscount
                 ? Math.Round(unitPrice * (100 - discountPercentage) / 100)
                 : unitPrice;
@@ -224,8 +232,13 @@ namespace _01_PharmaPlusQuery.Query
                 ShortDescription = productBase.ShortDescription,
                 MetaDescription = productBase.MetaDescription,
                 Specifications = !string.IsNullOrWhiteSpace(productBase.Specifications)
-                ? JsonSerializer.Deserialize<ProductSpecificationModel>(productBase.Specifications, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
-                : new ProductSpecificationModel(),
+                    ? JsonSerializer.Deserialize<ProductSpecificationModel>(
+                        productBase.Specifications,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        }) ?? new ProductSpecificationModel()
+                    : new ProductSpecificationModel(),
                 Keywords = productBase.Keywords,
                 Slug = productBase.Slug,
                 ViewCount = productBase.ViewCount,
@@ -241,16 +254,14 @@ namespace _01_PharmaPlusQuery.Query
 
                 Pictures = pictures,
 
-                Price = unitPrice.ToMoney(),
-                DoublePrice = unitPrice,
+                Price = unitPrice,
                 HasDiscount = hasDiscount,
                 DiscountRate = discountPercentage,
                 DiscountExpireDate = discount?.EndDate?.ToFarsi() ?? "",
-                PriceWithDiscount = priceWithDiscount.ToMoney(),
+                PriceWithDiscount = priceWithDiscount,
                 DiscountedQty = discountedQty,
                 IsInStock = inventory != null && inventory.InStock,
-                InStockQty = inventory?.CalculateCurrentCount() ?? 0,
-
+                InvQty = invQty,
                 Comments = comments,
                 CommentCount = commentCount,
                 RateCount = rateCount,
@@ -267,7 +278,7 @@ namespace _01_PharmaPlusQuery.Query
             // ===== Load Inventory & Discounts & Rates =====
             var inventory = await _inventoryContext.Inventory
             .Select(x => new ProductInventoryDto
-            { ProductId = x.ProductId, UnitPrice = x.UnitPrice, InStock = x.InStock })
+            { ProductId = x.ProductId, UnitPrice = x.UnitPrice, InStock = x.InStock, InvQty = x.CalculateCurrentCount() })
             .ToListAsync(cancellationToken);
 
             var activeDiscounts = await _discountContext.Discounts
@@ -311,8 +322,9 @@ namespace _01_PharmaPlusQuery.Query
                 if (productInventory != null)
                 {
                     var price = productInventory.UnitPrice;
-                    product.Price = price.ToMoney();
+                    product.Price = price;
                     product.IsInStock = productInventory.InStock;
+                    product.InvQty = productInventory.InvQty;
 
                     var bestDiscount = activeDiscounts
                         .Where(d => d.Targets.Any(t =>
@@ -329,15 +341,20 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = bestDiscount.Percentage;
                         product.HasDiscount = true;
                         product.DiscountExpireDate = bestDiscount.EndDate?.ToString();
-
                         var discountAmount = Math.Round((price * bestDiscount.Percentage) / 100);
-                        product.PriceWithDiscount = (price - discountAmount).ToMoney();
+                        product.PriceWithDiscount = price - discountAmount;
                     }
                     else
                     {
                         product.PriceWithDiscount = product.Price;
                         product.HasDiscount = false;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? productInventory.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    product.DiscountedQty = (bestDiscount == null || product.HasDiscount == false) ? 0 : Math.Min(productInventory.InvQty, maxAllowedInDiscount);
+
                 }
                 var rateInfo = avgRates.FirstOrDefault(x => x.ProductId == product.Id);
                 if (rateInfo != null)
@@ -395,7 +412,8 @@ namespace _01_PharmaPlusQuery.Query
                 p.Brand,
                 p.Keywords,
                 p.CategoryId,
-                p.Specifications
+                p.Specifications,
+                p.ViewCount
             }).ToListAsync(cancellationToken);
 
             var baseProducts = baseProductsRaw.Select(p => new ProductCardModel
@@ -409,19 +427,31 @@ namespace _01_PharmaPlusQuery.Query
                 PictureTitle = p.PictureTitle,
                 Slug = p.Slug,
                 Brand = p.Brand,
+                ViewCount = p.ViewCount,
                 CategoryId = p.CategoryId,
                 Specifications = !string.IsNullOrWhiteSpace(p.Specifications)
                 ? JsonSerializer.Deserialize<ProductSpecificationModel>(p.Specifications, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 : new ProductSpecificationModel()
             }).ToList();
 
-            if (!baseProducts.Any()) return new PagedResult<ProductCardModel>();
+            if (baseProducts.Count == 0) return new PagedResult<ProductCardModel>();
 
             var productIds = baseProducts.Select(x => x.Id).ToList();
 
             var inventory = await _inventoryContext.Inventory
                 .Where(x => productIds.Contains(x.ProductId))
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock }, cancellationToken);
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock, InvQty = x.CalculateCurrentCount() }, cancellationToken);
+
+            var productSales = await _shopContext.Orders
+                .SelectMany(order => order.Items)
+                .Where(item => productIds.Contains(item.ProductId))
+                .GroupBy(item => item.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    SalesCount = g.Sum(x => x.Quantity)
+                })
+                .ToDictionaryAsync(x => x.ProductId, x => x.SalesCount, cancellationToken: cancellationToken);
 
             var avgRates = await _commentContext.Comments
                 .Where(x => productIds.Contains(x.RecordId) && x.IsConfirmed && !x.IsCanceled)
@@ -440,10 +470,9 @@ namespace _01_PharmaPlusQuery.Query
             {
                 if (inventory.TryGetValue(product.Id, out var inv))
                 {
-                    product.Price = inv.UnitPrice.ToMoney();
-                    product.DoublePrice = inv.UnitPrice;
+                    product.Price = inv.UnitPrice;
                     product.IsInStock = inv.InStock;
-
+                    product.InvQty = inv.InvQty;
                     var bestDiscount = validDiscounts
                         .Where(d => d.Targets.Any(t =>
                             t.TargetType == (DiscountTargetType)4 ||
@@ -457,13 +486,22 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = bestDiscount.Percentage;
                         product.HasDiscount = true;
                         var discountAmount = Math.Round((inv.UnitPrice * bestDiscount.Percentage) / 100);
-                        product.DoublePriceWithDiscount = inv.UnitPrice - discountAmount;
-                        product.PriceWithDiscount = product.DoublePriceWithDiscount.ToMoney();
+                        product.PriceWithDiscount = inv.UnitPrice - discountAmount;
                     }
                     else
                     {
-                        product.DoublePriceWithDiscount = inv.UnitPrice;
+                        product.PriceWithDiscount = inv.UnitPrice;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? inv.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    product.DiscountedQty = (bestDiscount == null || product.HasDiscount == false) ? 0 : Math.Min(inv.InvQty, maxAllowedInDiscount);
+                }
+
+                if (productSales.TryGetValue(product.Id, out var saleCount))
+                {
+                    product.Sales = saleCount;
                 }
 
                 if (avgRates.TryGetValue(product.Id, out var rate))
@@ -496,18 +534,19 @@ namespace _01_PharmaPlusQuery.Query
                 filteredProducts = filteredProducts.Where(x => x.HasDiscount);
 
             if (request.MinPrice.HasValue)
-                filteredProducts = filteredProducts.Where(x => x.DoublePriceWithDiscount >= request.MinPrice.Value);
+                filteredProducts = filteredProducts.Where(x => x.PriceWithDiscount >= request.MinPrice.Value);
 
             if (request.MaxPrice.HasValue)
-                filteredProducts = filteredProducts.Where(x => x.DoublePriceWithDiscount <= request.MaxPrice.Value);
+                filteredProducts = filteredProducts.Where(x => x.PriceWithDiscount <= request.MaxPrice.Value);
 
             filteredProducts = request.SortBy switch
             {
-                ProductSortOption.PriceAsc => filteredProducts.OrderByDescending(x => x.IsInStock).ThenBy(x => x.DoublePriceWithDiscount),
-                ProductSortOption.PriceDesc => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.DoublePriceWithDiscount),
+                ProductSortOption.PriceAsc => filteredProducts.OrderByDescending(x => x.IsInStock).ThenBy(x => x.PriceWithDiscount),
+                ProductSortOption.PriceDesc => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.PriceWithDiscount),
                 ProductSortOption.Popularity => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.AvgRate).ThenByDescending(x => x.RateCount),
-                ProductSortOption.HighestDiscount => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.DiscountRate),
+                ProductSortOption.HighestDiscount => filteredProducts.Where(x => x.HasDiscount).OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.DiscountRate),
                 ProductSortOption.MostViewed => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.ViewCount),
+                ProductSortOption.TopSales => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.Sales),
                 _ => filteredProducts.OrderByDescending(x => x.IsInStock).ThenByDescending(x => x.Id) // Newest default
             };
 
@@ -538,7 +577,8 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     ProductId = x.ProductId,
                     UnitPrice = x.UnitPrice,
-                    InStock = x.InStock
+                    InStock = x.InStock,
+                    InvQty = x.CalculateCurrentCount()
                 })
                 .ToListAsync(cancellationToken);
 
@@ -547,7 +587,7 @@ namespace _01_PharmaPlusQuery.Query
                 .Select(x => x.ProductId)
                 .ToList();
 
-            if (!inStockProductIds.Any())
+            if (inStockProductIds.Count == 0)
                 return new List<ProductCardModel>();
 
             // ==== Rates ====
@@ -609,9 +649,9 @@ namespace _01_PharmaPlusQuery.Query
                 if (inv != null)
                 {
                     var price = inv.UnitPrice;
-                    product.Price = price.ToMoney();
+                    product.Price = price;
                     product.IsInStock = inv.InStock;
-
+                    product.InvQty = inv.InvQty;
                     var bestDiscount = activeDiscounts
                         .Where(d => d.Targets.Any(t =>
                             t.TargetType == (DiscountTargetType)4 || // اعمال به همه محصولات
@@ -627,15 +667,19 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = bestDiscount.Percentage;
                         product.DiscountExpireDate = bestDiscount.EndDate?.ToFarsi();
                         product.HasDiscount = true;
-
                         var amount = Math.Round((inv.UnitPrice * bestDiscount.Percentage) / 100);
-                        product.PriceWithDiscount = (inv.UnitPrice - amount).ToMoney();
+                        product.PriceWithDiscount = inv.UnitPrice - amount;
                     }
                     else
                     {
                         product.PriceWithDiscount = product.Price;
                         product.HasDiscount = false;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? inv.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    product.DiscountedQty = (bestDiscount == null || product.HasDiscount == false) ? 0 : Math.Min(inv.InvQty, maxAllowedInDiscount);
 
                     var rateInfo = avgRates.FirstOrDefault(x => x.ProductId == product.Id);
                     if (rateInfo != null)
@@ -662,7 +706,8 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     ProductId = x.ProductId,
                     UnitPrice = x.UnitPrice,
-                    InStock = x.InStock
+                    InStock = x.InStock,
+                    InvQty = x.CalculateCurrentCount()
                 })
                 .ToListAsync(cancellationToken);
 
@@ -735,8 +780,8 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     var price = inv.UnitPrice;
                     product.IsInStock = inv.InStock;
-                    product.Price = price.ToMoney();
-
+                    product.Price = price;
+                    product.InvQty = inv.InvQty;
                     var bestDiscount = activeDiscounts
                         .Where(d => d.Targets.Any(t =>
                             t.TargetType == (DiscountTargetType)4 || // اعمال به همه محصولات
@@ -752,15 +797,19 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = bestDiscount.Percentage;
                         product.DiscountExpireDate = bestDiscount.EndDate?.ToFarsi();
                         product.HasDiscount = true;
-
                         var amount = Math.Round((inv.UnitPrice * bestDiscount.Percentage) / 100);
-                        product.PriceWithDiscount = (inv.UnitPrice - amount).ToMoney();
+                        product.PriceWithDiscount = inv.UnitPrice - amount;
                     }
                     else
                     {
                         product.PriceWithDiscount = product.Price;
                         product.HasDiscount = false;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? inv.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    product.DiscountedQty = (bestDiscount == null || product.HasDiscount == false) ? 0 : Math.Min(inv.InvQty, maxAllowedInDiscount);
                 }
 
                 var rateInfo = avgRates.FirstOrDefault(x => x.ProductId == product.Id);
@@ -790,7 +839,8 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     ProductId = x.ProductId,
                     UnitPrice = x.UnitPrice,
-                    InStock = x.InStock
+                    InStock = x.InStock,
+                    InvQty = x.CalculateCurrentCount()
                 })
                 .ToListAsync(cancellationToken);
 
@@ -864,8 +914,8 @@ namespace _01_PharmaPlusQuery.Query
                 {
                     var price = inv.UnitPrice;
                     product.IsInStock = inv.InStock;
-                    product.Price = price.ToMoney();
-
+                    product.Price = price;
+                    product.InvQty = inv.InvQty;
                     var bestDiscount = activeDiscounts
                         .Where(d => d.Targets.Any(t =>
                             t.TargetType == (DiscountTargetType)4 || // اعمال به همه محصولات
@@ -881,15 +931,19 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = bestDiscount.Percentage;
                         product.DiscountExpireDate = bestDiscount.EndDate?.ToFarsi();
                         product.HasDiscount = true;
-
                         var amount = Math.Round((inv.UnitPrice * bestDiscount.Percentage) / 100);
-                        product.PriceWithDiscount = (inv.UnitPrice - amount).ToMoney();
+                        product.PriceWithDiscount = inv.UnitPrice - amount;
                     }
                     else
                     {
                         product.PriceWithDiscount = product.Price;
                         product.HasDiscount = false;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? inv.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    product.DiscountedQty = (bestDiscount == null || product.HasDiscount == false) ? 0 : Math.Min(inv.InvQty, maxAllowedInDiscount);
                 }
 
                 var rateInfo = avgRates.FirstOrDefault(x => x.ProductId == product.Id);
@@ -900,11 +954,10 @@ namespace _01_PharmaPlusQuery.Query
                 }
             }
 
-            return products
+            return [.. products
                 .OrderByDescending(x => x.ViewCount)
                 .ThenByDescending(x => x.AvgRate)
-                .ThenByDescending(x => x.RateCount)
-                .ToList();
+                .ThenByDescending(x => x.RateCount)];
         }
 
         public async Task<List<FaveProductsCardModel>> GetUserFavoriteList(long userId, CancellationToken cancellationToken = default)
@@ -960,13 +1013,13 @@ namespace _01_PharmaPlusQuery.Query
             foreach (var p in products)
             {
                 var favDate = favProducts[p.Id];
-                p.CurrentUserFavedDate = favDate;
-                p.CurrentUserFavedDateStr = favDate.ToFarsi();
+                p.CurrentUserFavedDate = favDate.ToFarsi();
 
                 if (inventory.TryGetValue(p.Id, out var inv))
                 {
-                    p.Price = inv.UnitPrice.ToMoney();
+                    p.Price = inv.UnitPrice;
                     p.IsInStock = inv.InStock;
+                    p.InvQty = inv.CalculateCurrentCount();
 
                     var bestDiscount = activeDiscounts
                         .Where(d => d.Targets.Any(t =>
@@ -985,13 +1038,18 @@ namespace _01_PharmaPlusQuery.Query
                         p.HasDiscount = true;
 
                         var amount = Math.Round((inv.UnitPrice * bestDiscount.Percentage) / 100);
-                        p.PriceWithDiscount = (inv.UnitPrice - amount).ToMoney();
+                        p.PriceWithDiscount = inv.UnitPrice - amount;
                     }
                     else
                     {
                         p.PriceWithDiscount = p.Price;
                         p.HasDiscount = false;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? p.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    p.DiscountedQty = (bestDiscount == null || p.HasDiscount == false) ? 0 : Math.Min(p.InvQty, maxAllowedInDiscount);
                 }
 
                 if (avgRates.TryGetValue(p.Id, out var rate))
@@ -1068,15 +1126,16 @@ namespace _01_PharmaPlusQuery.Query
 
             var inventory = await _inventoryContext.Inventory
                 .Where(x => productIds.Contains(x.ProductId))
-                .Select(x => new { x.ProductId, x.UnitPrice, x.InStock })
-                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock }, cancellationToken);
+                .Select(x => new { x.ProductId, x.UnitPrice, x.InStock, InvQty = x.CalculateCurrentCount() })
+                .ToDictionaryAsync(x => x.ProductId, x => new { x.UnitPrice, x.InStock, x.InvQty }, cancellationToken);
 
             foreach (var product in products)
             {
                 if (inventory.TryGetValue(product.Id, out var inv))
                 {
-                    product.Price = inv.UnitPrice.ToMoney();
+                    product.Price = inv.UnitPrice;
                     product.IsInStock = inv.InStock;
+                    product.InvQty = inv.InvQty;
 
                     var bestDiscount = activeDiscounts
                         .Where(d => d.Targets.Any(t =>
@@ -1094,15 +1153,19 @@ namespace _01_PharmaPlusQuery.Query
                         product.DiscountRate = rate;
                         product.DiscountExpireDate = bestDiscount.EndDate?.ToFarsi();
                         product.HasDiscount = true;
-
                         var discountAmount = Math.Round((inv.UnitPrice * rate) / 100);
-                        product.PriceWithDiscount = (inv.UnitPrice - discountAmount).ToMoney();
+                        product.PriceWithDiscount = inv.UnitPrice - discountAmount;
                     }
                     else
                     {
                         product.PriceWithDiscount = product.Price;
                         product.HasDiscount = false;
                     }
+
+                    long maxAllowedInDiscount = (bestDiscount?.MaxDiscountQuantity == null || bestDiscount.MaxDiscountQuantity <= 0)
+                            ? inv.InvQty
+                            : bestDiscount.MaxDiscountQuantity.Value;
+                    product.DiscountedQty = (bestDiscount == null || product.HasDiscount == false) ? 0 : Math.Min(inv.InvQty, maxAllowedInDiscount);
 
                     var rateInfo = avgRates.FirstOrDefault(x => x.ProductId == product.Id);
                     if (rateInfo != null)

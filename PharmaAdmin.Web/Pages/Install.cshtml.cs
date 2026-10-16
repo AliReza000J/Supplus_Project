@@ -72,7 +72,13 @@ public class InstallModel : PageModel
             SetupState.IsSetupCompleted = true;
             TempData["Toast.Success"] = result.IsSucceeded;
             TempData["Toast.Message"] = result.Message;
-            return RedirectToPage("/Admin/Login");
+
+            if (Request.Host.Host.Contains("localhost"))
+            {
+                return Redirect("https://localhost:5002/admin");
+            }
+
+            return Redirect("https://admin.supplus.ir/admin");
         }
         else
         {

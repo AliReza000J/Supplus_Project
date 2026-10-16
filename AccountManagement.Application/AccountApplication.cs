@@ -256,8 +256,6 @@ namespace AccountManagement.Application
                 account.ChangePassword(newPasswordHash);
             }
 
-            account.UpdateSuperAdmin(command.Email, command.Mobile);
-
             await _accountRepository.SaveChangesAsync(cancellation);
 
             return op.Succeeded("پروفایل شما با موفقیت بروزرسانی شد.");
@@ -823,5 +821,4 @@ namespace AccountManagement.Application
             return op.Succeeded("راه‌اندازی با موفقیت انجام شد. اکنون می‌توانید وارد سایت شوید.");
         }
     }
-
 }

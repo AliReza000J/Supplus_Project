@@ -4,7 +4,6 @@ using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ShopManagement.Application.Contracts.Order;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace PharmaShared.Web.Services
 {
@@ -25,14 +24,15 @@ namespace PharmaShared.Web.Services
         {
             container.Page(page =>
             {
-                page.DefaultTextStyle(x => x.FontFamily("XB Niloofar").FontSize(11));
+                page.DefaultTextStyle(x => x.FontFamily("Vazirmatn").FontSize(11));
+                //page.DefaultTextStyle(x => x.FontFamily("XB Niloofar").FontSize(11));
                 page.Margin(1.5f, Unit.Centimetre);
                 page.ContentFromRightToLeft();
                 page.PageColor(Colors.White);
 
-                page.Header().PaddingBottom(30).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Row(row =>
+                page.Header().PaddingBottom(20).BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Row(row =>
                 {
-                    row.RelativeItem().Column(col =>
+                    row.RelativeItem().AlignMiddle().Column(col =>
                     {
                         var basePath = _config["UploadSettings:BasePath"]
                             ?? throw new InvalidOperationException("Upload path is not configured.");
@@ -46,7 +46,7 @@ namespace PharmaShared.Web.Services
                         col.Item().PaddingTop(5).PaddingBottom(5).Text("داروخانه آنلاین فارماپلاس").FontSize(18).Bold().FontColor(Colors.Blue.Darken4);
                     });
 
-                    row.RelativeItem().AlignLeft().Column(col =>
+                    row.RelativeItem().AlignLeft().AlignMiddle().Column(col =>
                     {
                         col.Item().Text("فاکتور فروش کالا/خدمات").FontSize(14).SemiBold();
 
@@ -118,7 +118,7 @@ namespace PharmaShared.Web.Services
                         {
                             columns.ConstantColumn(30); // ردیف
                             columns.RelativeColumn(6);  // شرح کالا
-                            columns.RelativeColumn(1);  // تعداد
+                            columns.RelativeColumn(2);  // تعداد
                             columns.RelativeColumn(2);  // قیمت واحد
                             columns.RelativeColumn(2);  // تخفیف
                             columns.RelativeColumn(2);  // مبلغ کل
